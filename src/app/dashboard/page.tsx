@@ -19,11 +19,24 @@ export default async function DashboardPage() {
     redirect('/login')
   }
 
-  const { data: perfil } = await supabase
+  const { data: perfil, error: perfilError } = await supabase
     .from('usuarios_perfil')
     .select('nombre, rol')
     .eq('id', user.id)
     .single()
+
+  // Nota sobre los dos `signOut()` de abajo: al llamarse directo en el cuerpo
+  // de este Server Component (no como una Server Action real vía <form>),
+  // Next.js no permite escribir la cookie de sesión, así que la cookie local
+  // queda vieja. Esto no es un hueco de seguridad: `signOut()` sí revoca la
+  // sesión en el servidor de Supabase (llamada HTTP independiente de la
+  // restricción de cookies de Next.js), y `getUser()` revalida contra ese
+  // servidor en cada request, así que la siguiente navegación ya detecta la
+  // sesión revocada y redirige a /login. No hay ventana real de uso indebido.
+  if (perfilError && perfilError.code !== 'PGRST116') {
+    await supabase.auth.signOut()
+    redirect('/login?error=error-perfil')
+  }
 
   if (!perfil) {
     await supabase.auth.signOut()

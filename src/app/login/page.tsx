@@ -5,6 +5,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   'error-conexion': 'No se pudo conectar, intenta de nuevo.',
   'sin-perfil':
     'Tu cuenta no tiene un perfil asignado, contacta al administrador.',
+  'error-perfil':
+    'No se pudo cargar tu perfil, intenta de nuevo o contacta al administrador.',
 }
 
 export default async function LoginPage({
