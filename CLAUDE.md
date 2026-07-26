@@ -47,7 +47,44 @@ El inventario real (~140 SKUs) está transcrito en `data/Inventario_Distribuidor
 - Todo en español: interfaz, mensajes, nombres de campos.
 
 ## Convenciones del proyecto
-_(completar a medida que avance: comandos de build/test, estructura de carpetas, estilo de código — correr `/init` en Claude Code una vez que exista código para que lo complete automáticamente)_
+- Estructura: `src/app` (Next.js App Router), `src/lib/supabase/` con tres helpers:
+  `client.ts` (cliente de navegador, para Client Components), `server.ts` (cliente
+  async para Server Components/Actions, vía `next/headers`), `proxy.ts` (helper de
+  sesión para el proxy raíz, vía `NextRequest`/`NextResponse`).
+- **Next.js 16 (instalado en este proyecto) renombró `middleware.ts` a `proxy.ts`**
+  — el archivo se llama `src/proxy.ts` y exporta `proxy()`, no `middleware()`. Si
+  algo de tu conocimiento previo de Next.js menciona `middleware.ts`, no aplica a
+  esta versión.
+- `@supabase/ssr` requiere cookies `getAll`/`setAll` (los métodos `get`/`set`/`remove`
+  están deprecados y no se usan aquí).
+- Tailwind v4: usar `bg-linear-to-*`, no `bg-gradient-to-*` (nombre viejo de v3).
+- **Sin tests automatizados en este proyecto** (decisión explícita, dado el tamaño
+  del equipo y el alcance de portafolio). Verificación: `npx tsc --noEmit`,
+  `npm run build`, y prueba manual en el navegador.
+- Comandos: `npm run dev` (servidor local), `npx tsc --noEmit`, `npm run build`.
+- **Gotcha de desarrollo en Windows**: si el login (o cualquier llamada del
+  servidor de Next.js a Supabase) falla con `fetch failed` a pesar de que las
+  credenciales son correctas, revisa si el antivirus (ej. Avast) tiene activado
+  el "Escaneo HTTPS" del Web Shield — intercepta TLS con su propio certificado, y
+  Node.js no confía en él (a diferencia del navegador o PowerShell, que sí
+  confían en el certificate store de Windows). Desactivar esa opción (o agregar
+  una excepción) resuelve el problema; no es un bug del código.
+
+## Estado actual y próximos pasos
+- **Login con Supabase Auth**: implementado y probado end-to-end (login, logout,
+  protección de rutas, los 4 casos de error). Vive en la rama **`feature/login-auth`**,
+  **todavía no mergeada a `main`** — queda pendiente decidir merge local / PR / mantener.
+- Documentación completa del proceso: spec en
+  `docs/superpowers/specs/2026-07-26-login-auth-design.md`, plan de implementación
+  (con el código exacto de cada archivo) en
+  `docs/superpowers/plans/2026-07-26-login-auth-plan.md`.
+- **Siguiente ítem del MVP**: #2, CRUD de productos (crear, editar, eliminar, ver
+  por zona), sobre la base de los helpers de Supabase ya construidos.
+- Nota pendiente, no bloqueante: la política RLS `"lectura propio perfil"` en
+  `schema.sql` usa `auth.role() = 'authenticated'`, lo que en realidad permite a
+  cualquier usuario autenticado leer todas las filas de `usuarios_perfil` (no solo
+  la propia, a pesar del nombre). Vale la pena ajustarla a `auth.uid() = id` al
+  construir el CRUD, cuando haya más de un consumidor de esa tabla.
 
 ## Variables de entorno necesarias (.env.local — no versionar)
 ```
