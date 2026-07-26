@@ -35,11 +35,17 @@ export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   if (!user && pathname !== '/login') {
-    return NextResponse.redirect(new URL('/login', request.url))
+    const redirectResponse = NextResponse.redirect(new URL('/login', request.url))
+    response.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie))
+    response.headers.forEach((value, key) => redirectResponse.headers.set(key, value))
+    return redirectResponse
   }
 
   if (user && (pathname === '/login' || pathname === '/')) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    const redirectResponse = NextResponse.redirect(new URL('/dashboard', request.url))
+    response.cookies.getAll().forEach((cookie) => redirectResponse.cookies.set(cookie))
+    response.headers.forEach((value, key) => redirectResponse.headers.set(key, value))
+    return redirectResponse
   }
 
   return response
