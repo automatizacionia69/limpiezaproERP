@@ -49,13 +49,18 @@ No hay UI para esto en este ciclo.
 
 ## Arquitectura / estructura de archivos
 
+> **Nota técnica:** Next.js 16 renombró el archivo `middleware.ts` a `proxy.ts`
+> (exporta `proxy()` en vez de `middleware()`). Es el mismo concepto descrito
+> más abajo ("el único lugar con la lógica de redirect"), solo cambia el
+> nombre de archivo/función por la versión de Next.js instalada.
+
 ```
 src/
-├── middleware.ts                 # protege rutas, redirige según sesión
+├── proxy.ts                      # protege rutas, redirige según sesión
 ├── lib/supabase/
 │   ├── client.ts                 # cliente Supabase para Client Components
 │   ├── server.ts                 # cliente Supabase para Server Components/Actions
-│   └── middleware.ts             # helper para refrescar sesión en el middleware
+│   └── proxy.ts                  # helper para refrescar sesión en el proxy
 ├── app/
 │   ├── login/
 │   │   ├── page.tsx              # pantalla de login (Server Component)
