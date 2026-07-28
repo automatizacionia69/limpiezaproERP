@@ -22,7 +22,33 @@ type DetalleRow = {
   producto_id: number
   cantidad: number
   precio_unitario: number
-  productos: { nombre: string; unidades_medida: { nombre: string } | { nombre: string }[] | null; categorias: { nombre: string } | { nombre: string }[] | null } | null
+  productos: {
+    nombre: string
+    unidades_medida: { nombre: string } | { nombre: string }[] | null
+    categorias: { nombre: string } | { nombre: string }[] | null
+  } | null
+}
+
+type NotaCreditoRow = { id: number; numero: string; anula_operacion: boolean; creado_en: string; comprobante_id: number }
+type DetalleNcRow = { nota_credito_id: number; producto_id: number; cantidad: number; precio_unitario: number }
+
+type Fila = {
+  fecha: string
+  tipo: string
+  serie: string
+  numero: string
+  ruc: string
+  cliente: string
+  vendedor: string
+  producto: string
+  categoria: string
+  unidadMedida: string
+  cantidad: number
+  precioSinIgv: number
+  subtotalLinea: number
+  igvLinea: number
+  totalLinea: number
+  estado: string
 }
 
 function unoDe<T>(v: T | T[] | null): T | null {
@@ -70,77 +96,155 @@ export default async function ReporteVentasPorProductoPage({
           .returns<DetalleRow[]>()
       : Promise.resolve({ data: [] as DetalleRow[] }),
     comprobanteIds.length > 0
-      ? supabase.from('notas_credito').select('id, comprobante_id, anula_operacion').in('comprobante_id', comprobanteIds)
-      : Promise.resolve({ data: [] as { id: number; comprobante_id: number; anula_operacion: boolean }[] }),
+      ? supabase
+          .from('notas_credito')
+          .select('id, numero, anula_operacion, creado_en, comprobante_id')
+          .in('comprobante_id', comprobanteIds)
+          .returns<NotaCreditoRow[]>()
+      : Promise.resolve({ data: [] as NotaCreditoRow[] }),
   ])
 
   const idsNotasItem = (notasCredito ?? []).filter((n) => !n.anula_operacion).map((n) => n.id)
   const { data: detallesNc } =
     idsNotasItem.length > 0
-      ? await supabase.from('detalle_nota_credito').select('nota_credito_id, producto_id, cantidad').in('nota_credito_id', idsNotasItem)
-      : { data: [] as { nota_credito_id: number; producto_id: number; cantidad: number }[] }
+      ? await supabase
+          .from('detalle_nota_credito')
+          .select('nota_credito_id, producto_id, cantidad, precio_unitario')
+          .in('nota_credito_id', idsNotasItem)
+          .returns<DetalleNcRow[]>()
+      : { data: [] as DetalleNcRow[] }
 
-  const notaPorId = new Map((notasCredito ?? []).map((n) => [n.id, n]))
-  const comprobantesAnulados = new Set((notasCredito ?? []).filter((n) => n.anula_operacion).map((n) => n.comprobante_id))
-
-  const devueltoPorComprobanteProducto = new Map<string, number>()
-  for (const d of detallesNc ?? []) {
-    const nota = notaPorId.get(d.nota_credito_id)
-    if (!nota) continue
-    const clave = `${nota.comprobante_id}-${d.producto_id}`
-    devueltoPorComprobanteProducto.set(clave, (devueltoPorComprobanteProducto.get(clave) ?? 0) + Number(d.cantidad))
-  }
-
+  const infoPorComprobante = new Map<number, { ruc: string; cliente: string; vendedor: string }>()
   const detallesPorOrden = new Map<number, DetalleRow[]>()
+  const comprobantePorId = new Map<number, ComprobanteRow>()
+  for (const c of comprobantes ?? []) {
+    const cliente = unoDe(c.clientes)
+    const vendedor = unoDe(c.vendedor)
+    infoPorComprobante.set(c.id, {
+      ruc: cliente?.documento ?? '',
+      cliente: cliente?.nombre ?? '—',
+      vendedor: vendedor?.nombre ?? '—',
+    })
+    comprobantePorId.set(c.id, c)
+  }
   for (const d of detalles ?? []) {
     const lista = detallesPorOrden.get(d.orden_id) ?? []
     lista.push(d)
     detallesPorOrden.set(d.orden_id, lista)
   }
 
-  const filas = (comprobantes ?? []).flatMap((c) => {
-    const cliente = unoDe(c.clientes)
-    const vendedor = unoDe(c.vendedor)
-    const lineas = detallesPorOrden.get(c.orden_venta_id) ?? []
+  function filaProducto(
+    c: ComprobanteRow,
+    productoNombre: string,
+    categoria: string,
+    unidad: string,
+    cantidad: number,
+    precioUnitario: number,
+    tipoLabel: string,
+    numero: string,
+    serie: string,
+    fecha: string
+  ): Fila {
+    const info = infoPorComprobante.get(c.id)!
+    const precioSinIgv = precioUnitario / (1 + IGV_TASA)
+    const subtotalLinea = cantidad * precioSinIgv
+    const totalLinea = cantidad * precioUnitario
+    const igvLinea = totalLinea - subtotalLinea
+    return {
+      fecha,
+      tipo: tipoLabel,
+      serie,
+      numero,
+      ruc: info.ruc,
+      cliente: info.cliente,
+      vendedor: info.vendedor,
+      producto: productoNombre,
+      categoria,
+      unidadMedida: unidad,
+      cantidad,
+      precioSinIgv,
+      subtotalLinea,
+      igvLinea,
+      totalLinea,
+      estado: c.estado === 'emitido' ? 'Emitido' : 'Anulado',
+    }
+  }
 
+  const filasVenta: Fila[] = (comprobantes ?? []).flatMap((c) => {
+    const lineas = detallesPorOrden.get(c.orden_venta_id) ?? []
     return lineas.map((d) => {
       const producto = d.productos
       const unidad = unoDe(producto?.unidades_medida ?? null)
       const categoria = unoDe(producto?.categorias ?? null)
-      const precioSinIgv = Number(d.precio_unitario) / (1 + IGV_TASA)
-      const cantidad = Number(d.cantidad)
-      const devuelto = comprobantesAnulados.has(c.id)
-        ? cantidad
-        : Math.min(cantidad, devueltoPorComprobanteProducto.get(`${c.id}-${d.producto_id}`) ?? 0)
-      const cantidadNeta = cantidad - devuelto
-      const subtotalLinea = cantidad * precioSinIgv
-      const totalLinea = cantidad * Number(d.precio_unitario)
-      const igvLinea = totalLinea - subtotalLinea
-      const totalLineaNeto = cantidadNeta * Number(d.precio_unitario)
-
-      return {
-        fecha: c.fecha_emision,
-        tipo: TIPO_COMPROBANTE_LABELS[c.tipo] ?? c.tipo,
-        serie: c.serie,
-        numero: c.numero,
-        ruc: cliente?.documento ?? '',
-        cliente: cliente?.nombre ?? '—',
-        vendedor: vendedor?.nombre ?? '—',
-        producto: producto?.nombre ?? '—',
-        categoria: categoria?.nombre ?? '—',
-        unidadMedida: unidad?.nombre ?? '—',
-        cantidad,
-        cantidadDevuelta: devuelto,
-        cantidadNeta,
-        precioSinIgv,
-        subtotalLinea,
-        igvLinea,
-        totalLinea,
-        totalLineaNeto,
-        estado: c.estado,
-      }
+      return filaProducto(
+        c,
+        producto?.nombre ?? '—',
+        categoria?.nombre ?? '—',
+        unidad?.nombre ?? '—',
+        Number(d.cantidad),
+        Number(d.precio_unitario),
+        TIPO_COMPROBANTE_LABELS[c.tipo] ?? c.tipo,
+        c.numero,
+        c.serie,
+        c.fecha_emision
+      )
     })
   })
+
+  const productoPorId = new Map<number, DetalleRow['productos']>()
+  for (const d of detalles ?? []) {
+    if (d.productos) productoPorId.set(d.producto_id, d.productos)
+  }
+
+  const filasNotasCredito: Fila[] = (notasCredito ?? []).flatMap((n) => {
+    const c = comprobantePorId.get(n.comprobante_id)
+    if (!c) return []
+    const fecha = n.creado_en.slice(0, 10)
+
+    if (n.anula_operacion) {
+      const lineas = detallesPorOrden.get(c.orden_venta_id) ?? []
+      return lineas.map((d) => {
+        const producto = d.productos
+        const unidad = unoDe(producto?.unidades_medida ?? null)
+        const categoria = unoDe(producto?.categorias ?? null)
+        return filaProducto(
+          c,
+          producto?.nombre ?? '—',
+          categoria?.nombre ?? '—',
+          unidad?.nombre ?? '—',
+          -Number(d.cantidad),
+          Number(d.precio_unitario),
+          'Nota de crédito',
+          n.numero,
+          'NC01',
+          fecha
+        )
+      })
+    }
+
+    const detallesDeNota = (detallesNc ?? []).filter((dn) => dn.nota_credito_id === n.id)
+    return detallesDeNota.map((dn) => {
+      const producto = productoPorId.get(dn.producto_id)
+      const unidad = unoDe(producto?.unidades_medida ?? null)
+      const categoria = unoDe(producto?.categorias ?? null)
+      return filaProducto(
+        c,
+        producto?.nombre ?? '—',
+        categoria?.nombre ?? '—',
+        unidad?.nombre ?? '—',
+        -Number(dn.cantidad),
+        Number(dn.precio_unitario),
+        'Nota de crédito',
+        n.numero,
+        'NC01',
+        fecha
+      )
+    })
+  })
+
+  const filas = [...filasVenta, ...filasNotasCredito].sort(
+    (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
+  )
 
   const filasExcel = filas.map((f) => [
     f.fecha,
@@ -154,18 +258,14 @@ export default async function ReporteVentasPorProductoPage({
     f.categoria,
     f.unidadMedida,
     f.cantidad,
-    f.cantidadDevuelta,
-    f.cantidadNeta,
     Number(f.precioSinIgv.toFixed(2)),
     Number(f.subtotalLinea.toFixed(2)),
     Number(f.igvLinea.toFixed(2)),
     Number(f.totalLinea.toFixed(2)),
-    Number(f.totalLineaNeto.toFixed(2)),
-    f.estado === 'emitido' ? 'Emitido' : 'Anulado',
+    f.estado,
   ])
 
   const totalGeneral = filas.reduce((acc, f) => acc + f.totalLinea, 0)
-  const totalNeto = filas.reduce((acc, f) => acc + f.totalLineaNeto, 0)
   const unidadesGeneral = filas.reduce((acc, f) => acc + f.cantidad, 0)
 
   return (
@@ -189,14 +289,11 @@ export default async function ReporteVentasPorProductoPage({
             'Producto',
             'Categoría',
             'Unidad',
-            'Cantidad vendida',
-            'Cantidad devuelta (NC)',
-            'Cantidad neta',
+            'Cantidad',
             'Precio unit. sin IGV',
             'Subtotal sin IGV',
             'IGV',
             'Total línea',
-            'Total línea neto',
             'Estado',
           ]}
           filas={filasExcel}
@@ -235,9 +332,8 @@ export default async function ReporteVentasPorProductoPage({
 
       <div className="mt-6 overflow-hidden rounded-3xl border-2 border-[#e2e8f0] bg-white shadow-lg shadow-slate-500/5">
         <p className="border-b-2 border-[#f1f5f9] px-6 py-4 text-sm font-medium text-[#64748b]">
-          {filas.length} línea{filas.length === 1 ? '' : 's'} de producto entre {desde} y {hasta} · {unidadesGeneral}{' '}
-          unidades · Total bruto: S/ {totalGeneral.toFixed(2)} ·{' '}
-          <span className="font-bold text-lime-700">Total neto (con NC): S/ {totalNeto.toFixed(2)}</span>
+          {filas.length} línea{filas.length === 1 ? '' : 's'} entre {desde} y {hasta} · {unidadesGeneral} unidades ·
+          Total: S/ {totalGeneral.toFixed(2)}
         </p>
         {filas.length === 0 ? (
           <p className="p-12 text-center text-sm font-medium text-[#64748b]">No hay ventas en ese rango de fechas.</p>
@@ -247,30 +343,30 @@ export default async function ReporteVentasPorProductoPage({
               <thead>
                 <tr className="border-b-2 border-[#f1f5f9] bg-[#f8fafc] text-[#64748b]">
                   <th className="px-5 py-3 font-bold">Fecha</th>
+                  <th className="px-5 py-3 font-bold">Tipo</th>
                   <th className="px-5 py-3 font-bold">Número</th>
                   <th className="px-5 py-3 font-bold">Cliente</th>
                   <th className="px-5 py-3 font-bold">Producto</th>
                   <th className="px-5 py-3 font-bold">Unidad</th>
                   <th className="px-5 py-3 font-bold">Cant.</th>
-                  <th className="px-5 py-3 font-bold">Devuelta</th>
                   <th className="px-5 py-3 font-bold">P. unit. sin IGV</th>
                   <th className="px-5 py-3 font-bold">Total línea</th>
-                  <th className="px-5 py-3 font-bold">Total neto</th>
                 </tr>
               </thead>
               <tbody>
                 {filas.map((f, i) => (
                   <tr key={i} className="border-b border-[#f1f5f9] text-[#1e293b]">
                     <td className="px-5 py-2.5 whitespace-nowrap text-[#64748b]">{f.fecha}</td>
+                    <td className="px-5 py-2.5">{f.tipo}</td>
                     <td className="px-5 py-2.5 font-semibold">{f.numero}</td>
                     <td className="px-5 py-2.5">{f.cliente}</td>
                     <td className="px-5 py-2.5">{f.producto}</td>
                     <td className="px-5 py-2.5 text-[#64748b]">{f.unidadMedida}</td>
                     <td className="px-5 py-2.5">{f.cantidad}</td>
-                    <td className="px-5 py-2.5 text-red-600">{f.cantidadDevuelta > 0 ? `− ${f.cantidadDevuelta}` : '—'}</td>
                     <td className="px-5 py-2.5 text-[#64748b]">S/ {f.precioSinIgv.toFixed(2)}</td>
-                    <td className="px-5 py-2.5 font-semibold">S/ {f.totalLinea.toFixed(2)}</td>
-                    <td className="px-5 py-2.5 font-bold text-lime-700">S/ {f.totalLineaNeto.toFixed(2)}</td>
+                    <td className={`px-5 py-2.5 font-semibold ${f.tipo === 'Nota de crédito' ? 'text-red-600' : ''}`}>
+                      S/ {f.totalLinea.toFixed(2)}
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { requierePermiso } from '@/lib/permisos'
+import { IGV_TASA } from '@/lib/cotizaciones'
 import { TIPO_COMPROBANTE_LABELS } from '@/lib/motivos'
 import { DescargarExcelBoton } from '@/components/descargar-excel-boton'
 
@@ -18,6 +19,31 @@ type ComprobanteRow = {
   orden_venta_id: number
   clientes: { nombre: string; documento: string | null } | { nombre: string; documento: string | null }[] | null
   vendedor: { nombre: string } | { nombre: string }[] | null
+}
+
+type NotaRow = {
+  id: number
+  numero: string
+  monto: number
+  creado_en: string
+  comprobante_id: number
+}
+
+type Fila = {
+  fecha: string
+  tipo: string
+  serie: string
+  numero: string
+  ruc: string
+  cliente: string
+  vendedor: string
+  subtotal: number
+  igv: number
+  total: number
+  unidades: number
+  items: number
+  medioPago: string
+  estado: string
 }
 
 function unoDe<T>(v: T | T[] | null): T | null {
@@ -61,11 +87,19 @@ export default async function ReporteVentasPorClientePage({
       ? supabase.from('detalle_venta').select('orden_id, cantidad').in('orden_id', ordenIds)
       : Promise.resolve({ data: [] as { orden_id: number; cantidad: number }[] }),
     comprobanteIds.length > 0
-      ? supabase.from('notas_credito').select('comprobante_id, monto').in('comprobante_id', comprobanteIds)
-      : Promise.resolve({ data: [] as { comprobante_id: number; monto: number }[] }),
+      ? supabase
+          .from('notas_credito')
+          .select('id, numero, monto, creado_en, comprobante_id')
+          .in('comprobante_id', comprobanteIds)
+          .returns<NotaRow[]>()
+      : Promise.resolve({ data: [] as NotaRow[] }),
     comprobanteIds.length > 0
-      ? supabase.from('notas_debito').select('comprobante_id, monto').in('comprobante_id', comprobanteIds)
-      : Promise.resolve({ data: [] as { comprobante_id: number; monto: number }[] }),
+      ? supabase
+          .from('notas_debito')
+          .select('id, numero, monto, creado_en, comprobante_id')
+          .in('comprobante_id', comprobanteIds)
+          .returns<NotaRow[]>()
+      : Promise.resolve({ data: [] as NotaRow[] }),
   ])
 
   const unidadesPorOrden = new Map<number, number>()
@@ -75,40 +109,84 @@ export default async function ReporteVentasPorClientePage({
     itemsPorOrden.set(d.orden_id, (itemsPorOrden.get(d.orden_id) ?? 0) + 1)
   }
 
-  const notasCreditoPorComprobante = new Map<number, number>()
-  for (const n of notasCredito ?? []) {
-    notasCreditoPorComprobante.set(n.comprobante_id, (notasCreditoPorComprobante.get(n.comprobante_id) ?? 0) + Number(n.monto))
-  }
-  const notasDebitoPorComprobante = new Map<number, number>()
-  for (const n of notasDebito ?? []) {
-    notasDebitoPorComprobante.set(n.comprobante_id, (notasDebitoPorComprobante.get(n.comprobante_id) ?? 0) + Number(n.monto))
-  }
-
-  const filas = (comprobantes ?? []).map((c) => {
+  const infoPorComprobante = new Map<number, { ruc: string; cliente: string; vendedor: string }>()
+  for (const c of comprobantes ?? []) {
     const cliente = unoDe(c.clientes)
     const vendedor = unoDe(c.vendedor)
-    const notaCredito = notasCreditoPorComprobante.get(c.id) ?? 0
-    const notaDebito = notasDebitoPorComprobante.get(c.id) ?? 0
+    infoPorComprobante.set(c.id, {
+      ruc: cliente?.documento ?? '',
+      cliente: cliente?.nombre ?? '—',
+      vendedor: vendedor?.nombre ?? '—',
+    })
+  }
+
+  const filasComprobantes: Fila[] = (comprobantes ?? []).map((c) => {
+    const info = infoPorComprobante.get(c.id)!
     return {
       fecha: c.fecha_emision,
       tipo: TIPO_COMPROBANTE_LABELS[c.tipo] ?? c.tipo,
       serie: c.serie,
       numero: c.numero,
-      ruc: cliente?.documento ?? '',
-      cliente: cliente?.nombre ?? '—',
-      vendedor: vendedor?.nombre ?? '—',
+      ruc: info.ruc,
+      cliente: info.cliente,
+      vendedor: info.vendedor,
       subtotal: Number(c.subtotal),
       igv: Number(c.igv),
       total: Number(c.total),
-      notaCredito,
-      notaDebito,
-      ventaNeta: Math.max(0, Number(c.total) - notaCredito + notaDebito),
       unidades: unidadesPorOrden.get(c.orden_venta_id) ?? 0,
       items: itemsPorOrden.get(c.orden_venta_id) ?? 0,
       medioPago: c.medio_pago,
-      estado: c.estado,
+      estado: c.estado === 'emitido' ? 'Emitido' : 'Anulado',
     }
   })
+
+  const filasNotasCredito: Fila[] = (notasCredito ?? []).map((n) => {
+    const info = infoPorComprobante.get(n.comprobante_id)
+    const sinIgv = Number(n.monto) / (1 + IGV_TASA)
+    const igv = Number(n.monto) - sinIgv
+    return {
+      fecha: n.creado_en.slice(0, 10),
+      tipo: 'Nota de crédito',
+      serie: 'NC01',
+      numero: n.numero,
+      ruc: info?.ruc ?? '',
+      cliente: info?.cliente ?? '—',
+      vendedor: info?.vendedor ?? '—',
+      subtotal: -sinIgv,
+      igv: -igv,
+      total: -Number(n.monto),
+      unidades: 0,
+      items: 0,
+      medioPago: '—',
+      estado: 'Emitido',
+    }
+  })
+
+  const filasNotasDebito: Fila[] = (notasDebito ?? []).map((n) => {
+    const info = infoPorComprobante.get(n.comprobante_id)
+    const sinIgv = Number(n.monto) / (1 + IGV_TASA)
+    const igv = Number(n.monto) - sinIgv
+    return {
+      fecha: n.creado_en.slice(0, 10),
+      tipo: 'Nota de débito',
+      serie: 'ND01',
+      numero: n.numero,
+      ruc: info?.ruc ?? '',
+      cliente: info?.cliente ?? '—',
+      vendedor: info?.vendedor ?? '—',
+      subtotal: sinIgv,
+      igv,
+      total: Number(n.monto),
+      unidades: 0,
+      items: 0,
+      medioPago: '—',
+      estado: 'Emitido',
+    }
+  })
+
+  const filas = [...filasComprobantes, ...filasNotasCredito, ...filasNotasDebito].sort(
+    (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime()
+  )
 
   const filasExcel = filas.map((f) => [
     f.fecha,
@@ -121,17 +199,13 @@ export default async function ReporteVentasPorClientePage({
     Number(f.subtotal.toFixed(2)),
     Number(f.igv.toFixed(2)),
     Number(f.total.toFixed(2)),
-    Number(f.notaCredito.toFixed(2)),
-    Number(f.notaDebito.toFixed(2)),
-    Number(f.ventaNeta.toFixed(2)),
     f.unidades,
     f.items,
     f.medioPago,
-    f.estado === 'emitido' ? 'Emitido' : 'Anulado',
+    f.estado,
   ])
 
   const totalGeneral = filas.reduce((acc, f) => acc + f.total, 0)
-  const totalNeto = filas.reduce((acc, f) => acc + f.ventaNeta, 0)
 
   return (
     <div>
@@ -154,9 +228,6 @@ export default async function ReporteVentasPorClientePage({
             'Monto sin IGV',
             'IGV',
             'Total',
-            'Nota de crédito',
-            'Nota de débito',
-            'Venta neta',
             'Unidades',
             'N° de ítems',
             'Medio de pago',
@@ -198,9 +269,8 @@ export default async function ReporteVentasPorClientePage({
 
       <div className="mt-6 overflow-hidden rounded-3xl border-2 border-[#e2e8f0] bg-white shadow-lg shadow-slate-500/5">
         <p className="border-b-2 border-[#f1f5f9] px-6 py-4 text-sm font-medium text-[#64748b]">
-          {filas.length} comprobante{filas.length === 1 ? '' : 's'} entre {desde} y {hasta} · Total bruto: S/{' '}
-          {totalGeneral.toFixed(2)} ·{' '}
-          <span className="font-bold text-lime-700">Venta neta (con NC/ND): S/ {totalNeto.toFixed(2)}</span>
+          {filas.length} movimiento{filas.length === 1 ? '' : 's'} entre {desde} y {hasta} · Total: S/{' '}
+          {totalGeneral.toFixed(2)}
         </p>
         {filas.length === 0 ? (
           <p className="p-12 text-center text-sm font-medium text-[#64748b]">No hay ventas en ese rango de fechas.</p>
@@ -218,7 +288,6 @@ export default async function ReporteVentasPorClientePage({
                   <th className="px-5 py-3 font-bold">Sin IGV</th>
                   <th className="px-5 py-3 font-bold">IGV</th>
                   <th className="px-5 py-3 font-bold">Total</th>
-                  <th className="px-5 py-3 font-bold">Venta neta</th>
                   <th className="px-5 py-3 font-bold">Unid.</th>
                 </tr>
               </thead>
@@ -233,8 +302,13 @@ export default async function ReporteVentasPorClientePage({
                     <td className="px-5 py-2.5 text-[#64748b]">{f.vendedor}</td>
                     <td className="px-5 py-2.5 text-[#64748b]">S/ {f.subtotal.toFixed(2)}</td>
                     <td className="px-5 py-2.5 text-[#64748b]">S/ {f.igv.toFixed(2)}</td>
-                    <td className="px-5 py-2.5 font-semibold">S/ {f.total.toFixed(2)}</td>
-                    <td className="px-5 py-2.5 font-bold text-lime-700">S/ {f.ventaNeta.toFixed(2)}</td>
+                    <td
+                      className={`px-5 py-2.5 font-semibold ${
+                        f.tipo === 'Nota de crédito' ? 'text-red-600' : f.tipo === 'Nota de débito' ? 'text-amber-700' : ''
+                      }`}
+                    >
+                      S/ {f.total.toFixed(2)}
+                    </td>
                     <td className="px-5 py-2.5">{f.unidades}</td>
                   </tr>
                 ))}
