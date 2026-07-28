@@ -2,6 +2,7 @@
 
 import { useActionState, useMemo, useState } from 'react'
 import { crearOrdenVenta, type EstadoFormulario } from '../actions'
+import { Buscador } from '@/components/buscador'
 
 type Cliente = { id: number; nombre: string }
 type Producto = { id: number; nombre: string; cantidad: number; precio_venta: number | null }
@@ -25,21 +26,30 @@ export function NuevaVentaForm({
   const [estado, formAction] = useActionState<EstadoFormulario, FormData>(crearOrdenVenta, {
     error: null,
   })
+  const [clienteId, setClienteId] = useState<number | ''>('')
   const [lineas, setLineas] = useState<Linea[]>([lineaVacia()])
+
+  const opcionesProductos = useMemo(
+    () => productos.map((p) => ({ id: p.id, nombre: p.nombre, subtitulo: `stock: ${p.cantidad}` })),
+    [productos]
+  )
 
   function actualizarLinea(i: number, campo: keyof Linea, valor: string) {
     setLineas((prev) =>
+      prev.map((l, idx) => (idx === i ? { ...l, [campo]: valor === '' ? '' : Number(valor) } : l))
+    )
+  }
+
+  function actualizarProductoLinea(i: number, productoId: number | string | '') {
+    setLineas((prev) =>
       prev.map((l, idx) => {
         if (idx !== i) return l
-        if (campo === 'producto_id') {
-          const producto = productos.find((p) => p.id === Number(valor))
-          return {
-            ...l,
-            producto_id: Number(valor) || '',
-            precio_unitario: producto?.precio_venta ?? l.precio_unitario,
-          }
+        const producto = productos.find((p) => p.id === Number(productoId))
+        return {
+          ...l,
+          producto_id: Number(productoId) || '',
+          precio_unitario: producto?.precio_venta ?? l.precio_unitario,
         }
-        return { ...l, [campo]: valor === '' ? '' : Number(valor) }
       })
     )
   }
@@ -74,16 +84,16 @@ export function NuevaVentaForm({
 
       <div>
         <label className={LABEL}>Cliente *</label>
-        <select name="cliente_id" required defaultValue="" className={CAMPO}>
-          <option value="" disabled className="text-[#1e293b]">
-            Selecciona un cliente
-          </option>
-          {clientes.map((c) => (
-            <option key={c.id} value={c.id} className="text-[#1e293b]">
-              {c.nombre}
-            </option>
-          ))}
-        </select>
+        <div className="mt-1.5">
+          <Buscador
+            opciones={clientes}
+            valor={clienteId}
+            onChange={(id) => setClienteId(Number(id) || '')}
+            placeholder="Escribe el nombre del cliente..."
+            name="cliente_id"
+            required
+          />
+        </div>
       </div>
 
       <div>
@@ -110,20 +120,14 @@ export function NuevaVentaForm({
             return (
               <div key={i}>
                 <div className="flex items-center gap-2">
-                  <select
-                    value={l.producto_id}
-                    onChange={(e) => actualizarLinea(i, 'producto_id', e.target.value)}
-                    className="flex-1 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm text-[#1e293b] outline-none focus:border-teal-500"
-                  >
-                    <option value="" className="text-[#1e293b]">
-                      Producto...
-                    </option>
-                    {productos.map((p) => (
-                      <option key={p.id} value={p.id} className="text-[#1e293b]">
-                        {p.nombre} (stock: {p.cantidad})
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex-1">
+                    <Buscador
+                      opciones={opcionesProductos}
+                      valor={l.producto_id}
+                      onChange={(id) => actualizarProductoLinea(i, id)}
+                      placeholder="Buscar producto..."
+                    />
+                  </div>
                   <input
                     type="number"
                     min="0.01"

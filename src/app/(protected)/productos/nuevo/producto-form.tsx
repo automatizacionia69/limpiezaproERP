@@ -1,7 +1,8 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { crearProducto, type EstadoFormulario } from '../actions'
+import { Buscador } from '@/components/buscador'
 
 type Opcion = { id: number; nombre: string }
 
@@ -19,6 +20,8 @@ export function ProductoForm({
   const [estado, formAction] = useActionState<EstadoFormulario, FormData>(crearProducto, {
     error: null,
   })
+  const [unidadId, setUnidadId] = useState<number | ''>('')
+  const [categoriaId, setCategoriaId] = useState<number | ''>('')
 
   return (
     <form action={formAction} className="mt-6 space-y-5">
@@ -34,30 +37,29 @@ export function ProductoForm({
 
       <div>
         <label className={LABEL}>Unidad *</label>
-        <select name="unidad_id" required defaultValue="" className={CAMPO}>
-          <option value="" disabled className="text-slate-900">
-            Selecciona una unidad
-          </option>
-          {unidades.map((u) => (
-            <option key={u.id} value={u.id} className="text-slate-900">
-              {u.nombre}
-            </option>
-          ))}
-        </select>
+        <div className="mt-1.5">
+          <Buscador
+            opciones={unidades}
+            valor={unidadId}
+            onChange={(id) => setUnidadId(Number(id) || '')}
+            placeholder="Escribe para buscar una unidad..."
+            name="unidad_id"
+            required
+          />
+        </div>
       </div>
 
       <div>
         <label className={LABEL}>Categoría</label>
-        <select name="categoria_id" defaultValue="" className={CAMPO}>
-          <option value="" className="text-slate-900">
-            Sin categoría
-          </option>
-          {categorias.map((c) => (
-            <option key={c.id} value={c.id} className="text-slate-900">
-              {c.nombre}
-            </option>
-          ))}
-        </select>
+        <div className="mt-1.5">
+          <Buscador
+            opciones={categorias}
+            valor={categoriaId}
+            onChange={(id) => setCategoriaId(Number(id) || '')}
+            placeholder="Sin categoría (opcional)"
+            name="categoria_id"
+          />
+        </div>
       </div>
 
       <div>

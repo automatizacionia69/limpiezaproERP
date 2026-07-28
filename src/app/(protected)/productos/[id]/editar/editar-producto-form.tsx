@@ -1,8 +1,9 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { editarProducto } from '../../actions'
 import type { EstadoFormulario } from '../../actions'
+import { Buscador } from '@/components/buscador'
 
 type Opcion = { id: number; nombre: string }
 
@@ -35,6 +36,9 @@ export function EditarProductoForm({
   const [estado, formAction] = useActionState<EstadoFormulario, FormData>(editarProducto, {
     error: null,
   })
+  const [unidadId, setUnidadId] = useState<number | ''>(producto.unidad_id)
+  const [categoriaId, setCategoriaId] = useState<number | ''>(producto.categoria_id ?? '')
+  const [zonaId, setZonaId] = useState<number | ''>(producto.zona_id ?? '')
 
   return (
     <form action={formAction} className="mt-6 space-y-5">
@@ -52,41 +56,43 @@ export function EditarProductoForm({
 
       <div>
         <label className={LABEL}>Unidad *</label>
-        <select name="unidad_id" required defaultValue={producto.unidad_id} className={CAMPO}>
-          {unidades.map((u) => (
-            <option key={u.id} value={u.id} className="text-slate-900">
-              {u.nombre}
-            </option>
-          ))}
-        </select>
+        <div className="mt-1.5">
+          <Buscador
+            opciones={unidades}
+            valor={unidadId}
+            onChange={(id) => setUnidadId(Number(id) || '')}
+            placeholder="Escribe para buscar una unidad..."
+            name="unidad_id"
+            required
+          />
+        </div>
       </div>
 
       <div>
         <label className={LABEL}>Categoría</label>
-        <select name="categoria_id" defaultValue={producto.categoria_id ?? ''} className={CAMPO}>
-          <option value="" className="text-slate-900">
-            Sin categoría
-          </option>
-          {categorias.map((c) => (
-            <option key={c.id} value={c.id} className="text-slate-900">
-              {c.nombre}
-            </option>
-          ))}
-        </select>
+        <div className="mt-1.5">
+          <Buscador
+            opciones={categorias}
+            valor={categoriaId}
+            onChange={(id) => setCategoriaId(Number(id) || '')}
+            placeholder="Sin categoría (opcional)"
+            name="categoria_id"
+          />
+        </div>
       </div>
 
       <div>
         <label className={LABEL}>Zona</label>
-        <select name="zona_id" defaultValue={producto.zona_id ?? ''} className={CAMPO}>
-          <option value="" className="text-slate-900">
-            Sin zona
-          </option>
-          {zonas.map((z) => (
-            <option key={z.id} value={z.id} className="text-slate-900">
-              {z.nombre}
-            </option>
-          ))}
-        </select>
+        <div className="mt-1.5">
+          <Buscador
+            opciones={zonas}
+            valor={zonaId}
+            onChange={(id) => setZonaId(Number(id) || '')}
+            placeholder="Sin zona (opcional)"
+            name="zona_id"
+            disabled={zonas.length === 0}
+          />
+        </div>
         {zonas.length === 0 && (
           <p className="mt-1.5 text-xs font-medium text-[#94a3b8]">
             Todavía no hay zonas creadas — este selector se llena cuando exista un módulo de Zonas.

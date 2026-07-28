@@ -3,6 +3,7 @@
 import { useActionState, useMemo, useState } from 'react'
 import { crearCotizacion, type EstadoFormulario } from '../actions'
 import { IGV_TASA } from '@/lib/cotizaciones'
+import { Buscador } from '@/components/buscador'
 
 type Cliente = { id: number; nombre: string; documento: string | null }
 type Producto = { id: number; nombre: string; precio_venta: number | null }
@@ -51,17 +52,20 @@ export function NuevaCotizacionForm({
 
   function actualizarLinea(i: number, campo: keyof Linea, valor: string) {
     setLineas((prev) =>
+      prev.map((l, idx) => (idx === i ? { ...l, [campo]: valor === '' ? '' : Number(valor) } : l))
+    )
+  }
+
+  function actualizarProductoLinea(i: number, productoId: number | string | '') {
+    setLineas((prev) =>
       prev.map((l, idx) => {
         if (idx !== i) return l
-        if (campo === 'producto_id') {
-          const producto = productos.find((p) => p.id === Number(valor))
-          return {
-            ...l,
-            producto_id: Number(valor) || '',
-            precio_unitario: producto?.precio_venta ?? l.precio_unitario,
-          }
+        const producto = productos.find((p) => p.id === Number(productoId))
+        return {
+          ...l,
+          producto_id: Number(productoId) || '',
+          precio_unitario: producto?.precio_venta ?? l.precio_unitario,
         }
-        return { ...l, [campo]: valor === '' ? '' : Number(valor) }
       })
     )
   }
@@ -130,21 +134,15 @@ export function NuevaCotizacionForm({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className={LABEL}>Cliente *</label>
-              <select
-                value={clienteId}
-                onChange={(e) => setClienteId(Number(e.target.value) || '')}
-                required
-                className={CAMPO}
-              >
-                <option value="" disabled className="text-[#1e293b]">
-                  Selecciona un cliente
-                </option>
-                {clientes.map((c) => (
-                  <option key={c.id} value={c.id} className="text-[#1e293b]">
-                    {c.nombre}
-                  </option>
-                ))}
-              </select>
+              <div className="mt-1.5">
+                <Buscador
+                  opciones={clientes}
+                  valor={clienteId}
+                  onChange={(id) => setClienteId(Number(id) || '')}
+                  placeholder="Escribe el nombre del cliente..."
+                  required
+                />
+              </div>
             </div>
             <div>
               <label className={LABEL}>Fecha *</label>
@@ -207,20 +205,14 @@ export function NuevaCotizacionForm({
             <div className="mt-3 space-y-2.5">
               {lineas.map((l, i) => (
                 <div key={i} className="flex items-center gap-2">
-                  <select
-                    value={l.producto_id}
-                    onChange={(e) => actualizarLinea(i, 'producto_id', e.target.value)}
-                    className="flex-1 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm text-[#1e293b] outline-none focus:border-sky-500"
-                  >
-                    <option value="" className="text-[#1e293b]">
-                      Producto...
-                    </option>
-                    {productos.map((p) => (
-                      <option key={p.id} value={p.id} className="text-[#1e293b]">
-                        {p.nombre}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex-1">
+                    <Buscador
+                      opciones={productos}
+                      valor={l.producto_id}
+                      onChange={(id) => actualizarProductoLinea(i, id)}
+                      placeholder="Buscar producto..."
+                    />
+                  </div>
                   <input
                     type="number"
                     min="0.01"
@@ -280,21 +272,15 @@ export function NuevaCotizacionForm({
         <div className={tab === 'vendedor' ? 'mt-6 space-y-5' : 'hidden'}>
           <div>
             <label className={LABEL}>Vendedor que hizo la cotización *</label>
-            <select
-              value={vendedorId}
-              onChange={(e) => setVendedorId(e.target.value)}
-              required
-              className={CAMPO}
-            >
-              <option value="" disabled className="text-[#1e293b]">
-                Selecciona un vendedor
-              </option>
-              {vendedores.map((v) => (
-                <option key={v.id} value={v.id} className="text-[#1e293b]">
-                  {v.nombre}
-                </option>
-              ))}
-            </select>
+            <div className="mt-1.5">
+              <Buscador
+                opciones={vendedores}
+                valor={vendedorId}
+                onChange={(id) => setVendedorId(String(id))}
+                placeholder="Escribe el nombre del vendedor..."
+                required
+              />
+            </div>
             <p className="mt-1.5 text-xs font-medium text-[#94a3b8]">
               Por defecto queda seleccionado quien está registrando la cotización — cámbialo si la
               hizo otra persona.

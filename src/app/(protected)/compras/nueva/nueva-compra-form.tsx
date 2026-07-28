@@ -2,6 +2,7 @@
 
 import { useActionState, useMemo, useState } from 'react'
 import { crearOrdenCompra, type EstadoFormulario } from '../actions'
+import { Buscador } from '@/components/buscador'
 
 type Proveedor = { id: number; nombre: string }
 type Producto = { id: number; nombre: string }
@@ -25,15 +26,18 @@ export function NuevaCompraForm({
   const [estado, formAction] = useActionState<EstadoFormulario, FormData>(crearOrdenCompra, {
     error: null,
   })
+  const [proveedorId, setProveedorId] = useState<number | ''>('')
   const [lineas, setLineas] = useState<Linea[]>([lineaVacia()])
 
   function actualizarLinea(i: number, campo: keyof Linea, valor: string) {
     setLineas((prev) =>
-      prev.map((l, idx) =>
-        idx === i
-          ? { ...l, [campo]: campo === 'producto_id' ? Number(valor) || '' : valor === '' ? '' : Number(valor) }
-          : l
-      )
+      prev.map((l, idx) => (idx === i ? { ...l, [campo]: valor === '' ? '' : Number(valor) } : l))
+    )
+  }
+
+  function actualizarProductoLinea(i: number, productoId: number | string | '') {
+    setLineas((prev) =>
+      prev.map((l, idx) => (idx === i ? { ...l, producto_id: Number(productoId) || '' } : l))
     )
   }
 
@@ -70,16 +74,16 @@ export function NuevaCompraForm({
 
       <div>
         <label className={LABEL}>Proveedor *</label>
-        <select name="proveedor_id" required defaultValue="" className={CAMPO}>
-          <option value="" disabled className="text-[#1e293b]">
-            Selecciona un proveedor
-          </option>
-          {proveedores.map((p) => (
-            <option key={p.id} value={p.id} className="text-[#1e293b]">
-              {p.nombre}
-            </option>
-          ))}
-        </select>
+        <div className="mt-1.5">
+          <Buscador
+            opciones={proveedores}
+            valor={proveedorId}
+            onChange={(id) => setProveedorId(Number(id) || '')}
+            placeholder="Escribe el nombre del proveedor..."
+            name="proveedor_id"
+            required
+          />
+        </div>
       </div>
 
       <div>
@@ -102,20 +106,14 @@ export function NuevaCompraForm({
         <div className="mt-3 space-y-2.5">
           {lineas.map((l, i) => (
             <div key={i} className="flex items-center gap-2">
-              <select
-                value={l.producto_id}
-                onChange={(e) => actualizarLinea(i, 'producto_id', e.target.value)}
-                className="flex-1 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm text-[#1e293b] outline-none focus:border-pink-500"
-              >
-                <option value="" className="text-[#1e293b]">
-                  Producto...
-                </option>
-                {productos.map((p) => (
-                  <option key={p.id} value={p.id} className="text-[#1e293b]">
-                    {p.nombre}
-                  </option>
-                ))}
-              </select>
+              <div className="flex-1">
+                <Buscador
+                  opciones={productos}
+                  valor={l.producto_id}
+                  onChange={(id) => actualizarProductoLinea(i, id)}
+                  placeholder="Buscar producto..."
+                />
+              </div>
               <input
                 type="number"
                 min="0.01"

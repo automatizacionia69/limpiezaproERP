@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { registrarMovimiento, type EstadoFormulario } from './actions'
+import { Buscador } from '@/components/buscador'
 
 type Producto = { id: number; nombre: string }
 
@@ -26,6 +27,7 @@ export function MovimientoForm({ productos }: { productos: Producto[] }) {
     error: null,
   })
   const [tipo, setTipo] = useState('entrada')
+  const [productoId, setProductoId] = useState<number | ''>('')
 
   return (
     <form action={formAction} className="mt-6 space-y-5">
@@ -52,16 +54,16 @@ export function MovimientoForm({ productos }: { productos: Producto[] }) {
 
       <div>
         <label className={LABEL}>Producto *</label>
-        <select name="producto_id" required defaultValue="" className={CAMPO}>
-          <option value="" disabled className="text-slate-900">
-            Selecciona un producto
-          </option>
-          {productos.map((p) => (
-            <option key={p.id} value={p.id} className="text-slate-900">
-              {p.nombre}
-            </option>
-          ))}
-        </select>
+        <div className="mt-1.5">
+          <Buscador
+            opciones={productos}
+            valor={productoId}
+            onChange={(id) => setProductoId(Number(id) || '')}
+            placeholder="Escribe el nombre del producto..."
+            name="producto_id"
+            required
+          />
+        </div>
       </div>
 
       <div>
