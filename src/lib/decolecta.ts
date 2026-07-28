@@ -44,3 +44,46 @@ export async function buscarRazonSocialPorRuc(ruc: string): Promise<ResultadoBus
     return { error: 'No se pudo conectar con el servicio de consulta de RUC.' }
   }
 }
+
+export type ResultadoBusquedaDni = { nombre: string } | { error: string }
+
+export async function buscarNombrePorDni(dni: string): Promise<ResultadoBusquedaDni> {
+  const dniLimpio = dni.trim()
+
+  if (!/^\d{8}$/.test(dniLimpio)) {
+    return { error: 'El DNI debe tener 8 dígitos.' }
+  }
+
+  const token = process.env.DECOLECTA_API_TOKEN
+  if (!token) {
+    return { error: 'Falta configurar DECOLECTA_API_TOKEN en el servidor.' }
+  }
+
+  try {
+    const res = await fetch(`https://api.decolecta.com/v1/reniec/dni?numero=${dniLimpio}`, {
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    })
+
+    if (res.status === 404) {
+      return { error: 'No se encontró ese DNI.' }
+    }
+    if (!res.ok) {
+      return { error: `No se pudo consultar el DNI (${res.status}).` }
+    }
+
+    const data = await res.json()
+    const nombre = data.full_name ?? null
+
+    if (!nombre) {
+      return { error: 'La API respondió pero no trajo el nombre — revisa el formato de respuesta.' }
+    }
+
+    return { nombre }
+  } catch {
+    return { error: 'No se pudo conectar con el servicio de consulta de DNI.' }
+  }
+}
