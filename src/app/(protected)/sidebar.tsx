@@ -95,6 +95,34 @@ const NAV_ITEMS = [
       />
     ),
   },
+  {
+    href: '/cotizaciones/nueva',
+    label: 'Crear Cotización',
+    gradient: 'from-sky-500 to-blue-500',
+    glow: 'shadow-sky-500/40',
+    exact: true,
+    icon: (
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 4.5v15m7.5-7.5h-15"
+      />
+    ),
+  },
+  {
+    href: '/cotizaciones',
+    label: 'Consulta de Cotización',
+    gradient: 'from-blue-500 to-indigo-500',
+    glow: 'shadow-blue-500/40',
+    exact: true,
+    icon: (
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+      />
+    ),
+  },
 ]
 
 export function Sidebar({ collapsed }: { collapsed: boolean }) {
@@ -102,7 +130,7 @@ export function Sidebar({ collapsed }: { collapsed: boolean }) {
 
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-20 bg-gradient-to-b from-[#0f172a] via-[#151b2e] to-[#1e1b3a] transition-[width] duration-200 ${
+      className={`fixed inset-y-0 left-0 z-20 bg-gradient-to-b from-[#0f172a] via-[#151b2e] to-[#1e1b3a] transition-[width] duration-200 print:hidden ${
         collapsed ? 'w-20' : 'w-72'
       }`}
     >
@@ -133,7 +161,9 @@ export function Sidebar({ collapsed }: { collapsed: boolean }) {
       )}
       <nav className={`space-y-1.5 pb-6 ${collapsed ? 'px-3' : 'px-4'}`}>
         {NAV_ITEMS.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(item.href + '/')
+          const active =
+            pathname === item.href ||
+            (!('exact' in item && item.exact) && pathname.startsWith(item.href + '/'))
           return (
             <Link
               key={item.href}

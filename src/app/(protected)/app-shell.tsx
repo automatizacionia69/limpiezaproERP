@@ -35,8 +35,8 @@ export function AppShell({
     <div className="min-h-screen bg-gradient-to-br from-[#f8fafc] to-[#eef2ff]">
       <Sidebar collapsed={collapsed} />
 
-      <div className={`transition-[padding] duration-200 ${collapsed ? 'pl-20' : 'pl-72'}`}>
-        <header className="flex h-20 items-center justify-between border-b border-[#e2e8f0] bg-white/80 px-8 backdrop-blur-sm">
+      <div className={`transition-[padding] duration-200 print:pl-0 ${collapsed ? 'pl-20' : 'pl-72'}`}>
+        <header className="flex h-20 items-center justify-between border-b border-[#e2e8f0] bg-white/80 px-8 backdrop-blur-sm print:hidden">
           <button
             type="button"
             onClick={() => setCollapsed((c) => !c)}
@@ -76,7 +76,7 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="mx-auto max-w-6xl px-8 py-10">{children}</main>
+        <main className="mx-auto max-w-[1440px] px-8 py-10 print:max-w-none print:p-0">{children}</main>
       </div>
     </div>
   )
