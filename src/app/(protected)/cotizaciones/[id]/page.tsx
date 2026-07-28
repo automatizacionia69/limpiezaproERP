@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { DescargarPdfBoton } from './descargar-pdf-boton'
+import { ConvertirVentaBoton } from './convertir-venta-boton'
 
 type DetalleRow = {
   id: number
@@ -46,7 +47,10 @@ export default async function CotizacionPage({
         <Link href="/cotizaciones" className="text-sm font-bold text-[#64748b] hover:text-sky-600">
           ← Volver a Cotizaciones
         </Link>
-        <DescargarPdfBoton />
+        <div className="flex gap-3">
+          <ConvertirVentaBoton id={cotizacion.id} numero={cotizacion.numero} />
+          <DescargarPdfBoton />
+        </div>
       </div>
 
       <div className="mx-auto max-w-3xl rounded-3xl border-2 border-[#e2e8f0] bg-white p-10 shadow-lg shadow-slate-500/5 print:max-w-none print:rounded-none print:border-0 print:p-0 print:shadow-none">

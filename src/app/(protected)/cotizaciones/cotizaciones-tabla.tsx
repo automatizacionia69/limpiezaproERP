@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useMemo, useState, useTransition } from 'react'
-import { eliminarCotizacion } from './actions'
+import { eliminarCotizacion, convertirCotizacionAVenta } from './actions'
 
 type CotizacionRow = {
   id: number
@@ -28,6 +28,21 @@ export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRo
         await eliminarCotizacion(id)
       } catch (e) {
         setError(e instanceof Error ? e.message : 'No se pudo eliminar la cotización.')
+      } finally {
+        setPendienteId(null)
+      }
+    })
+  }
+
+  function handleConvertir(id: number, numero: string) {
+    if (!confirm(`¿Convertir la cotización ${numero} en una orden de venta? Se creará como "pendiente".`)) return
+    setError(null)
+    setPendienteId(id)
+    startTransition(async () => {
+      try {
+        await convertirCotizacionAVenta(id)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'No se pudo convertir la cotización.')
       } finally {
         setPendienteId(null)
       }
@@ -130,6 +145,21 @@ export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRo
                           <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                         </svg>
                       </Link>
+                      <button
+                        type="button"
+                        onClick={() => handleConvertir(c.id, c.numero)}
+                        disabled={isPending && pendienteId === c.id}
+                        title="Convertir a Venta"
+                        className="ml-1.5 inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] transition-all hover:bg-teal-100 hover:text-teal-600 disabled:opacity-50"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                          />
+                        </svg>
+                      </button>
                       <button
                         type="button"
                         onClick={() => handleEliminar(c.id, c.numero)}

@@ -103,3 +103,62 @@ export async function eliminarCotizacion(id: number) {
 
   revalidatePath('/cotizaciones')
 }
+
+export async function convertirCotizacionAVenta(cotizacionId: number) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const { data: cotizacion, error: errorCotizacion } = await supabase
+    .from('cotizaciones')
+    .select('id, numero, cliente_id')
+    .eq('id', cotizacionId)
+    .single()
+
+  if (errorCotizacion || !cotizacion) {
+    throw new Error('Cotización no encontrada.')
+  }
+
+  const { data: detalles, error: errorDetalles } = await supabase
+    .from('detalle_cotizacion')
+    .select('producto_id, cantidad, precio_unitario')
+    .eq('cotizacion_id', cotizacionId)
+
+  if (errorDetalles || !detalles || detalles.length === 0) {
+    throw new Error('La cotización no tiene productos.')
+  }
+
+  const total = detalles.reduce((acc, d) => acc + d.cantidad * d.precio_unitario, 0)
+
+  const { data: orden, error: errorOrden } = await supabase
+    .from('ordenes_venta')
+    .insert({
+      cliente_id: cotizacion.cliente_id,
+      usuario_id: user?.id ?? null,
+      observacion: `Generada desde cotización ${cotizacion.numero}`,
+      total,
+    })
+    .select('id')
+    .single()
+
+  if (errorOrden || !orden) {
+    throw new Error(errorOrden?.message ?? 'No se pudo crear la orden de venta.')
+  }
+
+  const { error: errorDetalleVenta } = await supabase.from('detalle_venta').insert(
+    detalles.map((d) => ({
+      orden_id: orden.id,
+      producto_id: d.producto_id,
+      cantidad: d.cantidad,
+      precio_unitario: d.precio_unitario,
+    }))
+  )
+
+  if (errorDetalleVenta) {
+    throw new Error(errorDetalleVenta.message)
+  }
+
+  revalidatePath('/ventas')
+  redirect('/ventas')
+}
