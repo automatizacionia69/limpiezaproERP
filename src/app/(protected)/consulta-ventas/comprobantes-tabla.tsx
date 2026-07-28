@@ -20,6 +20,7 @@ type ComprobanteRow = {
   tipo: string
   numero: string
   total: number
+  totalNeto: number
   estado: string
   creado_en: string
   clientes: { nombre: string } | null
@@ -81,6 +82,7 @@ export function ComprobantesTabla({ comprobantes }: { comprobantes: ComprobanteR
                   <th className="px-6 py-4 font-bold">Fecha</th>
                   <th className="px-6 py-4 font-bold">Cliente</th>
                   <th className="px-6 py-4 font-bold">Total</th>
+                  <th className="px-6 py-4 font-bold">Neto (comisionable)</th>
                   <th className="px-6 py-4 font-bold">Estado</th>
                   <th className="px-6 py-4 text-right font-bold">Acciones</th>
                 </tr>
@@ -97,6 +99,13 @@ export function ComprobantesTabla({ comprobantes }: { comprobantes: ComprobanteR
                     <td className="px-6 py-4 text-[#64748b]">{new Date(c.creado_en).toLocaleDateString('es-PE')}</td>
                     <td className="px-6 py-4">{c.clientes?.nombre ?? '—'}</td>
                     <td className="px-6 py-4 font-semibold">S/ {Number(c.total).toFixed(2)}</td>
+                    <td className="px-6 py-4">
+                      {c.totalNeto === c.total ? (
+                        <span className="text-[#94a3b8]">—</span>
+                      ) : (
+                        <span className="font-bold text-lime-700">S/ {c.totalNeto.toFixed(2)}</span>
+                      )}
+                    </td>
                     <td className="px-6 py-4">
                       <span className={`rounded-full px-3 py-1 text-[11px] font-bold ${ESTADO_BADGE[c.estado] ?? 'bg-slate-100 text-slate-700'}`}>
                         {c.estado === 'emitido' ? '✅ Emitido' : '🚫 Anulado'}

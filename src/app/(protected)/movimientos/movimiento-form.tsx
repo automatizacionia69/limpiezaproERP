@@ -68,7 +68,7 @@ export function MovimientoForm({ productos }: { productos: Producto[] }) {
 
       <div>
         <label className={LABEL}>{CANTIDAD_LABEL[tipo]} *</label>
-        <input type="number" step="0.01" min="0" name="cantidad" required className={CAMPO} />
+        <input type="number" step="1" min="0" name="cantidad" required className={CAMPO} />
         {tipo === 'ajuste' && (
           <p className="mt-1.5 text-xs font-medium text-[#94a3b8]">
             Es el total real contado, no la diferencia — el sistema calcula el ajuste solo.

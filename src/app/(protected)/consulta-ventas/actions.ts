@@ -69,6 +69,9 @@ export async function anularComprobante(
     if (lineas.length === 0) {
       return { error: 'Selecciona al menos un producto y la cantidad a aplicar.' }
     }
+    if (lineas.some((l) => !Number.isInteger(l.cantidad))) {
+      return { error: 'La cantidad a aplicar debe ser un número entero.' }
+    }
 
     const [{ data: vendidos }, { data: notasPrevias }] = await Promise.all([
       supabase.from('detalle_venta').select('producto_id, cantidad').eq('orden_id', comprobante.orden_venta_id),

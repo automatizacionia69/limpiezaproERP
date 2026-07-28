@@ -105,11 +105,12 @@ export function AnularComprobanteForm({
                   type="number"
                   min="0"
                   max={l.cantidadDisponible}
-                  step="0.01"
+                  step="1"
                   placeholder="0"
                   disabled={l.cantidadDisponible <= 0}
                   value={cantidades[l.producto_id] ?? ''}
                   onChange={(e) => setCantidades((prev) => ({ ...prev, [l.producto_id]: e.target.value }))}
+                  onWheel={(e) => e.currentTarget.blur()}
                   className="w-20 rounded-lg border-2 border-[#e2e8f0] bg-white px-2 py-1.5 text-xs text-[#1e293b] outline-none focus:border-red-500 disabled:bg-[#f8fafc] disabled:opacity-50"
                 />
               </div>

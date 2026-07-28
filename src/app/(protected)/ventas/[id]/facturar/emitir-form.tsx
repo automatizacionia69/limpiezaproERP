@@ -245,8 +245,8 @@ export function EmitirComprobanteForm({
                     </div>
                     <input
                       type="number"
-                      min="0.01"
-                      step="0.01"
+                      min="1"
+                      step="1"
                       placeholder="Cant."
                       value={l.cantidad}
                       onChange={(e) => actualizarLinea(i, 'cantidad', e.target.value)}

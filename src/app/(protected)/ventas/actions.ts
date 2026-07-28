@@ -123,6 +123,9 @@ export async function emitirComprobante(
   if (lineas.some((l) => l.precio_unitario < 0)) {
     return { error: 'El precio unitario no puede ser negativo.' }
   }
+  if (lineas.some((l) => !Number.isInteger(l.cantidad))) {
+    return { error: 'La cantidad de cada producto debe ser un número entero.' }
+  }
 
   const supabase = await createClient()
   const {

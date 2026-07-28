@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Sidebar } from './sidebar'
 import { NotificacionesStock } from './notificaciones-stock'
 
@@ -37,6 +37,20 @@ export function AppShell({
   signOutAction: () => Promise<void>
 }) {
   const [collapsed, setCollapsed] = useState(false)
+
+  // Evita que la rueda del mouse cambie el valor de un input numérico
+  // enfocado (comportamiento nativo del navegador que causa errores
+  // silenciosos en cantidades/montos — ej. 3 -> 2.98 sin que se note).
+  useEffect(() => {
+    function alRodarRueda(e: WheelEvent) {
+      const activo = document.activeElement
+      if (activo instanceof HTMLInputElement && activo.type === 'number' && e.target === activo) {
+        activo.blur()
+      }
+    }
+    document.addEventListener('wheel', alRodarRueda, { passive: true })
+    return () => document.removeEventListener('wheel', alRodarRueda)
+  }, [])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f8fafc] to-[#eef2ff]">
