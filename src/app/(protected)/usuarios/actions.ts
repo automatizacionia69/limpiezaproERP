@@ -9,10 +9,30 @@ export type EstadoFormulario = { error: string | null }
 
 const ROLES_VALIDOS = ['admin', 'almacen', 'ventas']
 
+async function verificarEsAdmin(): Promise<boolean> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return false
+
+  const { data: perfil } = await supabase
+    .from('usuarios_perfil')
+    .select('rol')
+    .eq('id', user.id)
+    .single()
+
+  return perfil?.rol === 'admin'
+}
+
 export async function crearUsuario(
   _prevState: EstadoFormulario,
   formData: FormData
 ): Promise<EstadoFormulario> {
+  if (!(await verificarEsAdmin())) {
+    return { error: 'Solo un administrador puede crear usuarios.' }
+  }
+
   const nombre = (formData.get('nombre') as string)?.trim()
   const email = (formData.get('email') as string)?.trim()
   const password = formData.get('password') as string
@@ -73,6 +93,10 @@ export async function editarUsuario(
   _prevState: EstadoFormulario,
   formData: FormData
 ): Promise<EstadoFormulario> {
+  if (!(await verificarEsAdmin())) {
+    return { error: 'Solo un administrador puede editar usuarios.' }
+  }
+
   const id = formData.get('id') as string
   const nombre = (formData.get('nombre') as string)?.trim()
   const rol = formData.get('rol') as string
@@ -95,14 +119,25 @@ export async function editarUsuario(
     return { error: 'El brevete es obligatorio para el rol Almacén.' }
   }
 
-  const supabase = await createClient()
-  const { error } = await supabase
+  const admin = createAdminClient()
+  if (!admin) {
+    return {
+      error:
+        'Falta configurar SUPABASE_SERVICE_ROLE_KEY en .env.local para poder editar usuarios desde aquí.',
+    }
+  }
+
+  const { data, error } = await admin
     .from('usuarios_perfil')
     .update({ nombre, rol, dni, brevete: brevete || null })
     .eq('id', id)
+    .select('id')
 
   if (error) {
     return { error: error.message }
+  }
+  if (!data || data.length === 0) {
+    return { error: 'No se encontró el usuario a editar.' }
   }
 
   revalidatePath('/usuarios')
