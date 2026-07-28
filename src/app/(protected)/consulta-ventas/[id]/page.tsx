@@ -9,6 +9,7 @@ import { ImprimirBoton } from '@/components/imprimir-boton'
 
 type DetalleRow = {
   id: number
+  producto_id: number
   cantidad: number
   precio_unitario: number
   productos: { nombre: string } | null
@@ -45,7 +46,7 @@ export default async function ComprobantePage({
   const { data: comprobante } = await supabase
     .from('comprobantes')
     .select(
-      'id, tipo, serie, numero, subtotal, igv, total, estado, creado_en, orden_venta_id, clientes(nombre, documento, direccion)'
+      'id, tipo, serie, numero, subtotal, igv, total, estado, creado_en, fecha_emision, dias_credito, medio_pago, orden_venta_id, clientes(nombre, documento, direccion), vendedor:vendedor_id(nombre)'
     )
     .eq('id', id)
     .single()
@@ -55,12 +56,13 @@ export default async function ComprobantePage({
   }
 
   const cliente = Array.isArray(comprobante.clientes) ? comprobante.clientes[0] : comprobante.clientes
+  const vendedor = Array.isArray(comprobante.vendedor) ? comprobante.vendedor[0] : comprobante.vendedor
 
   const [{ data: detalles }, { data: notasCredito }, { data: notasDebito }, { data: configuracion }] =
     await Promise.all([
       supabase
         .from('detalle_venta')
-        .select('id, cantidad, precio_unitario, productos(nombre)')
+        .select('id, producto_id, cantidad, precio_unitario, productos(nombre)')
         .eq('orden_id', comprobante.orden_venta_id)
         .returns<DetalleRow[]>(),
       supabase
@@ -78,6 +80,26 @@ export default async function ComprobantePage({
       supabase.from('configuracion').select('empresa, ruc, direccion, telefono').eq('id', 1).single(),
     ])
 
+  const idsNotasCredito = (notasCredito ?? []).map((n) => n.id)
+  const yaDevueltoPorProducto = new Map<number, number>()
+  if (idsNotasCredito.length > 0) {
+    const { data: detallesNc } = await supabase
+      .from('detalle_nota_credito')
+      .select('producto_id, cantidad')
+      .in('nota_credito_id', idsNotasCredito)
+    for (const d of detallesNc ?? []) {
+      yaDevueltoPorProducto.set(d.producto_id, (yaDevueltoPorProducto.get(d.producto_id) ?? 0) + Number(d.cantidad))
+    }
+  }
+
+  const lineasParaAnular = (detalles ?? []).map((d) => ({
+    producto_id: d.producto_id,
+    nombre: d.productos?.nombre ?? `Producto #${d.producto_id}`,
+    cantidadVendida: Number(d.cantidad),
+    precioUnitario: Number(d.precio_unitario),
+    cantidadDisponible: Number(d.cantidad) - (yaDevueltoPorProducto.get(d.producto_id) ?? 0),
+  }))
+
   const tipoLabel = TIPO_COMPROBANTE_LABELS[comprobante.tipo] ?? comprobante.tipo
 
   return (
@@ -91,53 +113,71 @@ export default async function ComprobantePage({
         </ImprimirBoton>
       </div>
 
-      <div className="mx-auto max-w-3xl rounded-3xl border-2 border-[#e2e8f0] bg-white p-10 shadow-lg shadow-slate-500/5 print:max-w-none print:rounded-none print:border-0 print:p-0 print:shadow-none">
-        <div className="flex items-start justify-between border-b-2 border-[#f1f5f9] pb-6">
+      <div className="mx-auto max-w-4xl rounded-3xl border-2 border-[#e2e8f0] bg-white p-10 shadow-lg shadow-slate-500/5 print:max-w-none print:rounded-none print:border-0 print:p-0 print:shadow-none">
+        {comprobante.estado === 'anulado' && (
+          <div className="mb-6 rounded-xl border-2 border-red-300 bg-red-50 px-4 py-2.5 text-center text-sm font-extrabold tracking-wide text-red-700 uppercase">
+            🚫 Comprobante anulado
+          </div>
+        )}
+
+        <div className="flex items-start justify-between gap-6 border-b-2 border-[#1e293b] pb-5">
           <div>
-            <h1 className="text-2xl font-extrabold text-[#1e293b]">
+            <h1 className="text-xl font-extrabold text-[#1e293b]">
               {configuracion?.empresa ?? 'Distribuidora LimpiezaPro'}
             </h1>
-            <p className="text-sm text-[#64748b]">
-              {[configuracion?.ruc && `RUC ${configuracion.ruc}`, configuracion?.direccion, configuracion?.telefono]
-                .filter(Boolean)
-                .join(' · ') || 'Gestión de Inventarios · Piura, Perú'}
+            <p className="mt-1 text-xs text-[#64748b]">
+              {configuracion?.direccion || 'Piura, Perú'}
             </p>
+            <p className="text-xs text-[#64748b]">{configuracion?.telefono && `Teléfono: ${configuracion.telefono}`}</p>
           </div>
-          <div className="text-right">
-            <span
-              className={`inline-block rounded-full px-3 py-1 text-[11px] font-bold ${
-                comprobante.estado === 'emitido' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
-              }`}
-            >
-              {comprobante.estado === 'emitido' ? 'Emitido' : 'Anulado'}
-            </span>
-            <p className="mt-2 text-lg font-extrabold text-lime-600">{comprobante.numero}</p>
-            <p className="text-sm text-[#64748b]">{tipoLabel}</p>
+          <div className="w-56 shrink-0 rounded-xl border-2 border-[#1e293b] p-4 text-center">
+            {configuracion?.ruc && <p className="text-xs font-bold text-[#1e293b]">RUC {configuracion.ruc}</p>}
+            <p className="mt-1 text-sm font-extrabold tracking-wide text-[#1e293b] uppercase">{tipoLabel}</p>
+            <p className="mt-1 text-lg font-extrabold text-lime-600">{comprobante.numero}</p>
           </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-6 text-sm">
-          <div>
-            <p className="text-xs font-bold tracking-wide text-[#94a3b8] uppercase">Cliente</p>
+        <div className="mt-5 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
+          <div className="rounded-xl border border-[#e2e8f0] p-4">
+            <p className="text-[10px] font-bold tracking-wide text-[#94a3b8] uppercase">Cliente</p>
             <p className="mt-1 font-bold text-[#1e293b]">{cliente?.nombre ?? '—'}</p>
-            {cliente?.documento && <p className="text-[#64748b]">{cliente.documento}</p>}
+            <p className="text-[#64748b]">
+              {comprobante.tipo === 'factura' ? 'RUC' : 'Documento'}: {cliente?.documento || '—'}
+            </p>
             {cliente?.direccion && <p className="text-[#64748b]">{cliente.direccion}</p>}
           </div>
-          <div className="text-right">
-            <p className="text-xs font-bold tracking-wide text-[#94a3b8] uppercase">Fecha de emisión</p>
-            <p className="mt-1 text-[#1e293b]">
-              {new Date(comprobante.creado_en).toLocaleDateString('es-PE')}
-            </p>
+          <div className="rounded-xl border border-[#e2e8f0] p-4">
+            <p className="text-[10px] font-bold tracking-wide text-[#94a3b8] uppercase">Datos de la venta</p>
+            <div className="mt-1.5 space-y-0.5">
+              <p className="flex justify-between text-[#1e293b]">
+                <span className="text-[#64748b]">Fecha de emisión</span>
+                <span className="font-semibold">
+                  {new Date(`${comprobante.fecha_emision}T00:00:00`).toLocaleDateString('es-PE')}
+                </span>
+              </p>
+              <p className="flex justify-between text-[#1e293b]">
+                <span className="text-[#64748b]">Días de crédito</span>
+                <span className="font-semibold">{comprobante.dias_credito}</span>
+              </p>
+              <p className="flex justify-between text-[#1e293b]">
+                <span className="text-[#64748b]">Medio de pago</span>
+                <span className="font-semibold">{comprobante.medio_pago}</span>
+              </p>
+              <p className="flex justify-between text-[#1e293b]">
+                <span className="text-[#64748b]">Vendedor</span>
+                <span className="font-semibold">{vendedor?.nombre ?? '—'}</span>
+              </p>
+            </div>
           </div>
         </div>
 
-        <table className="mt-8 w-full text-left text-sm">
+        <table className="mt-6 w-full text-left text-sm">
           <thead>
-            <tr className="border-b-2 border-[#f1f5f9] text-[#64748b]">
-              <th className="py-2 font-bold">Producto</th>
+            <tr className="border-y-2 border-[#1e293b] text-[#1e293b]">
+              <th className="py-2 font-bold">Descripción</th>
               <th className="py-2 font-bold">Cantidad</th>
-              <th className="py-2 font-bold">Precio unit.</th>
-              <th className="py-2 text-right font-bold">Subtotal</th>
+              <th className="py-2 font-bold">P. unit.</th>
+              <th className="py-2 text-right font-bold">Valor venta</th>
             </tr>
           </thead>
           <tbody>
@@ -155,17 +195,17 @@ export default async function ComprobantePage({
         </table>
 
         <div className="mt-6 flex justify-end">
-          <div className="w-64 space-y-1.5">
+          <div className="w-64 space-y-1.5 rounded-xl border border-[#e2e8f0] p-4">
             <p className="flex justify-between text-sm text-[#64748b]">
-              <span>Subtotal (sin IGV)</span>
+              <span>Op. gravada</span>
               <span className="font-semibold text-[#1e293b]">S/ {Number(comprobante.subtotal).toFixed(2)}</span>
             </p>
             <p className="flex justify-between text-sm text-[#64748b]">
               <span>IGV (18%)</span>
               <span className="font-semibold text-[#1e293b]">S/ {Number(comprobante.igv).toFixed(2)}</span>
             </p>
-            <p className="flex justify-between border-t-2 border-[#f1f5f9] pt-2 text-lg font-extrabold text-lime-600">
-              <span>Total</span>
+            <p className="flex justify-between border-t-2 border-[#1e293b] pt-2 text-lg font-extrabold text-[#1e293b]">
+              <span>Importe total</span>
               <span>S/ {Number(comprobante.total).toFixed(2)}</span>
             </p>
           </div>
@@ -179,7 +219,9 @@ export default async function ComprobantePage({
                 <div key={`nc-${n.id}`} className="flex items-center justify-between rounded-xl bg-red-50 px-4 py-2.5 text-sm">
                   <div>
                     <span className="font-bold text-red-700">{n.numero}</span>{' '}
-                    <span className="text-[#64748b]">— Nota de crédito · {n.motivo}</span>
+                    <span className="text-[#64748b]">
+                      — Nota de crédito · {n.motivo} · anexada a {tipoLabel} {comprobante.numero}
+                    </span>
                     {n.observacion && <p className="text-xs text-[#94a3b8]">{n.observacion}</p>}
                   </div>
                   <span className="font-bold text-red-700">S/ {Number(n.monto).toFixed(2)}</span>
@@ -189,7 +231,9 @@ export default async function ComprobantePage({
                 <div key={`nd-${n.id}`} className="flex items-center justify-between rounded-xl bg-amber-50 px-4 py-2.5 text-sm">
                   <div>
                     <span className="font-bold text-amber-700">{n.numero}</span>{' '}
-                    <span className="text-[#64748b]">— Nota de débito · {n.motivo}</span>
+                    <span className="text-[#64748b]">
+                      — Nota de débito · {n.motivo} · anexada a {tipoLabel} {comprobante.numero}
+                    </span>
                     {n.observacion && <p className="text-xs text-[#94a3b8]">{n.observacion}</p>}
                   </div>
                   <span className="font-bold text-amber-700">S/ {Number(n.monto).toFixed(2)}</span>
@@ -198,16 +242,23 @@ export default async function ComprobantePage({
             </div>
           </div>
         )}
+
+        <p className="mt-10 text-center text-[11px] text-[#94a3b8]">
+          Representación de {tipoLabel.toLowerCase()} generada por LimpiezaPro ERP — sin validez tributaria
+          (sin integración con SUNAT).
+        </p>
       </div>
 
       {comprobante.estado === 'emitido' && (
-        <div className="mx-auto mt-6 grid max-w-3xl grid-cols-1 gap-5 sm:grid-cols-2 print:hidden">
+        <div className="mx-auto mt-6 grid max-w-5xl grid-cols-1 gap-5 lg:grid-cols-[1.4fr_1fr] print:hidden">
           <div className="rounded-3xl border-2 border-red-100 bg-white p-6 shadow-lg shadow-red-500/5">
             <h2 className="text-base font-extrabold text-[#1e293b]">🚫 Anular con Nota de Crédito</h2>
             <p className="mt-1 text-xs font-medium text-[#64748b]">
-              Solo los motivos de anulación/devolución total revierten el stock y anulan el comprobante.
+              N° {comprobante.numero} — solo "Anulación", "Anulación por error en el RUC" y "Devolución total"
+              revierten todo el stock y anulan el comprobante. "Devolución por ítem" y "Descuento por ítem" te
+              dejan elegir cuántas unidades de cada producto.
             </p>
-            <AnularComprobanteForm comprobanteId={comprobante.id} />
+            <AnularComprobanteForm comprobanteId={comprobante.id} numero={comprobante.numero} lineas={lineasParaAnular} />
           </div>
 
           <div className="rounded-3xl border-2 border-amber-100 bg-white p-6 shadow-lg shadow-amber-500/5">

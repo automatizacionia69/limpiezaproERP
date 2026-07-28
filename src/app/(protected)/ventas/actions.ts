@@ -89,9 +89,39 @@ export async function emitirComprobante(
 
   const ordenId = Number(formData.get('orden_id'))
   const tipo = formData.get('tipo') as string
+  const clienteId = formData.get('cliente_id') as string
+  const fecha = formData.get('fecha') as string
+  const diasCredito = (formData.get('dias_credito') as string) || 'Contado'
+  const medioPago = (formData.get('medio_pago') as string) || 'Efectivo'
+  const vendedorId = formData.get('vendedor_id') as string
+  const lineasRaw = formData.get('lineas') as string
 
-  if (!['factura', 'boleta', 'nota_venta'].includes(tipo)) {
+  if (!['factura', 'boleta', 'nota_venta', 'ticket'].includes(tipo)) {
     return { error: 'Selecciona un tipo de comprobante válido.' }
+  }
+  if (!clienteId) {
+    return { error: 'Selecciona un cliente.' }
+  }
+  if (!fecha) {
+    return { error: 'Selecciona la fecha del comprobante.' }
+  }
+  if (!vendedorId) {
+    return { error: 'Selecciona el vendedor (pestaña Vendedor).' }
+  }
+
+  let lineas: Linea[]
+  try {
+    lineas = JSON.parse(lineasRaw || '[]')
+  } catch {
+    return { error: 'Las líneas de la venta no son válidas.' }
+  }
+
+  lineas = lineas.filter((l) => l.producto_id && l.cantidad > 0)
+  if (lineas.length === 0) {
+    return { error: 'Agrega al menos un producto.' }
+  }
+  if (lineas.some((l) => l.precio_unitario < 0)) {
+    return { error: 'El precio unitario no puede ser negativo.' }
   }
 
   const supabase = await createClient()
@@ -101,7 +131,7 @@ export async function emitirComprobante(
 
   const { data: orden, error: errorOrden } = await supabase
     .from('ordenes_venta')
-    .select('id, numero, estado, total, cliente_id, clientes(documento)')
+    .select('id, numero, estado')
     .eq('id', ordenId)
     .single()
 
@@ -112,28 +142,47 @@ export async function emitirComprobante(
     return { error: 'Esta orden ya fue facturada o anulada.' }
   }
 
-  const cliente = Array.isArray(orden.clientes) ? orden.clientes[0] : orden.clientes
+  const { data: cliente } = await supabase.from('clientes').select('documento').eq('id', clienteId).single()
   if (tipo === 'factura' && (cliente?.documento ?? '').trim().length !== 11) {
     return {
-      error: 'Este cliente no tiene RUC (11 dígitos) — no se puede emitir Factura. Usa Boleta o Nota de venta.',
+      error: 'Este cliente no tiene RUC (11 dígitos) — no se puede emitir Factura. Usa Boleta, Nota de venta o Ticket.',
     }
   }
 
-  const { data: detalles, error: errorDetalles } = await supabase
-    .from('detalle_venta')
-    .select('producto_id, cantidad')
-    .eq('orden_id', ordenId)
+  // Las líneas pudieron editarse en esta pantalla: reemplaza el detalle de la orden.
+  const total = lineas.reduce((acc, l) => acc + l.cantidad * l.precio_unitario, 0)
 
-  if (errorDetalles || !detalles || detalles.length === 0) {
-    return { error: 'La orden no tiene productos.' }
+  const { error: errorDeleteDetalle } = await supabase.from('detalle_venta').delete().eq('orden_id', ordenId)
+  if (errorDeleteDetalle) {
+    return { error: errorDeleteDetalle.message }
+  }
+
+  const { error: errorDetalle } = await supabase.from('detalle_venta').insert(
+    lineas.map((l) => ({
+      orden_id: ordenId,
+      producto_id: l.producto_id,
+      cantidad: l.cantidad,
+      precio_unitario: l.precio_unitario,
+    }))
+  )
+  if (errorDetalle) {
+    return { error: errorDetalle.message }
+  }
+
+  const { error: errorUpdateOrden } = await supabase
+    .from('ordenes_venta')
+    .update({ cliente_id: Number(clienteId), total })
+    .eq('id', ordenId)
+  if (errorUpdateOrden) {
+    return { error: errorUpdateOrden.message }
   }
 
   // El trigger valida stock suficiente por cada línea (lanza excepción si falta).
   const { error: errorMovs } = await supabase.from('movimientos').insert(
-    detalles.map((d) => ({
-      producto_id: d.producto_id,
+    lineas.map((l) => ({
+      producto_id: l.producto_id,
       tipo: 'salida',
-      cantidad: d.cantidad,
+      cantidad: l.cantidad,
       usuario_id: user?.id ?? null,
       motivo: `Venta ${orden.numero}`,
       referencia: orden.numero,
@@ -144,7 +193,6 @@ export async function emitirComprobante(
     return { error: errorMovs.message }
   }
 
-  const total = Number(orden.total)
   const subtotal = Number((total / (1 + IGV_TASA)).toFixed(2))
   const igv = Number((total - subtotal).toFixed(2))
 
@@ -153,8 +201,12 @@ export async function emitirComprobante(
     .insert({
       tipo,
       orden_venta_id: ordenId,
-      cliente_id: orden.cliente_id,
+      cliente_id: Number(clienteId),
       usuario_id: user?.id ?? null,
+      vendedor_id: vendedorId,
+      fecha_emision: fecha,
+      dias_credito: diasCredito,
+      medio_pago: medioPago,
       subtotal,
       igv,
       total,

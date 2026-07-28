@@ -1,33 +1,118 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useMemo, useState } from 'react'
 import { anularComprobante, type EstadoFormulario } from '../actions'
 import { MOTIVOS_NOTA_CREDITO } from '@/lib/motivos'
+
+type LineaVenta = {
+  producto_id: number
+  nombre: string
+  cantidadVendida: number
+  precioUnitario: number
+  cantidadDisponible: number
+}
 
 const CAMPO =
   'mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] bg-white px-3.5 py-2.5 text-sm text-[#1e293b] outline-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-100'
 const LABEL = 'block text-xs font-bold text-[#1e293b]'
 
-export function AnularComprobanteForm({ comprobanteId }: { comprobanteId: number }) {
+export function AnularComprobanteForm({
+  comprobanteId,
+  numero,
+  lineas,
+}: {
+  comprobanteId: number
+  numero: string
+  lineas: LineaVenta[]
+}) {
   const [estado, formAction] = useActionState<EstadoFormulario, FormData>(anularComprobante, { error: null })
+  const [codigoMotivo, setCodigoMotivo] = useState('')
+  const [cantidades, setCantidades] = useState<Record<number, string>>({})
+
+  const motivoInfo = MOTIVOS_NOTA_CREDITO.find((m) => m.codigo === codigoMotivo)
+
+  const lineasSeleccionadas = useMemo(
+    () =>
+      lineas
+        .map((l) => ({ ...l, cantidad: Number(cantidades[l.producto_id] || 0) }))
+        .filter((l) => l.cantidad > 0),
+    [lineas, cantidades]
+  )
+
+  const montoEstimado = motivoInfo?.itemizable
+    ? lineasSeleccionadas.reduce((acc, l) => acc + l.cantidad * l.precioUnitario, 0)
+    : null
+
+  const lineasJson = JSON.stringify(
+    lineasSeleccionadas.map((l) => ({
+      producto_id: l.producto_id,
+      cantidad: l.cantidad,
+      precio_unitario: l.precioUnitario,
+    }))
+  )
 
   return (
     <form action={formAction} className="mt-4 space-y-3">
       <input type="hidden" name="comprobante_id" value={comprobanteId} />
+      {motivoInfo?.itemizable && <input type="hidden" name="lineas" value={lineasJson} />}
 
       <div>
         <label className={LABEL}>Motivo *</label>
-        <select name="motivo" required defaultValue="" className={CAMPO}>
+        <select
+          name="motivo"
+          required
+          value={codigoMotivo}
+          onChange={(e) => setCodigoMotivo(e.target.value)}
+          className={CAMPO}
+        >
           <option value="" disabled>
             Selecciona un motivo
           </option>
           {MOTIVOS_NOTA_CREDITO.map((m) => (
             <option key={m.codigo} value={m.codigo}>
-              {m.label} {m.anula ? '(anula la operación)' : ''}
+              {m.label} {m.anula ? '· anula la operación' : m.itemizable ? '· por ítem' : ''}
             </option>
           ))}
         </select>
+        {motivoInfo?.anula && (
+          <p className="mt-1.5 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
+            ⚠️ Este motivo anula toda la factura N° {numero}: revierte el stock completo y ya no se podrá
+            revertir.
+          </p>
+        )}
       </div>
+
+      {motivoInfo?.itemizable && (
+        <div className="rounded-xl border-2 border-red-100 bg-red-50/40 p-3">
+          <p className="text-xs font-bold text-[#1e293b]">Elige cuántas unidades de cada producto</p>
+          <div className="mt-2 space-y-2">
+            {lineas.map((l) => (
+              <div key={l.producto_id} className="flex items-center gap-2 rounded-lg bg-white p-2">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-bold text-[#1e293b]">{l.nombre}</p>
+                  <p className="text-[10px] text-[#94a3b8]">
+                    Vendido: {l.cantidadVendida} · Disponible: {l.cantidadDisponible}
+                  </p>
+                </div>
+                <input
+                  type="number"
+                  min="0"
+                  max={l.cantidadDisponible}
+                  step="0.01"
+                  placeholder="0"
+                  disabled={l.cantidadDisponible <= 0}
+                  value={cantidades[l.producto_id] ?? ''}
+                  onChange={(e) => setCantidades((prev) => ({ ...prev, [l.producto_id]: e.target.value }))}
+                  className="w-20 rounded-lg border-2 border-[#e2e8f0] bg-white px-2 py-1.5 text-xs text-[#1e293b] outline-none focus:border-red-500 disabled:bg-[#f8fafc] disabled:opacity-50"
+                />
+              </div>
+            ))}
+          </div>
+          {montoEstimado !== null && (
+            <p className="mt-2 text-right text-xs font-bold text-red-700">Monto: S/ {montoEstimado.toFixed(2)}</p>
+          )}
+        </div>
+      )}
 
       <div>
         <label className={LABEL}>Observación</label>
@@ -42,7 +127,8 @@ export function AnularComprobanteForm({ comprobanteId }: { comprobanteId: number
 
       <button
         type="submit"
-        className="w-full rounded-xl bg-red-500 py-2.5 text-sm font-bold text-white shadow-sm shadow-red-500/30 transition-all hover:bg-red-600"
+        disabled={!codigoMotivo}
+        className="w-full rounded-xl bg-red-500 py-2.5 text-sm font-bold text-white shadow-sm shadow-red-500/30 transition-all hover:bg-red-600 disabled:opacity-40"
       >
         Emitir nota de crédito
       </button>

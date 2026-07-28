@@ -56,55 +56,59 @@ export default async function CotizacionPage({
         </div>
       </div>
 
-      <div className="mx-auto max-w-3xl rounded-3xl border-2 border-[#e2e8f0] bg-white p-10 shadow-lg shadow-slate-500/5 print:max-w-none print:rounded-none print:border-0 print:p-0 print:shadow-none">
-        <div className="flex items-start justify-between border-b-2 border-[#f1f5f9] pb-6">
+      <div className="mx-auto max-w-4xl rounded-3xl border-2 border-[#e2e8f0] bg-white p-10 shadow-lg shadow-slate-500/5 print:max-w-none print:rounded-none print:border-0 print:p-0 print:shadow-none">
+        <div className="flex items-start justify-between gap-6 border-b-2 border-[#1e293b] pb-5">
           <div>
-            <h1 className="text-2xl font-extrabold text-[#1e293b]">
+            <h1 className="text-xl font-extrabold text-[#1e293b]">
               {configuracion?.empresa ?? 'Distribuidora LimpiezaPro'}
             </h1>
-            <p className="text-sm text-[#64748b]">
-              {[configuracion?.ruc && `RUC ${configuracion.ruc}`, configuracion?.direccion, configuracion?.telefono]
-                .filter(Boolean)
-                .join(' · ') || 'Gestión de Inventarios · Piura, Perú'}
-            </p>
+            <p className="mt-1 text-xs text-[#64748b]">{configuracion?.direccion || 'Piura, Perú'}</p>
+            <p className="text-xs text-[#64748b]">{configuracion?.telefono && `Teléfono: ${configuracion.telefono}`}</p>
           </div>
-          <div className="text-right">
-            <p className="text-lg font-extrabold text-sky-600">{cotizacion.numero}</p>
-            <p className="text-sm text-[#64748b]">Cotización</p>
+          <div className="w-56 shrink-0 rounded-xl border-2 border-[#1e293b] p-4 text-center">
+            {configuracion?.ruc && <p className="text-xs font-bold text-[#1e293b]">RUC {configuracion.ruc}</p>}
+            <p className="mt-1 text-sm font-extrabold tracking-wide text-[#1e293b] uppercase">Cotización</p>
+            <p className="mt-1 text-lg font-extrabold text-sky-600">{cotizacion.numero}</p>
           </div>
         </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-6 text-sm">
-          <div>
-            <p className="text-xs font-bold tracking-wide text-[#94a3b8] uppercase">Cliente</p>
+        <div className="mt-5 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
+          <div className="rounded-xl border border-[#e2e8f0] p-4">
+            <p className="text-[10px] font-bold tracking-wide text-[#94a3b8] uppercase">Cliente</p>
             <p className="mt-1 font-bold text-[#1e293b]">{cliente?.nombre ?? '—'}</p>
-            {cliente?.documento && <p className="text-[#64748b]">{cliente.documento}</p>}
+            <p className="text-[#64748b]">Documento: {cliente?.documento || '—'}</p>
             {cliente?.direccion && <p className="text-[#64748b]">{cliente.direccion}</p>}
           </div>
-          <div className="text-right">
-            <p className="text-xs font-bold tracking-wide text-[#94a3b8] uppercase">Detalles</p>
-            <p className="mt-1 text-[#1e293b]">
-              Fecha: <span className="font-semibold">{cotizacion.fecha}</span>
-            </p>
-            <p className="text-[#1e293b]">
-              Días de crédito: <span className="font-semibold">{cotizacion.dias_credito}</span>
-            </p>
-            <p className="text-[#1e293b]">
-              Medio de pago: <span className="font-semibold">{cotizacion.medio_pago}</span>
-            </p>
-            <p className="text-[#1e293b]">
-              Vendedor: <span className="font-semibold">{vendedor?.nombre ?? '—'}</span>
-            </p>
+          <div className="rounded-xl border border-[#e2e8f0] p-4">
+            <p className="text-[10px] font-bold tracking-wide text-[#94a3b8] uppercase">Detalles</p>
+            <div className="mt-1.5 space-y-0.5">
+              <p className="flex justify-between text-[#1e293b]">
+                <span className="text-[#64748b]">Fecha</span>
+                <span className="font-semibold">{cotizacion.fecha}</span>
+              </p>
+              <p className="flex justify-between text-[#1e293b]">
+                <span className="text-[#64748b]">Días de crédito</span>
+                <span className="font-semibold">{cotizacion.dias_credito}</span>
+              </p>
+              <p className="flex justify-between text-[#1e293b]">
+                <span className="text-[#64748b]">Medio de pago</span>
+                <span className="font-semibold">{cotizacion.medio_pago}</span>
+              </p>
+              <p className="flex justify-between text-[#1e293b]">
+                <span className="text-[#64748b]">Vendedor</span>
+                <span className="font-semibold">{vendedor?.nombre ?? '—'}</span>
+              </p>
+            </div>
           </div>
         </div>
 
-        <table className="mt-8 w-full text-left text-sm">
+        <table className="mt-6 w-full text-left text-sm">
           <thead>
-            <tr className="border-b-2 border-[#f1f5f9] text-[#64748b]">
-              <th className="py-2 font-bold">Producto</th>
+            <tr className="border-y-2 border-[#1e293b] text-[#1e293b]">
+              <th className="py-2 font-bold">Descripción</th>
               <th className="py-2 font-bold">Cantidad</th>
-              <th className="py-2 font-bold">Precio unit.</th>
-              <th className="py-2 text-right font-bold">Subtotal</th>
+              <th className="py-2 font-bold">P. unit.</th>
+              <th className="py-2 text-right font-bold">Valor venta</th>
             </tr>
           </thead>
           <tbody>
@@ -122,16 +126,16 @@ export default async function CotizacionPage({
         </table>
 
         <div className="mt-6 flex justify-end">
-          <div className="w-64 space-y-1.5">
+          <div className="w-64 space-y-1.5 rounded-xl border border-[#e2e8f0] p-4">
             <p className="flex justify-between text-sm text-[#64748b]">
-              <span>Subtotal (sin IGV)</span>
+              <span>Op. gravada</span>
               <span className="font-semibold text-[#1e293b]">S/ {Number(cotizacion.subtotal).toFixed(2)}</span>
             </p>
             <p className="flex justify-between text-sm text-[#64748b]">
               <span>IGV (18%)</span>
               <span className="font-semibold text-[#1e293b]">S/ {Number(cotizacion.igv).toFixed(2)}</span>
             </p>
-            <p className="flex justify-between border-t-2 border-[#f1f5f9] pt-2 text-lg font-extrabold text-sky-600">
+            <p className="flex justify-between border-t-2 border-[#1e293b] pt-2 text-lg font-extrabold text-[#1e293b]">
               <span>Total</span>
               <span>S/ {Number(cotizacion.total).toFixed(2)}</span>
             </p>
@@ -145,8 +149,9 @@ export default async function CotizacionPage({
           </div>
         )}
 
-        <p className="mt-10 text-center text-xs text-[#94a3b8]">
-          Cotización válida sujeta a disponibilidad de stock al momento de confirmar el pedido.
+        <p className="mt-10 text-center text-[11px] text-[#94a3b8]">
+          Cotización válida sujeta a disponibilidad de stock al momento de confirmar el pedido — documento
+          sin validez tributaria.
         </p>
       </div>
     </div>

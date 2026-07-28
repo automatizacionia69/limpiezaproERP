@@ -7,6 +7,8 @@ import { MOTIVOS_NOTA_CREDITO } from '@/lib/motivos'
 
 export type EstadoFormulario = { error: string | null }
 
+type LineaDevolucion = { producto_id: number; cantidad: number; precio_unitario: number }
+
 export async function anularComprobante(
   _prevState: EstadoFormulario,
   formData: FormData
@@ -18,6 +20,7 @@ export async function anularComprobante(
   const comprobanteId = Number(formData.get('comprobante_id'))
   const codigoMotivo = formData.get('motivo') as string
   const observacion = (formData.get('observacion') as string)?.trim()
+  const lineasRaw = formData.get('lineas') as string | null
 
   const motivoInfo = MOTIVOS_NOTA_CREDITO.find((m) => m.codigo === codigoMotivo)
   if (!motivoInfo) {
@@ -42,17 +45,85 @@ export async function anularComprobante(
     return { error: 'Este comprobante ya fue anulado.' }
   }
 
-  const { error: errorNc } = await supabase.from('notas_credito').insert({
-    comprobante_id: comprobante.id,
-    motivo: motivoInfo.label,
-    anula_operacion: motivoInfo.anula,
-    monto: comprobante.total,
-    observacion: observacion || null,
-    usuario_id: user?.id ?? null,
-  })
+  let lineas: LineaDevolucion[] = []
+  let monto = Number(comprobante.total)
 
-  if (errorNc) {
-    return { error: errorNc.message }
+  if (motivoInfo.itemizable) {
+    try {
+      lineas = JSON.parse(lineasRaw || '[]')
+    } catch {
+      return { error: 'Las líneas seleccionadas no son válidas.' }
+    }
+    lineas = lineas.filter((l) => l.producto_id && l.cantidad > 0)
+    if (lineas.length === 0) {
+      return { error: 'Selecciona al menos un producto y la cantidad a aplicar.' }
+    }
+
+    const [{ data: vendidos }, { data: notasPrevias }] = await Promise.all([
+      supabase.from('detalle_venta').select('producto_id, cantidad').eq('orden_id', comprobante.orden_venta_id),
+      supabase.from('notas_credito').select('id').eq('comprobante_id', comprobante.id),
+    ])
+
+    const vendidoPorProducto = new Map<number, number>()
+    for (const d of vendidos ?? []) {
+      vendidoPorProducto.set(d.producto_id, (vendidoPorProducto.get(d.producto_id) ?? 0) + Number(d.cantidad))
+    }
+
+    const idsNotasPrevias = (notasPrevias ?? []).map((n) => n.id)
+    const devueltoPorProducto = new Map<number, number>()
+    if (idsNotasPrevias.length > 0) {
+      const { data: detallesPrevios } = await supabase
+        .from('detalle_nota_credito')
+        .select('producto_id, cantidad')
+        .in('nota_credito_id', idsNotasPrevias)
+      for (const d of detallesPrevios ?? []) {
+        devueltoPorProducto.set(d.producto_id, (devueltoPorProducto.get(d.producto_id) ?? 0) + Number(d.cantidad))
+      }
+    }
+
+    for (const l of lineas) {
+      const vendido = vendidoPorProducto.get(l.producto_id) ?? 0
+      const yaDevuelto = devueltoPorProducto.get(l.producto_id) ?? 0
+      const disponible = vendido - yaDevuelto
+      if (l.cantidad > disponible) {
+        return {
+          error: `La cantidad a aplicar (${l.cantidad}) excede lo disponible para devolver/ajustar en ese producto (${disponible}).`,
+        }
+      }
+    }
+
+    monto = lineas.reduce((acc, l) => acc + l.cantidad * l.precio_unitario, 0)
+  }
+
+  const { data: notaCredito, error: errorNc } = await supabase
+    .from('notas_credito')
+    .insert({
+      comprobante_id: comprobante.id,
+      motivo: motivoInfo.label,
+      anula_operacion: motivoInfo.anula,
+      monto,
+      observacion: observacion || null,
+      usuario_id: user?.id ?? null,
+    })
+    .select('id')
+    .single()
+
+  if (errorNc || !notaCredito) {
+    return { error: errorNc?.message ?? 'No se pudo registrar la nota de crédito.' }
+  }
+
+  if (motivoInfo.itemizable) {
+    const { error: errorDetalleNc } = await supabase.from('detalle_nota_credito').insert(
+      lineas.map((l) => ({
+        nota_credito_id: notaCredito.id,
+        producto_id: l.producto_id,
+        cantidad: l.cantidad,
+        precio_unitario: l.precio_unitario,
+      }))
+    )
+    if (errorDetalleNc) {
+      return { error: errorDetalleNc.message }
+    }
   }
 
   if (motivoInfo.anula) {
@@ -93,6 +164,22 @@ export async function anularComprobante(
     }
 
     await supabase.from('ordenes_venta').update({ estado: 'anulada' }).eq('id', comprobante.orden_venta_id)
+  } else if (motivoInfo.reversaStock) {
+    // Devolución por ítem: solo revierte stock de las cantidades seleccionadas.
+    const { error: errorMovs } = await supabase.from('movimientos').insert(
+      lineas.map((l) => ({
+        producto_id: l.producto_id,
+        tipo: 'entrada',
+        cantidad: l.cantidad,
+        costo_unitario: 0,
+        usuario_id: user?.id ?? null,
+        motivo: `Devolución por ítem ${comprobante.numero} (Nota de Crédito ${notaCredito.id})`,
+        referencia: comprobante.numero,
+      }))
+    )
+    if (errorMovs) {
+      return { error: errorMovs.message }
+    }
   }
 
   revalidatePath('/consulta-ventas')
