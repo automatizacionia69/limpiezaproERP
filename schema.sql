@@ -236,6 +236,22 @@ alter table productos enable row level security;
 alter table movimientos enable row level security;
 alter table usuarios_perfil enable row level security;
 
+-- Función auxiliar para políticas RLS: evita la recursión infinita que
+-- causa consultar usuarios_perfil dentro de su propia política de RLS.
+-- SECURITY DEFINER hace que esta consulta interna corra sin aplicar RLS
+-- (como dueño de la tabla), rompiendo el ciclo.
+create or replace function usuario_es_admin()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from usuarios_perfil where id = auth.uid() and rol = 'admin'
+  );
+$$;
+
 create policy "lectura autenticados" on almacenes for select using (auth.role() = 'authenticated');
 create policy "lectura autenticados" on zonas for select using (auth.role() = 'authenticated');
 create policy "lectura autenticados" on categorias for select using (auth.role() = 'authenticated');
@@ -248,7 +264,7 @@ create policy "usuarios_perfil: lectura propio perfil" on usuarios_perfil for se
   using (auth.uid() = id);
 
 create policy "usuarios_perfil: lectura admin todos" on usuarios_perfil for select
-  using (exists (select 1 from usuarios_perfil up where up.id = auth.uid() and up.rol = 'admin'));
+  using (usuario_es_admin());
 
 create policy "escritura admin almacenes" on almacenes for all
   using (exists (select 1 from usuarios_perfil up where up.id = auth.uid() and up.rol = 'admin'))
