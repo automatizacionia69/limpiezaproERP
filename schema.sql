@@ -154,6 +154,11 @@ begin
       where id = new.producto_id;
 
   elsif new.tipo = 'salida' then
+    if v_producto.cantidad - new.cantidad < 0 then
+      raise exception 'Stock insuficiente: % tiene % y se intenta sacar %',
+        v_producto.nombre, v_producto.cantidad, new.cantidad;
+    end if;
+
     new.costo_unitario := v_producto.costo;
     new.efecto_cantidad := -new.cantidad;
 

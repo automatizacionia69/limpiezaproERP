@@ -1,0 +1,25 @@
+import { createClient } from '@/lib/supabase/server'
+import { NuevaVentaForm } from './nueva-venta-form'
+
+export default async function NuevaVentaPage() {
+  const supabase = await createClient()
+  const [{ data: clientes }, { data: productos }] = await Promise.all([
+    supabase.from('clientes').select('id, nombre').eq('activo', true).order('nombre'),
+    supabase.from('productos').select('id, nombre, cantidad, precio_venta').order('nombre'),
+  ])
+
+  return (
+    <div className="mx-auto max-w-2xl">
+      <h1 className="text-2xl font-extrabold text-[#1e293b]">💰 Nueva orden de venta</h1>
+      <div className="mt-5 rounded-3xl border-2 border-[#e2e8f0] bg-white p-8 shadow-lg shadow-slate-500/5">
+        {!clientes || clientes.length === 0 ? (
+          <p className="text-sm font-medium text-[#64748b]">
+            Todavía no hay clientes — crea uno primero en Clientes.
+          </p>
+        ) : (
+          <NuevaVentaForm clientes={clientes} productos={productos ?? []} />
+        )}
+      </div>
+    </div>
+  )
+}
