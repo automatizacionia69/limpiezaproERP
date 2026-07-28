@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 
 const ROLE_LABELS: Record<string, string> = {
@@ -12,6 +13,13 @@ type StockBajoRow = {
   cantidad: number
   punto_reorden: number | null
   unidad_nombre: string | null
+}
+
+function inicioDeMesISO() {
+  const d = new Date()
+  d.setDate(1)
+  d.setHours(0, 0, 0, 0)
+  return d.toISOString()
 }
 
 export default async function DashboardPage() {
@@ -29,18 +37,34 @@ export default async function DashboardPage() {
         .single()
     : { data: null }
 
-  const { data: productos } = await supabase.from('productos').select('cantidad, costo')
+  const inicioMes = inicioDeMesISO()
 
-  const { data: stockBajo } = await supabase
-    .from('productos_stock_bajo')
-    .select('id, nombre, cantidad, punto_reorden, unidad_nombre')
-    .order('nombre')
-    .returns<StockBajoRow[]>()
+  const [
+    { data: productos },
+    { data: stockBajo },
+    { data: ventasMes },
+    { data: comprasMes },
+    { count: cotizacionesMes },
+    { count: ventasPendientes },
+  ] = await Promise.all([
+    supabase.from('productos').select('cantidad, costo'),
+    supabase
+      .from('productos_stock_bajo')
+      .select('id, nombre, cantidad, punto_reorden, unidad_nombre')
+      .order('nombre')
+      .returns<StockBajoRow[]>(),
+    supabase.from('ordenes_venta').select('total').eq('estado', 'facturada').gte('creado_en', inicioMes),
+    supabase.from('ordenes_compra').select('total').eq('estado', 'recibida').gte('creado_en', inicioMes),
+    supabase.from('cotizaciones').select('id', { count: 'exact', head: true }).gte('creado_en', inicioMes),
+    supabase.from('ordenes_venta').select('id', { count: 'exact', head: true }).eq('estado', 'pendiente'),
+  ])
 
   const totalProductos = productos?.length ?? 0
   const valorInventario =
     productos?.reduce((acc, p) => acc + Number(p.cantidad) * Number(p.costo), 0) ?? 0
   const hayStockBajo = (stockBajo?.length ?? 0) > 0
+  const totalVentasMes = ventasMes?.reduce((acc, v) => acc + Number(v.total), 0) ?? 0
+  const totalComprasMes = comprasMes?.reduce((acc, c) => acc + Number(c.total), 0) ?? 0
 
   return (
     <div>
@@ -52,7 +76,8 @@ export default async function DashboardPage() {
         </span>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-3">
+      <h2 className="mt-8 text-sm font-bold tracking-wide text-[#94a3b8] uppercase">Inventario</h2>
+      <div className="mt-3 grid grid-cols-1 gap-5 sm:grid-cols-3">
         <div className="overflow-hidden rounded-3xl border-2 border-indigo-100 bg-white shadow-lg shadow-indigo-500/5 transition-transform hover:-translate-y-1">
           <div className="h-2 bg-gradient-to-r from-indigo-500 to-violet-500" />
           <div className="flex items-center gap-4 p-7">
@@ -109,6 +134,53 @@ export default async function DashboardPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      <h2 className="mt-8 text-sm font-bold tracking-wide text-[#94a3b8] uppercase">Este mes</h2>
+      <div className="mt-3 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <Link
+          href="/ventas"
+          className="overflow-hidden rounded-3xl border-2 border-teal-100 bg-white shadow-lg shadow-teal-500/5 transition-transform hover:-translate-y-1"
+        >
+          <div className="h-2 bg-gradient-to-r from-teal-500 to-emerald-500" />
+          <div className="p-6">
+            <p className="text-sm font-semibold text-[#64748b]">💰 Ventas facturadas</p>
+            <p className="mt-1 text-3xl font-extrabold text-[#1e293b]">S/ {totalVentasMes.toFixed(2)}</p>
+          </div>
+        </Link>
+
+        <Link
+          href="/compras"
+          className="overflow-hidden rounded-3xl border-2 border-pink-100 bg-white shadow-lg shadow-pink-500/5 transition-transform hover:-translate-y-1"
+        >
+          <div className="h-2 bg-gradient-to-r from-pink-500 to-rose-500" />
+          <div className="p-6">
+            <p className="text-sm font-semibold text-[#64748b]">🛒 Compras recibidas</p>
+            <p className="mt-1 text-3xl font-extrabold text-[#1e293b]">S/ {totalComprasMes.toFixed(2)}</p>
+          </div>
+        </Link>
+
+        <Link
+          href="/cotizaciones"
+          className="overflow-hidden rounded-3xl border-2 border-sky-100 bg-white shadow-lg shadow-sky-500/5 transition-transform hover:-translate-y-1"
+        >
+          <div className="h-2 bg-gradient-to-r from-sky-500 to-blue-500" />
+          <div className="p-6">
+            <p className="text-sm font-semibold text-[#64748b]">📝 Cotizaciones creadas</p>
+            <p className="mt-1 text-3xl font-extrabold text-[#1e293b]">{cotizacionesMes ?? 0}</p>
+          </div>
+        </Link>
+
+        <Link
+          href="/ventas"
+          className="overflow-hidden rounded-3xl border-2 border-amber-100 bg-white shadow-lg shadow-amber-500/5 transition-transform hover:-translate-y-1"
+        >
+          <div className="h-2 bg-gradient-to-r from-amber-500 to-orange-500" />
+          <div className="p-6">
+            <p className="text-sm font-semibold text-[#64748b]">⏳ Ventas por facturar</p>
+            <p className="mt-1 text-3xl font-extrabold text-[#1e293b]">{ventasPendientes ?? 0}</p>
+          </div>
+        </Link>
       </div>
 
       <div className="mt-8 overflow-hidden rounded-3xl border-2 border-[#e2e8f0] bg-white shadow-lg shadow-slate-500/5">
