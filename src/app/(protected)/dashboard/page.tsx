@@ -113,8 +113,16 @@ export default async function DashboardPage() {
   const datosGrafico = construirSeisMeses(ventasSeisMeses, comprasSeisMeses)
 
   return (
-    <div>
-      <div className="overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 p-8 text-white shadow-xl shadow-indigo-500/20">
+    <div className="relative">
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-10 -right-24 h-72 w-72 rounded-full bg-fuchsia-400/20 blur-3xl" />
+        <div className="absolute top-64 -left-24 h-72 w-72 rounded-full bg-indigo-400/20 blur-3xl" />
+        <div className="absolute top-[420px] right-10 h-64 w-64 rounded-full bg-teal-400/10 blur-3xl" />
+      </div>
+
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 p-8 text-white shadow-xl shadow-indigo-500/30">
+        <div className="pointer-events-none absolute -top-16 -right-10 h-56 w-56 rounded-full bg-white/10 blur-2xl" />
+        <div className="pointer-events-none absolute -bottom-20 left-1/3 h-56 w-56 rounded-full bg-fuchsia-300/20 blur-2xl" />
         <p className="text-sm font-medium text-indigo-100">¡Hola de nuevo!</p>
         <h1 className="mt-1 text-3xl font-extrabold">{perfil?.nombre}</h1>
         <span className="mt-3 inline-block rounded-full bg-white/15 px-3 py-1 text-xs font-bold backdrop-blur-sm">
@@ -124,59 +132,55 @@ export default async function DashboardPage() {
 
       <h2 className="mt-8 text-sm font-bold tracking-wide text-[#94a3b8] uppercase">Inventario</h2>
       <div className="mt-3 grid grid-cols-1 gap-5 sm:grid-cols-3">
-        <div className="overflow-hidden rounded-3xl border-2 border-indigo-100 bg-white shadow-lg shadow-indigo-500/5 transition-transform hover:-translate-y-1">
-          <div className="h-2 bg-gradient-to-r from-indigo-500 to-violet-500" />
-          <div className="flex items-center gap-4 p-7">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-md shadow-indigo-500/40">
+        <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-500 to-violet-600 p-7 text-white shadow-lg shadow-indigo-500/30 transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-500/40">
+          <div className="pointer-events-none absolute -top-8 -right-8 h-28 w-28 rounded-full bg-white/10 blur-2xl transition-transform group-hover:scale-125" />
+          <div className="relative flex items-center gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white backdrop-blur-sm">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="h-7 w-7">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-8.25 4.5-8.25-4.5M20.25 7.5v9l-8.25 4.5m8.25-13.5-8.25-4.5-8.25 4.5m16.5 0-8.25 4.5m-8.25-4.5v9l8.25 4.5m-8.25-13.5 8.25 4.5m0 9v-9" />
               </svg>
             </div>
             <div>
-              <p className="text-sm font-semibold text-[#64748b]">Total de productos</p>
-              <p className="mt-1 text-4xl font-extrabold text-[#1e293b]">{totalProductos}</p>
+              <p className="text-sm font-semibold text-indigo-100">Total de productos</p>
+              <p className="mt-1 text-4xl font-extrabold">{totalProductos}</p>
             </div>
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-3xl border-2 border-emerald-100 bg-white shadow-lg shadow-emerald-500/5 transition-transform hover:-translate-y-1">
-          <div className="h-2 bg-gradient-to-r from-emerald-500 to-teal-500" />
-          <div className="flex items-center gap-4 p-7">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/40">
+        <div className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 to-teal-600 p-7 text-white shadow-lg shadow-emerald-500/30 transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-emerald-500/40">
+          <div className="pointer-events-none absolute -top-8 -right-8 h-28 w-28 rounded-full bg-white/10 blur-2xl transition-transform group-hover:scale-125" />
+          <div className="relative flex items-center gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white backdrop-blur-sm">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="h-7 w-7">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-4.5-5.25 4.5 4.5 4.5-4.5M7.5 8.25 12 3.75l4.5 4.5" />
               </svg>
             </div>
             <div>
-              <p className="text-sm font-semibold text-[#64748b]">Valor del inventario</p>
-              <p className="mt-1 text-4xl font-extrabold text-[#1e293b]">
-                S/ {valorInventario.toFixed(2)}
-              </p>
+              <p className="text-sm font-semibold text-emerald-100">Valor del inventario</p>
+              <p className="mt-1 text-4xl font-extrabold">S/ {valorInventario.toFixed(2)}</p>
             </div>
           </div>
         </div>
 
         <div
-          className={`overflow-hidden rounded-3xl border-2 bg-white shadow-lg transition-transform hover:-translate-y-1 ${
-            hayStockBajo ? 'border-amber-100 shadow-amber-500/5' : 'border-slate-100 shadow-slate-500/5'
+          className={`group relative overflow-hidden rounded-3xl p-7 text-white shadow-lg transition-all hover:-translate-y-1 hover:shadow-xl ${
+            hayStockBajo
+              ? 'bg-gradient-to-br from-amber-500 to-orange-600 shadow-amber-500/30 hover:shadow-amber-500/40'
+              : 'bg-gradient-to-br from-slate-500 to-slate-600 shadow-slate-500/20 hover:shadow-slate-500/30'
           }`}
         >
-          <div className={`h-2 ${hayStockBajo ? 'bg-gradient-to-r from-amber-500 to-orange-500' : 'bg-slate-300'}`} />
-          <div className="flex items-center gap-4 p-7">
-            <div
-              className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-white shadow-md ${
-                hayStockBajo
-                  ? 'bg-gradient-to-br from-amber-500 to-orange-500 shadow-amber-500/40'
-                  : 'bg-slate-300 shadow-none'
-              }`}
-            >
+          <div className="pointer-events-none absolute -top-8 -right-8 h-28 w-28 rounded-full bg-white/10 blur-2xl transition-transform group-hover:scale-125" />
+          <div className="relative flex items-center gap-4">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white backdrop-blur-sm">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="h-7 w-7">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
               </svg>
             </div>
             <div>
-              <p className="text-sm font-semibold text-[#64748b]">Con stock bajo</p>
-              <p className="mt-1 text-4xl font-extrabold text-[#1e293b]">{stockBajo?.length ?? 0}</p>
+              <p className={`text-sm font-semibold ${hayStockBajo ? 'text-amber-100' : 'text-slate-200'}`}>
+                Con stock bajo
+              </p>
+              <p className="mt-1 text-4xl font-extrabold">{stockBajo?.length ?? 0}</p>
             </div>
           </div>
         </div>
@@ -186,46 +190,42 @@ export default async function DashboardPage() {
       <div className="mt-3 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <Link
           href="/ventas"
-          className="overflow-hidden rounded-3xl border-2 border-teal-100 bg-white shadow-lg shadow-teal-500/5 transition-transform hover:-translate-y-1"
+          className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-teal-500 to-emerald-600 p-6 text-white shadow-lg shadow-teal-500/30 transition-all hover:-translate-y-1 hover:scale-[1.02] hover:shadow-xl hover:shadow-teal-500/40"
         >
-          <div className="h-2 bg-gradient-to-r from-teal-500 to-emerald-500" />
-          <div className="p-6">
-            <p className="text-sm font-semibold text-[#64748b]">💰 Ventas facturadas</p>
-            <p className="mt-1 text-3xl font-extrabold text-[#1e293b]">S/ {totalVentasMes.toFixed(2)}</p>
-          </div>
+          <div className="pointer-events-none absolute -top-8 -right-8 h-24 w-24 rounded-full bg-white/10 blur-2xl transition-transform group-hover:scale-125" />
+          <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 text-lg backdrop-blur-sm">💰</div>
+          <p className="relative mt-4 text-sm font-semibold text-teal-100">Ventas facturadas</p>
+          <p className="relative mt-1 text-3xl font-extrabold">S/ {totalVentasMes.toFixed(2)}</p>
         </Link>
 
         <Link
           href="/compras"
-          className="overflow-hidden rounded-3xl border-2 border-pink-100 bg-white shadow-lg shadow-pink-500/5 transition-transform hover:-translate-y-1"
+          className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-pink-500 to-rose-600 p-6 text-white shadow-lg shadow-pink-500/30 transition-all hover:-translate-y-1 hover:scale-[1.02] hover:shadow-xl hover:shadow-pink-500/40"
         >
-          <div className="h-2 bg-gradient-to-r from-pink-500 to-rose-500" />
-          <div className="p-6">
-            <p className="text-sm font-semibold text-[#64748b]">🛒 Compras recibidas</p>
-            <p className="mt-1 text-3xl font-extrabold text-[#1e293b]">S/ {totalComprasMes.toFixed(2)}</p>
-          </div>
+          <div className="pointer-events-none absolute -top-8 -right-8 h-24 w-24 rounded-full bg-white/10 blur-2xl transition-transform group-hover:scale-125" />
+          <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 text-lg backdrop-blur-sm">🛒</div>
+          <p className="relative mt-4 text-sm font-semibold text-pink-100">Compras recibidas</p>
+          <p className="relative mt-1 text-3xl font-extrabold">S/ {totalComprasMes.toFixed(2)}</p>
         </Link>
 
         <Link
           href="/cotizaciones"
-          className="overflow-hidden rounded-3xl border-2 border-sky-100 bg-white shadow-lg shadow-sky-500/5 transition-transform hover:-translate-y-1"
+          className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-500 to-blue-600 p-6 text-white shadow-lg shadow-sky-500/30 transition-all hover:-translate-y-1 hover:scale-[1.02] hover:shadow-xl hover:shadow-sky-500/40"
         >
-          <div className="h-2 bg-gradient-to-r from-sky-500 to-blue-500" />
-          <div className="p-6">
-            <p className="text-sm font-semibold text-[#64748b]">📝 Cotizaciones creadas</p>
-            <p className="mt-1 text-3xl font-extrabold text-[#1e293b]">{cotizacionesMes ?? 0}</p>
-          </div>
+          <div className="pointer-events-none absolute -top-8 -right-8 h-24 w-24 rounded-full bg-white/10 blur-2xl transition-transform group-hover:scale-125" />
+          <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 text-lg backdrop-blur-sm">📝</div>
+          <p className="relative mt-4 text-sm font-semibold text-sky-100">Cotizaciones creadas</p>
+          <p className="relative mt-1 text-3xl font-extrabold">{cotizacionesMes ?? 0}</p>
         </Link>
 
         <Link
           href="/ventas"
-          className="overflow-hidden rounded-3xl border-2 border-amber-100 bg-white shadow-lg shadow-amber-500/5 transition-transform hover:-translate-y-1"
+          className="group relative overflow-hidden rounded-3xl bg-gradient-to-br from-amber-500 to-orange-600 p-6 text-white shadow-lg shadow-amber-500/30 transition-all hover:-translate-y-1 hover:scale-[1.02] hover:shadow-xl hover:shadow-amber-500/40"
         >
-          <div className="h-2 bg-gradient-to-r from-amber-500 to-orange-500" />
-          <div className="p-6">
-            <p className="text-sm font-semibold text-[#64748b]">⏳ Ventas por facturar</p>
-            <p className="mt-1 text-3xl font-extrabold text-[#1e293b]">{ventasPendientes ?? 0}</p>
-          </div>
+          <div className="pointer-events-none absolute -top-8 -right-8 h-24 w-24 rounded-full bg-white/10 blur-2xl transition-transform group-hover:scale-125" />
+          <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 text-lg backdrop-blur-sm">⏳</div>
+          <p className="relative mt-4 text-sm font-semibold text-amber-100">Ventas por facturar</p>
+          <p className="relative mt-1 text-3xl font-extrabold">{ventasPendientes ?? 0}</p>
         </Link>
       </div>
 
