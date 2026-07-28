@@ -24,7 +24,7 @@ export function ProductoForm({
           type="text"
           name="nombre"
           required
-          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
         />
       </div>
 
@@ -33,7 +33,7 @@ export function ProductoForm({
         <input
           type="text"
           name="codigo"
-          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
         />
       </div>
 
@@ -43,13 +43,13 @@ export function ProductoForm({
           name="unidad_id"
           required
           defaultValue=""
-          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
         >
-          <option value="" disabled>
+          <option value="" disabled className="text-slate-900">
             Selecciona una unidad
           </option>
           {unidades.map((u) => (
-            <option key={u.id} value={u.id}>
+            <option key={u.id} value={u.id} className="text-slate-900">
               {u.nombre}
             </option>
           ))}
@@ -61,11 +61,13 @@ export function ProductoForm({
         <select
           name="categoria_id"
           defaultValue=""
-          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
         >
-          <option value="">Sin categoría</option>
+          <option value="" className="text-slate-900">
+            Sin categoría
+          </option>
           {categorias.map((c) => (
-            <option key={c.id} value={c.id}>
+            <option key={c.id} value={c.id} className="text-slate-900">
               {c.nombre}
             </option>
           ))}
@@ -79,7 +81,7 @@ export function ProductoForm({
           step="0.01"
           min="0"
           name="precio_venta"
-          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
         />
       </div>
 
@@ -90,7 +92,7 @@ export function ProductoForm({
           step="1"
           min="0"
           name="punto_reorden"
-          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
         />
       </div>
 
