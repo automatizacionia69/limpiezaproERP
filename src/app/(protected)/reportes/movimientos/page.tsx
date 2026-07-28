@@ -39,6 +39,11 @@ export default async function ReporteMovimientosPage({
   const { desde = haceUnMesISO(), hasta = hoyISO() } = await searchParams
 
   const supabase = await createClient()
+  const { data: configuracion } = await supabase
+    .from('configuracion')
+    .select('empresa')
+    .eq('id', 1)
+    .single()
   const { data: movimientos } = await supabase
     .from('kardex_valorizado')
     .select('id, producto_nombre, tipo, cantidad, costo_unitario, valor_movimiento, usuario_nombre, motivo, creado_en')
@@ -113,7 +118,9 @@ export default async function ReporteMovimientosPage({
 
       <div className="mt-6 overflow-hidden rounded-3xl border-2 border-[#e2e8f0] bg-white shadow-lg shadow-slate-500/5 print:rounded-none print:border-0 print:shadow-none">
         <div className="hidden border-b-2 border-[#f1f5f9] p-6 print:block">
-          <h2 className="text-xl font-extrabold">Distribuidora LimpiezaPro — Reporte de Movimientos</h2>
+          <h2 className="text-xl font-extrabold">
+            {configuracion?.empresa ?? 'Distribuidora LimpiezaPro'} — Reporte de Movimientos
+          </h2>
           <p className="text-sm text-[#64748b]">
             Del {desde} al {hasta} · Generado: {new Date().toLocaleString('es-PE')}
           </p>

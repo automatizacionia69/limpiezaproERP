@@ -1,0 +1,53 @@
+'use client'
+
+import { useActionState } from 'react'
+import { editarUsuario, type EstadoFormulario } from '../../actions'
+
+type Usuario = { id: string; nombre: string; rol: string }
+
+const CAMPO =
+  'mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] bg-white px-4 py-3 text-base text-[#1e293b] outline-none transition-all focus:border-rose-500 focus:ring-4 focus:ring-rose-100'
+const LABEL = 'block text-sm font-bold text-[#1e293b]'
+
+export function EditarUsuarioForm({ usuario }: { usuario: Usuario }) {
+  const [estado, formAction] = useActionState<EstadoFormulario, FormData>(editarUsuario, {
+    error: null,
+  })
+
+  return (
+    <form action={formAction} className="mt-6 space-y-5">
+      <input type="hidden" name="id" value={usuario.id} />
+      <div>
+        <label className={LABEL}>Nombre completo *</label>
+        <input type="text" name="nombre" required defaultValue={usuario.nombre} className={CAMPO} />
+      </div>
+      <div>
+        <label className={LABEL}>Rol *</label>
+        <select name="rol" required defaultValue={usuario.rol} className={CAMPO}>
+          <option value="admin" className="text-[#1e293b]">
+            Administrador
+          </option>
+          <option value="almacen" className="text-[#1e293b]">
+            Almacén
+          </option>
+          <option value="ventas" className="text-[#1e293b]">
+            Ventas
+          </option>
+        </select>
+      </div>
+
+      {estado.error && (
+        <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          {estado.error}
+        </p>
+      )}
+
+      <button
+        type="submit"
+        className="w-full rounded-xl bg-gradient-to-r from-rose-500 to-red-500 py-3.5 text-base font-bold text-white shadow-lg shadow-rose-500/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-rose-500/40"
+      >
+        Guardar cambios
+      </button>
+    </form>
+  )
+}

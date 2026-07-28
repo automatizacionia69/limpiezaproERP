@@ -8,11 +8,13 @@ export default async function NuevaCotizacionPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const [{ data: clientes }, { data: productos }, { data: vendedores }] = await Promise.all([
-    supabase.from('clientes').select('id, nombre, documento').eq('activo', true).order('nombre'),
-    supabase.from('productos').select('id, nombre, precio_venta').order('nombre'),
-    supabase.from('usuarios_perfil').select('id, nombre').order('nombre'),
-  ])
+  const [{ data: clientes }, { data: productos }, { data: vendedores }, { data: configuracion }] =
+    await Promise.all([
+      supabase.from('clientes').select('id, nombre, documento').eq('activo', true).order('nombre'),
+      supabase.from('productos').select('id, nombre, precio_venta').order('nombre'),
+      supabase.from('usuarios_perfil').select('id, nombre').order('nombre'),
+      supabase.from('configuracion').select('empresa').eq('id', 1).single(),
+    ])
 
   return (
     <div>
@@ -29,6 +31,7 @@ export default async function NuevaCotizacionPage() {
           productos={productos ?? []}
           vendedores={vendedores ?? []}
           usuarioActualId={user?.id ?? ''}
+          empresa={configuracion?.empresa ?? 'Distribuidora LimpiezaPro'}
         />
       )}
     </div>

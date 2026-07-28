@@ -19,7 +19,7 @@ export default async function CotizacionPage({
   const { id } = await params
   const supabase = await createClient()
 
-  const [{ data: cotizacion }, { data: detalles }] = await Promise.all([
+  const [{ data: cotizacion }, { data: detalles }, { data: configuracion }] = await Promise.all([
     supabase
       .from('cotizaciones')
       .select(
@@ -32,6 +32,7 @@ export default async function CotizacionPage({
       .select('id, cantidad, precio_unitario, productos(nombre)')
       .eq('cotizacion_id', id)
       .returns<DetalleRow[]>(),
+    supabase.from('configuracion').select('empresa, ruc, direccion, telefono').eq('id', 1).single(),
   ])
 
   if (!cotizacion) {
@@ -56,8 +57,14 @@ export default async function CotizacionPage({
       <div className="mx-auto max-w-3xl rounded-3xl border-2 border-[#e2e8f0] bg-white p-10 shadow-lg shadow-slate-500/5 print:max-w-none print:rounded-none print:border-0 print:p-0 print:shadow-none">
         <div className="flex items-start justify-between border-b-2 border-[#f1f5f9] pb-6">
           <div>
-            <h1 className="text-2xl font-extrabold text-[#1e293b]">Distribuidora LimpiezaPro</h1>
-            <p className="text-sm text-[#64748b]">Gestión de Inventarios · Piura, Perú</p>
+            <h1 className="text-2xl font-extrabold text-[#1e293b]">
+              {configuracion?.empresa ?? 'Distribuidora LimpiezaPro'}
+            </h1>
+            <p className="text-sm text-[#64748b]">
+              {[configuracion?.ruc && `RUC ${configuracion.ruc}`, configuracion?.direccion, configuracion?.telefono]
+                .filter(Boolean)
+                .join(' · ') || 'Gestión de Inventarios · Piura, Perú'}
+            </p>
           </div>
           <div className="text-right">
             <p className="text-lg font-extrabold text-sky-600">{cotizacion.numero}</p>

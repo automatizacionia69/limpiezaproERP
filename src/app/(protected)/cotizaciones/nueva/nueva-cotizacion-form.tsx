@@ -30,11 +30,13 @@ export function NuevaCotizacionForm({
   productos,
   vendedores,
   usuarioActualId,
+  empresa,
 }: {
   clientes: Cliente[]
   productos: Producto[]
   vendedores: Vendedor[]
   usuarioActualId: string
+  empresa: string
 }) {
   const [estado, formAction] = useActionState<EstadoFormulario, FormData>(crearCotizacion, {
     error: null,
@@ -311,7 +313,7 @@ export function NuevaCotizacionForm({
         </p>
         <div className="flex items-start justify-between border-b-2 border-[#f1f5f9] pb-4">
           <div>
-            <h2 className="text-lg font-extrabold text-[#1e293b]">Distribuidora LimpiezaPro</h2>
+            <h2 className="text-lg font-extrabold text-[#1e293b]">{empresa}</h2>
             <p className="text-sm text-[#64748b]">Cotización</p>
           </div>
           <div className="text-right text-xs text-[#64748b]">
