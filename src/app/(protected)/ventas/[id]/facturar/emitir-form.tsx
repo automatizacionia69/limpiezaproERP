@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useMemo, useState } from 'react'
+import { useActionState, useEffect, useMemo, useState } from 'react'
 import { emitirComprobante, type EstadoFormulario } from '../../actions'
 import { IGV_TASA } from '@/lib/cotizaciones'
 import { DIAS_CREDITO_OPCIONES, MEDIOS_PAGO, TIPO_COMPROBANTE_LABELS, calcularFechaVencimiento } from '@/lib/motivos'
@@ -62,7 +62,16 @@ export function EmitirComprobanteForm({
   const [vistaPrevia, setVistaPrevia] = useState(false)
 
   const clienteSeleccionado = clientes.find((c) => c.id === clienteId)
-  const tieneRuc = (clienteSeleccionado?.documento ?? '').trim().length === 11
+  const documentoCliente = (clienteSeleccionado?.documento ?? '').trim()
+  const tieneRuc = documentoCliente.length === 11
+  const tieneDni = documentoCliente.length === 8
+
+  // RUC -> solo Factura. DNI -> solo Boleta. Nota de venta/Ticket no tienen restricción.
+  useEffect(() => {
+    if (tieneRuc && tipo === 'boleta') setTipo('factura')
+    if (tieneDni && tipo === 'factura') setTipo('boleta')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tieneRuc, tieneDni])
 
   function actualizarLinea(i: number, campo: keyof Linea, valor: string) {
     setLineas((prev) => prev.map((l, idx) => (idx === i ? { ...l, [campo]: valor === '' ? '' : Number(valor) } : l)))
@@ -144,11 +153,16 @@ export function EmitirComprobanteForm({
                   onChange={(e) => setTipo(e.target.value as TipoComprobante)}
                   className={CAMPO}
                 >
-                  {TIPOS.map((t) => (
-                    <option key={t} value={t} disabled={t === 'factura' && !tieneRuc} className="text-[#1e293b]">
-                      {TIPO_COMPROBANTE_LABELS[t]} {t === 'factura' && !tieneRuc ? '(requiere RUC)' : ''}
-                    </option>
-                  ))}
+                  {TIPOS.map((t) => {
+                    const deshabilitado = (t === 'factura' && !tieneRuc) || (t === 'boleta' && tieneRuc)
+                    return (
+                      <option key={t} value={t} disabled={deshabilitado} className="text-[#1e293b]">
+                        {TIPO_COMPROBANTE_LABELS[t]}
+                        {t === 'factura' && !tieneRuc ? ' (requiere cliente con RUC)' : ''}
+                        {t === 'boleta' && tieneRuc ? ' (cliente tiene RUC — usa Factura)' : ''}
+                      </option>
+                    )
+                  })}
                 </select>
               </div>
               <div>

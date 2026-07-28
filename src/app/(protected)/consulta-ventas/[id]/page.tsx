@@ -92,6 +92,10 @@ export default async function ComprobantePage({
     }
   }
 
+  const totalNotasCredito = (notasCredito ?? []).reduce((acc, n) => acc + Number(n.monto), 0)
+  const totalNotasDebito = (notasDebito ?? []).reduce((acc, n) => acc + Number(n.monto), 0)
+  const saldoActual = Math.max(0, Number(comprobante.total) - totalNotasCredito + totalNotasDebito)
+
   const lineasParaAnular = (detalles ?? []).map((d) => ({
     producto_id: d.producto_id,
     nombre: d.productos?.nombre ?? `Producto #${d.producto_id}`,
@@ -216,6 +220,12 @@ export default async function ComprobantePage({
               <span>Importe total</span>
               <span>S/ {Number(comprobante.total).toFixed(2)}</span>
             </p>
+            {(totalNotasCredito > 0 || totalNotasDebito > 0) && (
+              <p className="flex justify-between border-t border-dashed border-[#e2e8f0] pt-2 text-sm font-bold text-lime-700">
+                <span>Saldo actual a pagar</span>
+                <span>S/ {saldoActual.toFixed(2)}</span>
+              </p>
+            )}
           </div>
         </div>
 
@@ -232,7 +242,12 @@ export default async function ComprobantePage({
                     </span>
                     {n.observacion && <p className="text-xs text-[#94a3b8]">{n.observacion}</p>}
                   </div>
-                  <span className="font-bold text-red-700">S/ {Number(n.monto).toFixed(2)}</span>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <span className="font-bold text-red-700">− S/ {Number(n.monto).toFixed(2)}</span>
+                    <Link href={`/consulta-ventas/notas-credito/${n.id}`} className="text-xs font-bold text-red-600 underline print:hidden">
+                      Ver
+                    </Link>
+                  </div>
                 </div>
               ))}
               {(notasDebito ?? []).map((n) => (
@@ -244,7 +259,12 @@ export default async function ComprobantePage({
                     </span>
                     {n.observacion && <p className="text-xs text-[#94a3b8]">{n.observacion}</p>}
                   </div>
-                  <span className="font-bold text-amber-700">S/ {Number(n.monto).toFixed(2)}</span>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <span className="font-bold text-amber-700">+ S/ {Number(n.monto).toFixed(2)}</span>
+                    <Link href={`/consulta-ventas/notas-debito/${n.id}`} className="text-xs font-bold text-amber-700 underline print:hidden">
+                      Ver
+                    </Link>
+                  </div>
                 </div>
               ))}
             </div>
@@ -266,7 +286,12 @@ export default async function ComprobantePage({
               revierten todo el stock y anulan el comprobante. "Devolución por ítem" y "Descuento por ítem" te
               dejan elegir cuántas unidades de cada producto.
             </p>
-            <AnularComprobanteForm comprobanteId={comprobante.id} numero={comprobante.numero} lineas={lineasParaAnular} />
+            <AnularComprobanteForm
+              comprobanteId={comprobante.id}
+              numero={comprobante.numero}
+              totalComprobante={Number(comprobante.total)}
+              lineas={lineasParaAnular}
+            />
           </div>
 
           <div className="rounded-3xl border-2 border-amber-100 bg-white p-6 shadow-lg shadow-amber-500/5">

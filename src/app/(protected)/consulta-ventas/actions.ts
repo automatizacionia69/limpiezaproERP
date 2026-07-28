@@ -48,6 +48,17 @@ export async function anularComprobante(
   let lineas: LineaDevolucion[] = []
   let monto = Number(comprobante.total)
 
+  if (!motivoInfo.anula && !motivoInfo.itemizable) {
+    const montoManual = Number(formData.get('monto'))
+    if (!montoManual || montoManual <= 0) {
+      return { error: 'Ingresa el monto de la nota de crédito.' }
+    }
+    if (montoManual > Number(comprobante.total)) {
+      return { error: 'El monto no puede ser mayor al total de la factura.' }
+    }
+    monto = montoManual
+  }
+
   if (motivoInfo.itemizable) {
     try {
       lineas = JSON.parse(lineasRaw || '[]')
