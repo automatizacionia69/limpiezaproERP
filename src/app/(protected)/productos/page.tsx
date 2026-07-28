@@ -54,6 +54,7 @@ export default async function ProductosPage() {
               <th className="py-2">Costo</th>
               <th className="py-2">Precio venta</th>
               <th className="py-2">Punto reorden</th>
+              <th className="py-2"></th>
             </tr>
           </thead>
           <tbody>
@@ -67,6 +68,11 @@ export default async function ProductosPage() {
                 <td className="py-2">{p.costo}</td>
                 <td className="py-2">{p.precio_venta ?? '—'}</td>
                 <td className="py-2">{p.punto_reorden ?? '—'}</td>
+                <td className="py-2 text-right">
+                  <Link href={`/productos/${p.id}/editar`} className="text-blue-700 hover:underline">
+                    Editar
+                  </Link>
+                </td>
               </tr>
             ))}
           </tbody>
