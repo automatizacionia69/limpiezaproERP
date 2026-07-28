@@ -33,12 +33,22 @@ function inicioMesesAtras(n: number) {
   return d
 }
 
+function aFechaISO(d: Date) {
+  return d.toISOString().slice(0, 10)
+}
+
 function clavesMes(fecha: Date) {
   return `${fecha.getFullYear()}-${fecha.getMonth()}`
 }
 
+function clavesMesDeFecha(fechaISO: string) {
+  // fecha_emision es tipo `date` ("YYYY-MM-DD") — parsear como fecha local, no UTC.
+  const [anio, mes] = fechaISO.split('-').map(Number)
+  return `${anio}-${mes - 1}`
+}
+
 function construirSeisMeses(
-  ventas: { total: number; creado_en: string }[] | null,
+  ventasNetas: { neto: number; fecha_emision: string }[],
   compras: { total: number; creado_en: string }[] | null
 ) {
   const inicio = inicioMesesAtras(5)
@@ -50,9 +60,9 @@ function construirSeisMeses(
 
   const indice = new Map(buckets.map((b) => [b.clave, b]))
 
-  for (const v of ventas ?? []) {
-    const b = indice.get(clavesMes(new Date(v.creado_en)))
-    if (b) b.ventas += Number(v.total)
+  for (const v of ventasNetas) {
+    const b = indice.get(clavesMesDeFecha(v.fecha_emision))
+    if (b) b.ventas += v.neto
   }
   for (const c of compras ?? []) {
     const b = indice.get(clavesMes(new Date(c.creado_en)))
@@ -78,16 +88,17 @@ export default async function DashboardPage() {
     : { data: null }
 
   const inicioMes = inicioDeMesISO()
+  const inicioMesFecha = aFechaISO(new Date())
   const inicioSeisMeses = inicioMesesAtras(5).toISOString()
+  const inicioSeisMesesFecha = aFechaISO(inicioMesesAtras(5))
 
   const [
     { data: productos },
     { data: stockBajo },
-    { data: ventasMes },
     { data: comprasMes },
     { count: cotizacionesMes },
     { count: ventasPendientes },
-    { data: ventasSeisMeses },
+    { data: comprobantesSeisMeses },
     { data: comprasSeisMeses },
   ] = await Promise.all([
     supabase.from('productos').select('cantidad, costo'),
@@ -96,21 +107,49 @@ export default async function DashboardPage() {
       .select('id, nombre, cantidad, punto_reorden, unidad_nombre')
       .order('nombre')
       .returns<StockBajoRow[]>(),
-    supabase.from('ordenes_venta').select('total').eq('estado', 'facturada').gte('creado_en', inicioMes),
     supabase.from('ordenes_compra').select('total').eq('estado', 'recibida').gte('creado_en', inicioMes),
     supabase.from('cotizaciones').select('id', { count: 'exact', head: true }).gte('creado_en', inicioMes),
     supabase.from('ordenes_venta').select('id', { count: 'exact', head: true }).eq('estado', 'pendiente'),
-    supabase.from('ordenes_venta').select('total, creado_en').eq('estado', 'facturada').gte('creado_en', inicioSeisMeses),
+    supabase
+      .from('comprobantes')
+      .select('id, total, fecha_emision')
+      .eq('estado', 'emitido')
+      .gte('fecha_emision', inicioSeisMesesFecha),
     supabase.from('ordenes_compra').select('total, creado_en').eq('estado', 'recibida').gte('creado_en', inicioSeisMeses),
   ])
+
+  const idsComprobantes = (comprobantesSeisMeses ?? []).map((c) => c.id)
+  const [{ data: notasCredito }, { data: notasDebito }] = await Promise.all([
+    idsComprobantes.length > 0
+      ? supabase.from('notas_credito').select('comprobante_id, monto').in('comprobante_id', idsComprobantes)
+      : Promise.resolve({ data: [] as { comprobante_id: number; monto: number }[] }),
+    idsComprobantes.length > 0
+      ? supabase.from('notas_debito').select('comprobante_id, monto').in('comprobante_id', idsComprobantes)
+      : Promise.resolve({ data: [] as { comprobante_id: number; monto: number }[] }),
+  ])
+
+  const ajustePorComprobante = new Map<number, number>()
+  for (const n of notasCredito ?? []) {
+    ajustePorComprobante.set(n.comprobante_id, (ajustePorComprobante.get(n.comprobante_id) ?? 0) - Number(n.monto))
+  }
+  for (const n of notasDebito ?? []) {
+    ajustePorComprobante.set(n.comprobante_id, (ajustePorComprobante.get(n.comprobante_id) ?? 0) + Number(n.monto))
+  }
+
+  const ventasNetasSeisMeses = (comprobantesSeisMeses ?? []).map((c) => ({
+    neto: Math.max(0, Number(c.total) + (ajustePorComprobante.get(c.id) ?? 0)),
+    fecha_emision: c.fecha_emision,
+  }))
 
   const totalProductos = productos?.length ?? 0
   const valorInventario =
     productos?.reduce((acc, p) => acc + Number(p.cantidad) * Number(p.costo), 0) ?? 0
   const hayStockBajo = (stockBajo?.length ?? 0) > 0
-  const totalVentasMes = ventasMes?.reduce((acc, v) => acc + Number(v.total), 0) ?? 0
+  const totalVentasMes = ventasNetasSeisMeses
+    .filter((v) => v.fecha_emision >= inicioMesFecha)
+    .reduce((acc, v) => acc + v.neto, 0)
   const totalComprasMes = comprasMes?.reduce((acc, c) => acc + Number(c.total), 0) ?? 0
-  const datosGrafico = construirSeisMeses(ventasSeisMeses, comprasSeisMeses)
+  const datosGrafico = construirSeisMeses(ventasNetasSeisMeses, comprasSeisMeses)
 
   const hoy = new Date().toLocaleDateString('es-PE', {
     weekday: 'long',
