@@ -14,7 +14,8 @@ type CotizacionRow = {
 
 export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRow[] }) {
   const [filtroCliente, setFiltroCliente] = useState('')
-  const [filtroFecha, setFiltroFecha] = useState('')
+  const [desde, setDesde] = useState('')
+  const [hasta, setHasta] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [pendienteId, setPendienteId] = useState<number | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -54,10 +55,11 @@ export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRo
       const coincideCliente =
         !filtroCliente.trim() ||
         [c.numero, c.clientes?.nombre].filter(Boolean).join(' ').toLowerCase().includes(filtroCliente.trim().toLowerCase())
-      const coincideFecha = !filtroFecha || c.fecha === filtroFecha
-      return coincideCliente && coincideFecha
+      const coincideDesde = !desde || c.fecha >= desde
+      const coincideHasta = !hasta || c.fecha <= hasta
+      return coincideCliente && coincideDesde && coincideHasta
     })
-  }, [cotizaciones, filtroCliente, filtroFecha])
+  }, [cotizaciones, filtroCliente, desde, hasta])
 
   return (
     <div>
@@ -70,22 +72,35 @@ export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRo
             type="text"
             value={filtroCliente}
             onChange={(e) => setFiltroCliente(e.target.value)}
-            placeholder="Buscar por cliente o número..."
+            placeholder="Buscar por cliente, serie o número..."
             className="w-full rounded-2xl border-2 border-[#e2e8f0] bg-white py-2.5 pr-4 pl-10 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
           />
         </div>
-        <input
-          type="date"
-          value={filtroFecha}
-          onChange={(e) => setFiltroFecha(e.target.value)}
-          className="rounded-2xl border-2 border-[#e2e8f0] bg-white px-4 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
-        />
-        {(filtroCliente || filtroFecha) && (
+        <div className="flex items-center gap-1.5">
+          <label className="text-xs font-bold text-[#64748b]">Desde</label>
+          <input
+            type="date"
+            value={desde}
+            onChange={(e) => setDesde(e.target.value)}
+            className="rounded-2xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+          />
+        </div>
+        <div className="flex items-center gap-1.5">
+          <label className="text-xs font-bold text-[#64748b]">Hasta</label>
+          <input
+            type="date"
+            value={hasta}
+            onChange={(e) => setHasta(e.target.value)}
+            className="rounded-2xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+          />
+        </div>
+        {(filtroCliente || desde || hasta) && (
           <button
             type="button"
             onClick={() => {
               setFiltroCliente('')
-              setFiltroFecha('')
+              setDesde('')
+              setHasta('')
             }}
             className="rounded-2xl border-2 border-[#e2e8f0] bg-white px-4 py-2.5 text-sm font-bold text-[#64748b] transition-all hover:bg-[#f8fafc]"
           >

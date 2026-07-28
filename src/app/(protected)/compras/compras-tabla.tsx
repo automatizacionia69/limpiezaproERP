@@ -32,6 +32,8 @@ type OrdenRow = {
 
 export function ComprasTabla({ ordenes }: { ordenes: OrdenRow[] }) {
   const [filtro, setFiltro] = useState('')
+  const [desde, setDesde] = useState('')
+  const [hasta, setHasta] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [pendienteId, setPendienteId] = useState<number | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -68,15 +70,18 @@ export function ComprasTabla({ ordenes }: { ordenes: OrdenRow[] }) {
 
   const filtradas = useMemo(() => {
     const q = filtro.trim().toLowerCase()
-    if (!q) return ordenes
-    return ordenes.filter((o) =>
-      [o.numero, o.proveedores?.nombre, ESTADO_LABELS[o.estado]]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-        .includes(q)
-    )
-  }, [ordenes, filtro])
+    return ordenes.filter((o) => {
+      const fecha = o.creado_en.slice(0, 10)
+      const coincideTexto =
+        !q ||
+        [o.numero, o.proveedores?.nombre, ESTADO_LABELS[o.estado]].filter(Boolean).join(' ').toLowerCase().includes(q)
+      const coincideDesde = !desde || fecha >= desde
+      const coincideHasta = !hasta || fecha <= hasta
+      return coincideTexto && coincideDesde && coincideHasta
+    })
+  }, [ordenes, filtro, desde, hasta])
+
+  const hayFiltros = filtro || desde || hasta
 
   return (
     <div>
@@ -86,8 +91,8 @@ export function ComprasTabla({ ordenes }: { ordenes: OrdenRow[] }) {
         </p>
       )}
 
-      <div className="mb-4 flex justify-end">
-        <div className="relative">
+      <div className="mb-4 flex flex-wrap items-center justify-end gap-3">
+        <div className="relative flex-1 min-w-[220px]">
           <svg
             viewBox="0 0 24 24"
             fill="none"
@@ -101,10 +106,41 @@ export function ComprasTabla({ ordenes }: { ordenes: OrdenRow[] }) {
             type="text"
             value={filtro}
             onChange={(e) => setFiltro(e.target.value)}
-            placeholder="Filtrar..."
-            className="rounded-2xl border-2 border-[#e2e8f0] bg-white py-2.5 pr-4 pl-10 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-pink-500 focus:ring-4 focus:ring-pink-100"
+            placeholder="Buscar por proveedor o número..."
+            className="w-full rounded-2xl border-2 border-[#e2e8f0] bg-white py-2.5 pr-4 pl-10 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-pink-500 focus:ring-4 focus:ring-pink-100"
           />
         </div>
+        <div className="flex items-center gap-1.5">
+          <label className="text-xs font-bold text-[#64748b]">Desde</label>
+          <input
+            type="date"
+            value={desde}
+            onChange={(e) => setDesde(e.target.value)}
+            className="rounded-2xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-pink-500 focus:ring-4 focus:ring-pink-100"
+          />
+        </div>
+        <div className="flex items-center gap-1.5">
+          <label className="text-xs font-bold text-[#64748b]">Hasta</label>
+          <input
+            type="date"
+            value={hasta}
+            onChange={(e) => setHasta(e.target.value)}
+            className="rounded-2xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-pink-500 focus:ring-4 focus:ring-pink-100"
+          />
+        </div>
+        {hayFiltros && (
+          <button
+            type="button"
+            onClick={() => {
+              setFiltro('')
+              setDesde('')
+              setHasta('')
+            }}
+            className="rounded-2xl border-2 border-[#e2e8f0] bg-white px-4 py-2.5 text-sm font-bold text-[#64748b] transition-all hover:bg-[#f8fafc]"
+          >
+            Limpiar
+          </button>
+        )}
       </div>
 
       <div className="overflow-hidden rounded-3xl border-2 border-[#e2e8f0] bg-white shadow-lg shadow-slate-500/5">

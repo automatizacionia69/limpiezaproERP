@@ -37,20 +37,25 @@ function hrefVer(fila: FilaMovimiento) {
 
 export function ComprobantesTabla({ movimientos }: { movimientos: FilaMovimiento[] }) {
   const [filtro, setFiltro] = useState('')
+  const [desde, setDesde] = useState('')
+  const [hasta, setHasta] = useState('')
 
   const totalComprobantes = movimientos.filter((m) => m.tipoMovimiento === 'comprobante').length
 
   const filtrados = useMemo(() => {
     const q = filtro.trim().toLowerCase()
-    if (!q) return movimientos
-    return movimientos.filter((m) =>
-      [m.numero, m.cliente, TIPO_COMPROBANTE_LABELS[m.tipo], m.detalle]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-        .includes(q)
-    )
-  }, [movimientos, filtro])
+    return movimientos.filter((m) => {
+      const fecha = m.fecha.slice(0, 10)
+      const coincideTexto =
+        !q ||
+        [m.numero, m.cliente, TIPO_COMPROBANTE_LABELS[m.tipo], m.detalle].filter(Boolean).join(' ').toLowerCase().includes(q)
+      const coincideDesde = !desde || fecha >= desde
+      const coincideHasta = !hasta || fecha <= hasta
+      return coincideTexto && coincideDesde && coincideHasta
+    })
+  }, [movimientos, filtro, desde, hasta])
+
+  const hayFiltros = filtro || desde || hasta
 
   return (
     <div>
@@ -83,10 +88,41 @@ export function ComprobantesTabla({ movimientos }: { movimientos: FilaMovimiento
               type="text"
               value={filtro}
               onChange={(e) => setFiltro(e.target.value)}
-              placeholder="Buscar por número o cliente..."
+              placeholder="Buscar por cliente, serie o número..."
               className="rounded-2xl border-2 border-[#e2e8f0] bg-white py-2.5 pr-4 pl-10 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-lime-500 focus:ring-4 focus:ring-lime-100"
             />
           </div>
+          <div className="flex items-center gap-1.5">
+            <label className="text-xs font-bold text-[#64748b]">Desde</label>
+            <input
+              type="date"
+              value={desde}
+              onChange={(e) => setDesde(e.target.value)}
+              className="rounded-2xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-lime-500 focus:ring-4 focus:ring-lime-100"
+            />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <label className="text-xs font-bold text-[#64748b]">Hasta</label>
+            <input
+              type="date"
+              value={hasta}
+              onChange={(e) => setHasta(e.target.value)}
+              className="rounded-2xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-lime-500 focus:ring-4 focus:ring-lime-100"
+            />
+          </div>
+          {hayFiltros && (
+            <button
+              type="button"
+              onClick={() => {
+                setFiltro('')
+                setDesde('')
+                setHasta('')
+              }}
+              className="rounded-2xl border-2 border-[#e2e8f0] bg-white px-4 py-2.5 text-sm font-bold text-[#64748b] transition-all hover:bg-[#f8fafc]"
+            >
+              Limpiar
+            </button>
+          )}
         </div>
       </div>
 
