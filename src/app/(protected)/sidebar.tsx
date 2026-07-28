@@ -43,9 +43,9 @@ export function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-20 w-64 bg-gradient-to-b from-[#1f2533] to-[#272e3f] text-[#aeb6c7]">
+    <aside className="fixed inset-y-0 left-0 z-20 w-64 bg-gradient-to-b from-[#0f172a] to-[#1e293b] text-[#94a3b8]">
       <div className="flex items-center gap-3 border-b border-white/10 px-5 py-4">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#e07a5f] text-white shadow-[0_4px_12px_rgba(224,122,95,.45)]">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#4f46e5] text-white shadow-[0_4px_12px_rgba(79,70,229,.45)]">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="h-5 w-5">
             <path
               strokeLinecap="round"
@@ -56,11 +56,11 @@ export function Sidebar() {
         </div>
         <div>
           <div className="text-sm font-bold leading-tight text-white">LimpiezaPro ERP</div>
-          <div className="text-[11px] leading-tight text-[#aeb6c7]">Gestión de Inventarios</div>
+          <div className="text-[11px] leading-tight text-[#94a3b8]">Gestión de Inventarios</div>
         </div>
       </div>
 
-      <div className="px-5 pt-4 pb-1.5 text-[10.5px] font-medium tracking-wider text-[#5d6678] uppercase">
+      <div className="px-5 pt-4 pb-1.5 text-[10.5px] font-medium tracking-wider text-[#64748b] uppercase">
         Menú principal
       </div>
       <nav className="space-y-1 px-3 pb-6">
@@ -72,8 +72,8 @@ export function Sidebar() {
               href={item.href}
               className={`flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium transition-colors ${
                 active
-                  ? 'bg-[#e07a5f] text-white'
-                  : 'text-[#aeb6c7] hover:bg-white/5 hover:text-white'
+                  ? 'bg-[#4f46e5] text-white'
+                  : 'text-[#94a3b8] hover:bg-white/5 hover:text-white'
               }`}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="h-5 w-5 shrink-0">

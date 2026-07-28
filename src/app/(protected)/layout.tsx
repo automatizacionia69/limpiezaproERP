@@ -54,21 +54,21 @@ export default async function ProtectedLayout({
   }
 
   return (
-    <div className="min-h-screen bg-[#f4f6fa]">
+    <div className="min-h-screen bg-[#f8fafc]">
       <Sidebar />
 
       <div className="pl-64">
-        <header className="flex h-16 items-center justify-between border-b border-[#e8ebf1] bg-white px-6">
-          <div className="text-sm font-semibold text-[#2b303a]" />
+        <header className="flex h-16 items-center justify-between border-b border-[#e2e8f0] bg-white px-6">
+          <div className="text-sm font-semibold text-[#1e293b]" />
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e07a5f] text-sm font-semibold text-white">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#4f46e5] text-sm font-semibold text-white">
               {iniciales(perfil.nombre)}
             </div>
             <div className="hidden text-right sm:block">
-              <div className="text-[13px] font-semibold leading-tight text-[#2b303a]">
+              <div className="text-[13px] font-semibold leading-tight text-[#1e293b]">
                 {perfil.nombre}
               </div>
-              <div className="text-[11px] leading-tight text-[#7a8290]">
+              <div className="text-[11px] leading-tight text-[#64748b]">
                 {ROLE_LABELS[perfil.rol] ?? perfil.rol}
               </div>
             </div>
@@ -76,7 +76,7 @@ export default async function ProtectedLayout({
               <button
                 type="submit"
                 title="Cerrar sesión"
-                className="flex h-9 w-9 items-center justify-center rounded-full text-[#7a8290] transition-colors hover:bg-red-50 hover:text-red-600"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-[#64748b] transition-colors hover:bg-red-50 hover:text-red-600"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="h-5 w-5">
                   <path

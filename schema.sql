@@ -288,6 +288,9 @@ create policy "escritura admin_almacen productos insert" on productos for insert
 create policy "escritura admin_almacen productos update" on productos for update
   using (exists (select 1 from usuarios_perfil up where up.id = auth.uid() and up.rol in ('admin', 'almacen')));
 
+create policy "escritura admin_almacen productos delete" on productos for delete
+  using (exists (select 1 from usuarios_perfil up where up.id = auth.uid() and up.rol in ('admin', 'almacen')));
+
 -- Movimientos: solo INSERT (admin/almacen). Sin update/delete — el ledger es
 -- inmutable; una corrección se hace con un nuevo movimiento de tipo 'ajuste'.
 create policy "escritura admin_almacen movimientos" on movimientos for insert

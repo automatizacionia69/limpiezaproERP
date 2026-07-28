@@ -1,6 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 
 export type EstadoFormulario = { error: string | null }
@@ -86,4 +87,21 @@ export async function editarProducto(
   }
 
   redirect('/productos')
+}
+
+export async function eliminarProducto(id: number) {
+  const supabase = await createClient()
+
+  const { error } = await supabase.from('productos').delete().eq('id', id)
+
+  if (error) {
+    if (error.code === '23503') {
+      throw new Error(
+        'No se puede eliminar: este producto ya tiene movimientos registrados (kardex). Puedes editarlo en vez de borrarlo.'
+      )
+    }
+    throw new Error(error.message)
+  }
+
+  revalidatePath('/productos')
 }
