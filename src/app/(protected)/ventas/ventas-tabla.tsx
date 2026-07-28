@@ -31,10 +31,12 @@ type OrdenRow = {
   clientes: { nombre: string } | null
 }
 
+type Filtros = { cliente: string; numero: string; desde: string; hasta: string }
+const FILTROS_VACIOS: Filtros = { cliente: '', numero: '', desde: '', hasta: '' }
+
 export function VentasTabla({ ordenes }: { ordenes: OrdenRow[] }) {
-  const [filtro, setFiltro] = useState('')
-  const [desde, setDesde] = useState('')
-  const [hasta, setHasta] = useState('')
+  const [borrador, setBorrador] = useState<Filtros>(FILTROS_VACIOS)
+  const [aplicado, setAplicado] = useState<Filtros>(FILTROS_VACIOS)
   const [error, setError] = useState<string | null>(null)
   const [pendienteId, setPendienteId] = useState<number | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -55,18 +57,29 @@ export function VentasTabla({ ordenes }: { ordenes: OrdenRow[] }) {
   }
 
   const filtradas = useMemo(() => {
-    const q = filtro.trim().toLowerCase()
+    const cliente = aplicado.cliente.trim().toLowerCase()
+    const numero = aplicado.numero.trim().toLowerCase()
     return ordenes.filter((o) => {
       const fecha = o.creado_en.slice(0, 10)
-      const coincideTexto =
-        !q || [o.numero, o.clientes?.nombre, ESTADO_LABELS[o.estado]].filter(Boolean).join(' ').toLowerCase().includes(q)
-      const coincideDesde = !desde || fecha >= desde
-      const coincideHasta = !hasta || fecha <= hasta
-      return coincideTexto && coincideDesde && coincideHasta
+      const coincideCliente = !cliente || (o.clientes?.nombre ?? '').toLowerCase().includes(cliente)
+      const coincideNumero = !numero || o.numero.toLowerCase().includes(numero)
+      const coincideDesde = !aplicado.desde || fecha >= aplicado.desde
+      const coincideHasta = !aplicado.hasta || fecha <= aplicado.hasta
+      return coincideCliente && coincideNumero && coincideDesde && coincideHasta
     })
-  }, [ordenes, filtro, desde, hasta])
+  }, [ordenes, aplicado])
 
-  const hayFiltros = filtro || desde || hasta
+  const hayFiltros = Object.values(aplicado).some(Boolean)
+
+  function buscar(e: React.FormEvent) {
+    e.preventDefault()
+    setAplicado(borrador)
+  }
+
+  function limpiar() {
+    setBorrador(FILTROS_VACIOS)
+    setAplicado(FILTROS_VACIOS)
+  }
 
   return (
     <div>
@@ -76,57 +89,67 @@ export function VentasTabla({ ordenes }: { ordenes: OrdenRow[] }) {
         </p>
       )}
 
-      <div className="mb-4 flex flex-wrap items-center justify-end gap-3">
-        <div className="relative flex-1 min-w-[220px]">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-[#94a3b8]">
-            <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-          </svg>
+      <form onSubmit={buscar} className="mb-4 flex flex-wrap items-end gap-3 rounded-2xl border-2 border-[#e2e8f0] bg-white p-4">
+        <div>
+          <label className="block text-xs font-bold text-[#64748b]">Cliente</label>
           <input
             type="text"
-            value={filtro}
-            onChange={(e) => setFiltro(e.target.value)}
-            placeholder="Buscar por cliente o número..."
-            className="w-full rounded-2xl border-2 border-[#e2e8f0] bg-white py-2.5 pr-4 pl-10 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+            value={borrador.cliente}
+            onChange={(e) => setBorrador((b) => ({ ...b, cliente: e.target.value }))}
+            placeholder="Nombre del cliente..."
+            className="mt-1 w-48 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
           />
         </div>
-        <div className="flex items-center gap-1.5">
-          <label className="text-xs font-bold text-[#64748b]">Desde</label>
+        <div>
+          <label className="block text-xs font-bold text-[#64748b]">Número</label>
+          <input
+            type="text"
+            value={borrador.numero}
+            onChange={(e) => setBorrador((b) => ({ ...b, numero: e.target.value }))}
+            placeholder="OV-00001..."
+            className="mt-1 w-36 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-[#64748b]">Desde</label>
           <input
             type="date"
-            value={desde}
-            onChange={(e) => setDesde(e.target.value)}
-            className="rounded-2xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+            value={borrador.desde}
+            onChange={(e) => setBorrador((b) => ({ ...b, desde: e.target.value }))}
+            className="mt-1 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
           />
         </div>
-        <div className="flex items-center gap-1.5">
-          <label className="text-xs font-bold text-[#64748b]">Hasta</label>
+        <div>
+          <label className="block text-xs font-bold text-[#64748b]">Hasta</label>
           <input
             type="date"
-            value={hasta}
-            onChange={(e) => setHasta(e.target.value)}
-            className="rounded-2xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+            value={borrador.hasta}
+            onChange={(e) => setBorrador((b) => ({ ...b, hasta: e.target.value }))}
+            className="mt-1 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
           />
         </div>
+        <button
+          type="submit"
+          className="rounded-xl bg-teal-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm shadow-teal-500/30 transition-all hover:bg-teal-700"
+        >
+          🔍 Buscar
+        </button>
         {hayFiltros && (
           <button
             type="button"
-            onClick={() => {
-              setFiltro('')
-              setDesde('')
-              setHasta('')
-            }}
-            className="rounded-2xl border-2 border-[#e2e8f0] bg-white px-4 py-2.5 text-sm font-bold text-[#64748b] transition-all hover:bg-[#f8fafc]"
+            onClick={limpiar}
+            className="rounded-xl border-2 border-[#e2e8f0] bg-white px-5 py-2.5 text-sm font-bold text-[#64748b] transition-all hover:bg-[#f8fafc]"
           >
             Limpiar
           </button>
         )}
-      </div>
+      </form>
 
       <div className="overflow-hidden rounded-3xl border-2 border-[#e2e8f0] bg-white shadow-lg shadow-slate-500/5">
         {ordenes.length === 0 ? (
           <p className="p-12 text-center text-sm font-medium text-[#64748b]">Todavía no hay órdenes de venta.</p>
         ) : filtradas.length === 0 ? (
-          <p className="p-12 text-center text-sm font-medium text-[#64748b]">Ninguna orden coincide con “{filtro}”.</p>
+          <p className="p-12 text-center text-sm font-medium text-[#64748b]">Ninguna orden coincide con la búsqueda.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-[13.5px]">

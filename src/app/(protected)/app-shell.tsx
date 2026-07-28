@@ -54,7 +54,7 @@ export function AppShell({
   }, [])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f8fafc] to-[#eef2ff]">
+    <div className="min-h-screen bg-gradient-to-br from-[#e7ebf4] to-[#dbe2f2] print:bg-white">
       <Sidebar collapsed={collapsed} rol={rol} modulosPermitidos={modulosPermitidos} />
 
       <div className={`transition-[padding] duration-200 print:pl-0 ${collapsed ? 'pl-20' : 'pl-72'}`}>

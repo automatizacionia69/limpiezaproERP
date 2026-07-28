@@ -35,27 +35,49 @@ function hrefVer(fila: FilaMovimiento) {
   return `/consulta-ventas/${fila.id}`
 }
 
+function separarNumero(numero: string) {
+  const idx = numero.indexOf('-')
+  if (idx === -1) return { serie: numero, correlativo: '' }
+  return { serie: numero.slice(0, idx), correlativo: numero.slice(idx + 1) }
+}
+
+type Filtros = { cliente: string; serie: string; numero: string; desde: string; hasta: string }
+const FILTROS_VACIOS: Filtros = { cliente: '', serie: '', numero: '', desde: '', hasta: '' }
+
 export function ComprobantesTabla({ movimientos }: { movimientos: FilaMovimiento[] }) {
-  const [filtro, setFiltro] = useState('')
-  const [desde, setDesde] = useState('')
-  const [hasta, setHasta] = useState('')
+  const [borrador, setBorrador] = useState<Filtros>(FILTROS_VACIOS)
+  const [aplicado, setAplicado] = useState<Filtros>(FILTROS_VACIOS)
 
   const totalComprobantes = movimientos.filter((m) => m.tipoMovimiento === 'comprobante').length
 
   const filtrados = useMemo(() => {
-    const q = filtro.trim().toLowerCase()
+    const cliente = aplicado.cliente.trim().toLowerCase()
+    const serie = aplicado.serie.trim().toLowerCase()
+    const numero = aplicado.numero.trim().toLowerCase()
+
     return movimientos.filter((m) => {
       const fecha = m.fecha.slice(0, 10)
-      const coincideTexto =
-        !q ||
-        [m.numero, m.cliente, TIPO_COMPROBANTE_LABELS[m.tipo], m.detalle].filter(Boolean).join(' ').toLowerCase().includes(q)
-      const coincideDesde = !desde || fecha >= desde
-      const coincideHasta = !hasta || fecha <= hasta
-      return coincideTexto && coincideDesde && coincideHasta
+      const { serie: serieFila, correlativo } = separarNumero(m.numero)
+      const coincideCliente = !cliente || (m.cliente ?? '').toLowerCase().includes(cliente)
+      const coincideSerie = !serie || serieFila.toLowerCase().includes(serie)
+      const coincideNumero = !numero || correlativo.toLowerCase().includes(numero) || m.numero.toLowerCase().includes(numero)
+      const coincideDesde = !aplicado.desde || fecha >= aplicado.desde
+      const coincideHasta = !aplicado.hasta || fecha <= aplicado.hasta
+      return coincideCliente && coincideSerie && coincideNumero && coincideDesde && coincideHasta
     })
-  }, [movimientos, filtro, desde, hasta])
+  }, [movimientos, aplicado])
 
-  const hayFiltros = filtro || desde || hasta
+  const hayFiltros = Object.values(aplicado).some(Boolean)
+
+  function buscar(e: React.FormEvent) {
+    e.preventDefault()
+    setAplicado(borrador)
+  }
+
+  function limpiar() {
+    setBorrador(FILTROS_VACIOS)
+    setAplicado(FILTROS_VACIOS)
+  }
 
   return (
     <div>
@@ -80,51 +102,74 @@ export function ComprobantesTabla({ movimientos }: { movimientos: FilaMovimiento
           >
             📦 Reporte ventas por producto
           </Link>
-          <div className="relative">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-[#94a3b8]">
-              <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-            </svg>
-            <input
-              type="text"
-              value={filtro}
-              onChange={(e) => setFiltro(e.target.value)}
-              placeholder="Buscar por cliente, serie o número..."
-              className="rounded-2xl border-2 border-[#e2e8f0] bg-white py-2.5 pr-4 pl-10 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-lime-500 focus:ring-4 focus:ring-lime-100"
-            />
-          </div>
-          <div className="flex items-center gap-1.5">
-            <label className="text-xs font-bold text-[#64748b]">Desde</label>
-            <input
-              type="date"
-              value={desde}
-              onChange={(e) => setDesde(e.target.value)}
-              className="rounded-2xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-lime-500 focus:ring-4 focus:ring-lime-100"
-            />
-          </div>
-          <div className="flex items-center gap-1.5">
-            <label className="text-xs font-bold text-[#64748b]">Hasta</label>
-            <input
-              type="date"
-              value={hasta}
-              onChange={(e) => setHasta(e.target.value)}
-              className="rounded-2xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-lime-500 focus:ring-4 focus:ring-lime-100"
-            />
-          </div>
-          {hayFiltros && (
-            <button
-              type="button"
-              onClick={() => {
-                setFiltro('')
-                setDesde('')
-                setHasta('')
-              }}
-              className="rounded-2xl border-2 border-[#e2e8f0] bg-white px-4 py-2.5 text-sm font-bold text-[#64748b] transition-all hover:bg-[#f8fafc]"
-            >
-              Limpiar
-            </button>
-          )}
         </div>
       </div>
+
+      <form onSubmit={buscar} className="mt-4 flex flex-wrap items-end gap-3 rounded-2xl border-2 border-[#e2e8f0] bg-white p-4">
+        <div>
+          <label className="block text-xs font-bold text-[#64748b]">Cliente</label>
+          <input
+            type="text"
+            value={borrador.cliente}
+            onChange={(e) => setBorrador((b) => ({ ...b, cliente: e.target.value }))}
+            placeholder="Nombre del cliente..."
+            className="mt-1 w-44 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-lime-500 focus:ring-4 focus:ring-lime-100"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-[#64748b]">Serie</label>
+          <input
+            type="text"
+            value={borrador.serie}
+            onChange={(e) => setBorrador((b) => ({ ...b, serie: e.target.value }))}
+            placeholder="F006, B006, NC01..."
+            className="mt-1 w-32 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-lime-500 focus:ring-4 focus:ring-lime-100"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-[#64748b]">Número</label>
+          <input
+            type="text"
+            value={borrador.numero}
+            onChange={(e) => setBorrador((b) => ({ ...b, numero: e.target.value }))}
+            placeholder="000001..."
+            className="mt-1 w-32 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-lime-500 focus:ring-4 focus:ring-lime-100"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-[#64748b]">Desde</label>
+          <input
+            type="date"
+            value={borrador.desde}
+            onChange={(e) => setBorrador((b) => ({ ...b, desde: e.target.value }))}
+            className="mt-1 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-lime-500 focus:ring-4 focus:ring-lime-100"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-[#64748b]">Hasta</label>
+          <input
+            type="date"
+            value={borrador.hasta}
+            onChange={(e) => setBorrador((b) => ({ ...b, hasta: e.target.value }))}
+            className="mt-1 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-lime-500 focus:ring-4 focus:ring-lime-100"
+          />
+        </div>
+        <button
+          type="submit"
+          className="rounded-xl bg-lime-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm shadow-lime-500/30 transition-all hover:bg-lime-700"
+        >
+          🔍 Buscar
+        </button>
+        {hayFiltros && (
+          <button
+            type="button"
+            onClick={limpiar}
+            className="rounded-xl border-2 border-[#e2e8f0] bg-white px-5 py-2.5 text-sm font-bold text-[#64748b] transition-all hover:bg-[#f8fafc]"
+          >
+            Limpiar
+          </button>
+        )}
+      </form>
 
       <div className="mt-6 overflow-hidden rounded-3xl border-2 border-[#e2e8f0] bg-white shadow-lg shadow-slate-500/5">
         {movimientos.length === 0 ? (
@@ -132,7 +177,7 @@ export function ComprobantesTabla({ movimientos }: { movimientos: FilaMovimiento
             Todavía no hay comprobantes emitidos — factura una orden de venta desde el módulo Ventas.
           </p>
         ) : filtrados.length === 0 ? (
-          <p className="p-12 text-center text-sm font-medium text-[#64748b]">Ningún movimiento coincide con “{filtro}”.</p>
+          <p className="p-12 text-center text-sm font-medium text-[#64748b]">Ningún movimiento coincide con la búsqueda.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-[13.5px]">
