@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Sidebar } from './sidebar'
 import { NotificacionesStock } from './notificaciones-stock'
+import { AlertaStockBajo } from './alerta-stock-bajo'
 
 type ProductoStockBajo = { id: number; nombre: string; cantidad: number; punto_reorden: number | null }
 
@@ -100,6 +101,8 @@ export function AppShell({
 
         <main className="w-full px-8 py-10 2xl:px-12 print:max-w-none print:p-0">{children}</main>
       </div>
+
+      <AlertaStockBajo stockBajo={stockBajo} />
     </div>
   )
 }
