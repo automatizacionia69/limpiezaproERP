@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { VentasComprasChart } from './ventas-compras-chart'
 
 const ROLE_LABELS: Record<string, string> = {
   admin: 'Administrador',
@@ -15,11 +16,50 @@ type StockBajoRow = {
   unidad_nombre: string | null
 }
 
+const MESES_LABEL = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+
 function inicioDeMesISO() {
   const d = new Date()
   d.setDate(1)
   d.setHours(0, 0, 0, 0)
   return d.toISOString()
+}
+
+function inicioMesesAtras(n: number) {
+  const d = new Date()
+  d.setDate(1)
+  d.setHours(0, 0, 0, 0)
+  d.setMonth(d.getMonth() - n)
+  return d
+}
+
+function clavesMes(fecha: Date) {
+  return `${fecha.getFullYear()}-${fecha.getMonth()}`
+}
+
+function construirSeisMeses(
+  ventas: { total: number; creado_en: string }[] | null,
+  compras: { total: number; creado_en: string }[] | null
+) {
+  const inicio = inicioMesesAtras(5)
+  const buckets = Array.from({ length: 6 }, (_, i) => {
+    const fecha = new Date(inicio)
+    fecha.setMonth(fecha.getMonth() + i)
+    return { clave: clavesMes(fecha), mes: MESES_LABEL[fecha.getMonth()], ventas: 0, compras: 0 }
+  })
+
+  const indice = new Map(buckets.map((b) => [b.clave, b]))
+
+  for (const v of ventas ?? []) {
+    const b = indice.get(clavesMes(new Date(v.creado_en)))
+    if (b) b.ventas += Number(v.total)
+  }
+  for (const c of compras ?? []) {
+    const b = indice.get(clavesMes(new Date(c.creado_en)))
+    if (b) b.compras += Number(c.total)
+  }
+
+  return buckets.map(({ clave: _clave, ...resto }) => resto)
 }
 
 export default async function DashboardPage() {
@@ -38,6 +78,7 @@ export default async function DashboardPage() {
     : { data: null }
 
   const inicioMes = inicioDeMesISO()
+  const inicioSeisMeses = inicioMesesAtras(5).toISOString()
 
   const [
     { data: productos },
@@ -46,6 +87,8 @@ export default async function DashboardPage() {
     { data: comprasMes },
     { count: cotizacionesMes },
     { count: ventasPendientes },
+    { data: ventasSeisMeses },
+    { data: comprasSeisMeses },
   ] = await Promise.all([
     supabase.from('productos').select('cantidad, costo'),
     supabase
@@ -57,6 +100,8 @@ export default async function DashboardPage() {
     supabase.from('ordenes_compra').select('total').eq('estado', 'recibida').gte('creado_en', inicioMes),
     supabase.from('cotizaciones').select('id', { count: 'exact', head: true }).gte('creado_en', inicioMes),
     supabase.from('ordenes_venta').select('id', { count: 'exact', head: true }).eq('estado', 'pendiente'),
+    supabase.from('ordenes_venta').select('total, creado_en').eq('estado', 'facturada').gte('creado_en', inicioSeisMeses),
+    supabase.from('ordenes_compra').select('total, creado_en').eq('estado', 'recibida').gte('creado_en', inicioSeisMeses),
   ])
 
   const totalProductos = productos?.length ?? 0
@@ -65,6 +110,7 @@ export default async function DashboardPage() {
   const hayStockBajo = (stockBajo?.length ?? 0) > 0
   const totalVentasMes = ventasMes?.reduce((acc, v) => acc + Number(v.total), 0) ?? 0
   const totalComprasMes = comprasMes?.reduce((acc, c) => acc + Number(c.total), 0) ?? 0
+  const datosGrafico = construirSeisMeses(ventasSeisMeses, comprasSeisMeses)
 
   return (
     <div>
@@ -181,6 +227,10 @@ export default async function DashboardPage() {
             <p className="mt-1 text-3xl font-extrabold text-[#1e293b]">{ventasPendientes ?? 0}</p>
           </div>
         </Link>
+      </div>
+
+      <div className="mt-8">
+        <VentasComprasChart datos={datosGrafico} />
       </div>
 
       <div className="mt-8 overflow-hidden rounded-3xl border-2 border-[#e2e8f0] bg-white shadow-lg shadow-slate-500/5">
