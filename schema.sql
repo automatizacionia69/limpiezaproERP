@@ -3,6 +3,11 @@
 -- Schema para Supabase (PostgreSQL) — v2: inventario valorizado
 -- Ejecutar en: Supabase → SQL Editor → New query
 -- Migración "drop and recreate": no hay datos reales de cliente todavía.
+--
+-- ⚠️ Ya NO volver a correr este archivo tal cual — desde que se importó
+-- el inventario real (import-inventario.sql) hay datos que no se pueden
+-- perder. Cambios de aquí en adelante van en archivos de migración
+-- aditivos aparte (ver add-compras.sql como ejemplo).
 -- ============================================================
 
 -- ------------------------------------------------------------
