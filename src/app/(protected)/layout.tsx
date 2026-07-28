@@ -49,6 +49,9 @@ export default async function ProtectedLayout({
           <Link href="/productos" className="text-sm text-blue-100 hover:text-white">
             Productos
           </Link>
+          <Link href="/movimientos" className="text-sm text-blue-100 hover:text-white">
+            Movimientos
+          </Link>
         </div>
         <form action={signOut}>
           <button
