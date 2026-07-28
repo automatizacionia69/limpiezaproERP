@@ -315,11 +315,10 @@ create policy "escritura admin_almacen movimientos" on movimientos for insert
 -- ------------------------------------------------------------
 insert into almacenes (nombre) values ('Piura');
 
-insert into zonas (almacen_id, nombre)
-select a.id, z.nombre
-from almacenes a
-cross join (values ('Sala Comedor'), ('Cochera'), ('Cuarto 1'), ('Cocina')) as z(nombre)
-where a.nombre = 'Piura';
+-- zonas: sin seed intencional. Todos los productos van en un único almacén
+-- ("Piura"), sin subdivisión por zona/cuarto — zona_id queda nulo para todos
+-- los productos. La tabla zonas queda disponible para uso futuro si el
+-- negocio llegara a necesitar subdividir, pero no se fuerza su uso hoy.
 
 insert into unidades_medida (nombre) values ('und'), ('paq'), ('caja');
 
@@ -371,11 +370,12 @@ Si el error es de un objeto que ya existía y el `drop ... cascade` no lo alcanz
 - [ ] **Step 4: Verificar el seed de catálogos**
 
 ```sql
-select a.nombre as almacen, z.nombre as zona from zonas z join almacenes a on a.id = z.almacen_id order by z.nombre;
+select nombre from almacenes order by nombre;
+select count(*) as zonas_sembradas from zonas;
 select nombre from unidades_medida order by nombre;
 ```
 
-Expected: la primera consulta devuelve 4 filas, todas con `almacen = 'Piura'` (`Sala Comedor`, `Cochera`, `Cuarto 1`, `Cocina`). La segunda devuelve 3 filas (`caja`, `paq`, `und`).
+Expected: la primera consulta devuelve 1 fila (`Piura`). La segunda devuelve `zonas_sembradas = 0` (no se siembra ninguna zona — todos los productos van directo en el almacén, sin subdivisión). La tercera devuelve 3 filas (`caja`, `paq`, `und`).
 
 ---
 

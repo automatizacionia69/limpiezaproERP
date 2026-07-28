@@ -282,11 +282,10 @@ create policy "escritura admin_almacen movimientos" on movimientos for insert
 -- ------------------------------------------------------------
 insert into almacenes (nombre) values ('Piura');
 
-insert into zonas (almacen_id, nombre)
-select a.id, z.nombre
-from almacenes a
-cross join (values ('Sala Comedor'), ('Cochera'), ('Cuarto 1'), ('Cocina')) as z(nombre)
-where a.nombre = 'Piura';
+-- zonas: sin seed intencional. Todos los productos van en un único almacén
+-- ("Piura"), sin subdivisión por zona/cuarto — zona_id queda nulo para todos
+-- los productos. La tabla zonas queda disponible para uso futuro si el
+-- negocio llegara a necesitar subdividir, pero no se fuerza su uso hoy.
 
 insert into unidades_medida (nombre) values ('und'), ('paq'), ('caja');
 

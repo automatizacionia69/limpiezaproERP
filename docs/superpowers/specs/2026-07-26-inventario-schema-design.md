@@ -16,7 +16,7 @@ También se discutió, fuera del alcance de este documento, la posibilidad de in
 Cada producto tiene UN costo unitario vigente (`productos.costo`), recalculado automáticamente en cada `entrada` con la fórmula estándar de promedio ponderado. Se descartó PEPS/FIFO por complejidad (requeriría tabla de lotes) para un equipo de 7 personas.
 
 ### 2. Almacenes (sede) → Zonas (sub-espacio), dos niveles
-"Almacén" representa una sede/ciudad (hoy solo "Piura"; a futuro podría existir "Chiclayo"). "Zona" es un espacio físico dentro de un almacén (las 4 actuales: Sala Comedor, Cochera, Cuarto 1, Cocina, todas bajo el almacén "Piura"). `zonas.nombre` es único por almacén, no global (el mismo nombre podría repetirse en otra sede a futuro). `productos.zona_id` no cambia de forma.
+"Almacén" representa una sede/ciudad (hoy solo "Piura"; a futuro podría existir "Chiclayo"). "Zona" es un espacio físico dentro de un almacén, para cuando el negocio necesite subdividir — hoy no aplica: todos los productos van directo en el almacén "Piura", sin subdivisión (ver corrección en la sección 9, "Seed de catálogos"). `zonas.nombre` es único por almacén, no global (el mismo nombre podría repetirse en otra sede a futuro). `productos.zona_id` no cambia de forma.
 
 ### 3. Costo en movimientos
 - `entrada`: el costo unitario es **obligatorio** al registrarla — es lo que alimenta el promedio ponderado.
@@ -43,6 +43,8 @@ La política `"lectura propio perfil"` usaba `auth.role() = 'authenticated'` (de
 
 ### 9. Seed de catálogos
 Se siembra `unidades_medida` (und, paq, caja — catálogo pequeño y estable). **No** se siembra `categorias`: es taxonomía específica del negocio (papel, químicos, higiene, etc.) que el admin debe definir deliberadamente al migrar el catálogo real de ~140 SKUs, no adivinarla ahora.
+
+**Corrección post-aprobación (2026-07-27):** tampoco se siembra `zonas`. El negocio real no subdivide el almacén por cuarto — todos los productos van directo en el único almacén ("Piura"), `productos.zona_id` queda nulo. Las 4 "zonas" originales (Sala Comedor, Cochera, Cuarto 1, Cocina) venían de cómo estaba organizado el inventario en cuadernos dentro de una casa, no de una necesidad real del negocio — se descartan del seed. La tabla `zonas` se queda en el schema por si a futuro hiciera falta subdividir, pero no se usa por ahora.
 
 ## Ejemplo trazado (verificación de la lógica)
 
@@ -358,11 +360,7 @@ create policy "escritura admin_almacen movimientos" on movimientos for insert
 ```sql
 insert into almacenes (nombre) values ('Piura');
 
-insert into zonas (almacen_id, nombre)
-select a.id, z.nombre
-from almacenes a
-cross join (values ('Sala Comedor'), ('Cochera'), ('Cuarto 1'), ('Cocina')) as z(nombre)
-where a.nombre = 'Piura';
+-- zonas: sin seed intencional (corrección post-aprobación, ver nota abajo).
 
 insert into unidades_medida (nombre) values ('und'), ('paq'), ('caja');
 
