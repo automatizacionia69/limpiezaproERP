@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { tienePermiso } from '@/lib/permisos'
+import { IGV_TASA } from '@/lib/cotizaciones'
 
 export type EstadoFormulario = { error: string | null }
 
@@ -78,9 +79,19 @@ export async function crearOrdenVenta(
   redirect('/ventas')
 }
 
-export async function facturarOrdenVenta(id: number) {
+export async function emitirComprobante(
+  _prevState: EstadoFormulario,
+  formData: FormData
+): Promise<EstadoFormulario> {
   if (!(await tienePermiso('ventas'))) {
-    throw new Error('No tienes permiso para esta acción.')
+    return { error: 'No tienes permiso para esta acción.' }
+  }
+
+  const ordenId = Number(formData.get('orden_id'))
+  const tipo = formData.get('tipo') as string
+
+  if (!['factura', 'boleta', 'nota_venta'].includes(tipo)) {
+    return { error: 'Selecciona un tipo de comprobante válido.' }
   }
 
   const supabase = await createClient()
@@ -90,24 +101,31 @@ export async function facturarOrdenVenta(id: number) {
 
   const { data: orden, error: errorOrden } = await supabase
     .from('ordenes_venta')
-    .select('id, numero, estado')
-    .eq('id', id)
+    .select('id, numero, estado, total, cliente_id, clientes(documento)')
+    .eq('id', ordenId)
     .single()
 
   if (errorOrden || !orden) {
-    throw new Error('Orden no encontrada.')
+    return { error: 'Orden no encontrada.' }
   }
   if (orden.estado !== 'pendiente') {
-    throw new Error('Esta orden ya fue facturada o anulada.')
+    return { error: 'Esta orden ya fue facturada o anulada.' }
+  }
+
+  const cliente = Array.isArray(orden.clientes) ? orden.clientes[0] : orden.clientes
+  if (tipo === 'factura' && (cliente?.documento ?? '').trim().length !== 11) {
+    return {
+      error: 'Este cliente no tiene RUC (11 dígitos) — no se puede emitir Factura. Usa Boleta o Nota de venta.',
+    }
   }
 
   const { data: detalles, error: errorDetalles } = await supabase
     .from('detalle_venta')
     .select('producto_id, cantidad')
-    .eq('orden_id', id)
+    .eq('orden_id', ordenId)
 
   if (errorDetalles || !detalles || detalles.length === 0) {
-    throw new Error('La orden no tiene productos.')
+    return { error: 'La orden no tiene productos.' }
   }
 
   // El trigger valida stock suficiente por cada línea (lanza excepción si falta).
@@ -123,22 +141,46 @@ export async function facturarOrdenVenta(id: number) {
   )
 
   if (errorMovs) {
-    throw new Error(errorMovs.message)
+    return { error: errorMovs.message }
+  }
+
+  const total = Number(orden.total)
+  const subtotal = Number((total / (1 + IGV_TASA)).toFixed(2))
+  const igv = Number((total - subtotal).toFixed(2))
+
+  const { data: comprobante, error: errorComp } = await supabase
+    .from('comprobantes')
+    .insert({
+      tipo,
+      orden_venta_id: ordenId,
+      cliente_id: orden.cliente_id,
+      usuario_id: user?.id ?? null,
+      subtotal,
+      igv,
+      total,
+    })
+    .select('id')
+    .single()
+
+  if (errorComp || !comprobante) {
+    return { error: errorComp?.message ?? 'No se pudo emitir el comprobante.' }
   }
 
   const { error: errorUpdate } = await supabase
     .from('ordenes_venta')
     .update({ estado: 'facturada', facturada_en: new Date().toISOString() })
-    .eq('id', id)
+    .eq('id', ordenId)
 
   if (errorUpdate) {
-    throw new Error(errorUpdate.message)
+    return { error: errorUpdate.message }
   }
 
   revalidatePath('/ventas')
   revalidatePath('/productos')
   revalidatePath('/movimientos')
   revalidatePath('/dashboard')
+  revalidatePath('/consulta-ventas')
+  redirect(`/consulta-ventas/${comprobante.id}`)
 }
 
 export async function anularOrdenVenta(id: number) {

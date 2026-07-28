@@ -1,7 +1,8 @@
 'use client'
 
+import Link from 'next/link'
 import { useMemo, useState, useTransition } from 'react'
-import { facturarOrdenVenta, anularOrdenVenta } from './actions'
+import { anularOrdenVenta } from './actions'
 
 const ESTADO_BADGE: Record<string, string> = {
   pendiente: 'bg-amber-100 text-amber-700',
@@ -35,21 +36,6 @@ export function VentasTabla({ ordenes }: { ordenes: OrdenRow[] }) {
   const [error, setError] = useState<string | null>(null)
   const [pendienteId, setPendienteId] = useState<number | null>(null)
   const [isPending, startTransition] = useTransition()
-
-  function handleFacturar(id: number, numero: string) {
-    if (!confirm(`¿Facturar la orden ${numero}? Esto descontará el stock.`)) return
-    setError(null)
-    setPendienteId(id)
-    startTransition(async () => {
-      try {
-        await facturarOrdenVenta(id)
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'No se pudo facturar la orden.')
-      } finally {
-        setPendienteId(null)
-      }
-    })
-  }
 
   function handleAnular(id: number, numero: string) {
     if (!confirm(`¿Anular la orden ${numero}?`)) return
@@ -134,14 +120,12 @@ export function VentasTabla({ ordenes }: { ordenes: OrdenRow[] }) {
                     <td className="px-6 py-4 text-right whitespace-nowrap">
                       {o.estado === 'pendiente' && (
                         <>
-                          <button
-                            type="button"
-                            onClick={() => handleFacturar(o.id, o.numero)}
-                            disabled={isPending && pendienteId === o.id}
-                            className="rounded-xl bg-emerald-500 px-4 py-2 text-[12px] font-bold text-white shadow-sm shadow-emerald-500/30 transition-all hover:bg-emerald-600 disabled:opacity-50"
+                          <Link
+                            href={`/ventas/${o.id}/facturar`}
+                            className="rounded-xl bg-emerald-500 px-4 py-2 text-[12px] font-bold text-white shadow-sm shadow-emerald-500/30 transition-all hover:bg-emerald-600"
                           >
                             Facturar
-                          </button>
+                          </Link>
                           <button
                             type="button"
                             onClick={() => handleAnular(o.id, o.numero)}
