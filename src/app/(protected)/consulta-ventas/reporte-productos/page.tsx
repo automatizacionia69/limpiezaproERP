@@ -19,6 +19,7 @@ type ComprobanteRow = {
 
 type DetalleRow = {
   orden_id: number
+  producto_id: number
   cantidad: number
   precio_unitario: number
   productos: { nombre: string; unidades_medida: { nombre: string } | { nombre: string }[] | null; categorias: { nombre: string } | { nombre: string }[] | null } | null
@@ -58,14 +59,37 @@ export default async function ReporteVentasPorProductoPage({
     .returns<ComprobanteRow[]>()
 
   const ordenIds = (comprobantes ?? []).map((c) => c.orden_venta_id)
-  const { data: detalles } =
+  const comprobanteIds = (comprobantes ?? []).map((c) => c.id)
+
+  const [{ data: detalles }, { data: notasCredito }] = await Promise.all([
     ordenIds.length > 0
-      ? await supabase
+      ? supabase
           .from('detalle_venta')
-          .select('orden_id, cantidad, precio_unitario, productos(nombre, unidades_medida(nombre), categorias(nombre))')
+          .select('orden_id, producto_id, cantidad, precio_unitario, productos(nombre, unidades_medida(nombre), categorias(nombre))')
           .in('orden_id', ordenIds)
           .returns<DetalleRow[]>()
-      : { data: [] as DetalleRow[] }
+      : Promise.resolve({ data: [] as DetalleRow[] }),
+    comprobanteIds.length > 0
+      ? supabase.from('notas_credito').select('id, comprobante_id, anula_operacion').in('comprobante_id', comprobanteIds)
+      : Promise.resolve({ data: [] as { id: number; comprobante_id: number; anula_operacion: boolean }[] }),
+  ])
+
+  const idsNotasItem = (notasCredito ?? []).filter((n) => !n.anula_operacion).map((n) => n.id)
+  const { data: detallesNc } =
+    idsNotasItem.length > 0
+      ? await supabase.from('detalle_nota_credito').select('nota_credito_id, producto_id, cantidad').in('nota_credito_id', idsNotasItem)
+      : { data: [] as { nota_credito_id: number; producto_id: number; cantidad: number }[] }
+
+  const notaPorId = new Map((notasCredito ?? []).map((n) => [n.id, n]))
+  const comprobantesAnulados = new Set((notasCredito ?? []).filter((n) => n.anula_operacion).map((n) => n.comprobante_id))
+
+  const devueltoPorComprobanteProducto = new Map<string, number>()
+  for (const d of detallesNc ?? []) {
+    const nota = notaPorId.get(d.nota_credito_id)
+    if (!nota) continue
+    const clave = `${nota.comprobante_id}-${d.producto_id}`
+    devueltoPorComprobanteProducto.set(clave, (devueltoPorComprobanteProducto.get(clave) ?? 0) + Number(d.cantidad))
+  }
 
   const detallesPorOrden = new Map<number, DetalleRow[]>()
   for (const d of detalles ?? []) {
@@ -84,9 +108,15 @@ export default async function ReporteVentasPorProductoPage({
       const unidad = unoDe(producto?.unidades_medida ?? null)
       const categoria = unoDe(producto?.categorias ?? null)
       const precioSinIgv = Number(d.precio_unitario) / (1 + IGV_TASA)
-      const subtotalLinea = Number(d.cantidad) * precioSinIgv
-      const totalLinea = Number(d.cantidad) * Number(d.precio_unitario)
+      const cantidad = Number(d.cantidad)
+      const devuelto = comprobantesAnulados.has(c.id)
+        ? cantidad
+        : Math.min(cantidad, devueltoPorComprobanteProducto.get(`${c.id}-${d.producto_id}`) ?? 0)
+      const cantidadNeta = cantidad - devuelto
+      const subtotalLinea = cantidad * precioSinIgv
+      const totalLinea = cantidad * Number(d.precio_unitario)
       const igvLinea = totalLinea - subtotalLinea
+      const totalLineaNeto = cantidadNeta * Number(d.precio_unitario)
 
       return {
         fecha: c.fecha_emision,
@@ -99,11 +129,14 @@ export default async function ReporteVentasPorProductoPage({
         producto: producto?.nombre ?? '—',
         categoria: categoria?.nombre ?? '—',
         unidadMedida: unidad?.nombre ?? '—',
-        cantidad: Number(d.cantidad),
+        cantidad,
+        cantidadDevuelta: devuelto,
+        cantidadNeta,
         precioSinIgv,
         subtotalLinea,
         igvLinea,
         totalLinea,
+        totalLineaNeto,
         estado: c.estado,
       }
     })
@@ -121,14 +154,18 @@ export default async function ReporteVentasPorProductoPage({
     f.categoria,
     f.unidadMedida,
     f.cantidad,
+    f.cantidadDevuelta,
+    f.cantidadNeta,
     Number(f.precioSinIgv.toFixed(2)),
     Number(f.subtotalLinea.toFixed(2)),
     Number(f.igvLinea.toFixed(2)),
     Number(f.totalLinea.toFixed(2)),
+    Number(f.totalLineaNeto.toFixed(2)),
     f.estado === 'emitido' ? 'Emitido' : 'Anulado',
   ])
 
   const totalGeneral = filas.reduce((acc, f) => acc + f.totalLinea, 0)
+  const totalNeto = filas.reduce((acc, f) => acc + f.totalLineaNeto, 0)
   const unidadesGeneral = filas.reduce((acc, f) => acc + f.cantidad, 0)
 
   return (
@@ -152,11 +189,14 @@ export default async function ReporteVentasPorProductoPage({
             'Producto',
             'Categoría',
             'Unidad',
-            'Cantidad',
+            'Cantidad vendida',
+            'Cantidad devuelta (NC)',
+            'Cantidad neta',
             'Precio unit. sin IGV',
             'Subtotal sin IGV',
             'IGV',
             'Total línea',
+            'Total línea neto',
             'Estado',
           ]}
           filas={filasExcel}
@@ -196,7 +236,8 @@ export default async function ReporteVentasPorProductoPage({
       <div className="mt-6 overflow-hidden rounded-3xl border-2 border-[#e2e8f0] bg-white shadow-lg shadow-slate-500/5">
         <p className="border-b-2 border-[#f1f5f9] px-6 py-4 text-sm font-medium text-[#64748b]">
           {filas.length} línea{filas.length === 1 ? '' : 's'} de producto entre {desde} y {hasta} · {unidadesGeneral}{' '}
-          unidades · Total: S/ {totalGeneral.toFixed(2)}
+          unidades · Total bruto: S/ {totalGeneral.toFixed(2)} ·{' '}
+          <span className="font-bold text-lime-700">Total neto (con NC): S/ {totalNeto.toFixed(2)}</span>
         </p>
         {filas.length === 0 ? (
           <p className="p-12 text-center text-sm font-medium text-[#64748b]">No hay ventas en ese rango de fechas.</p>
@@ -211,8 +252,10 @@ export default async function ReporteVentasPorProductoPage({
                   <th className="px-5 py-3 font-bold">Producto</th>
                   <th className="px-5 py-3 font-bold">Unidad</th>
                   <th className="px-5 py-3 font-bold">Cant.</th>
+                  <th className="px-5 py-3 font-bold">Devuelta</th>
                   <th className="px-5 py-3 font-bold">P. unit. sin IGV</th>
                   <th className="px-5 py-3 font-bold">Total línea</th>
+                  <th className="px-5 py-3 font-bold">Total neto</th>
                 </tr>
               </thead>
               <tbody>
@@ -224,8 +267,10 @@ export default async function ReporteVentasPorProductoPage({
                     <td className="px-5 py-2.5">{f.producto}</td>
                     <td className="px-5 py-2.5 text-[#64748b]">{f.unidadMedida}</td>
                     <td className="px-5 py-2.5">{f.cantidad}</td>
+                    <td className="px-5 py-2.5 text-red-600">{f.cantidadDevuelta > 0 ? `− ${f.cantidadDevuelta}` : '—'}</td>
                     <td className="px-5 py-2.5 text-[#64748b]">S/ {f.precioSinIgv.toFixed(2)}</td>
                     <td className="px-5 py-2.5 font-semibold">S/ {f.totalLinea.toFixed(2)}</td>
+                    <td className="px-5 py-2.5 font-bold text-lime-700">S/ {f.totalLineaNeto.toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
