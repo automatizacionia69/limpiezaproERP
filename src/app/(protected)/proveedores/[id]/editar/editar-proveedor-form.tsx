@@ -1,7 +1,7 @@
 'use client'
 
-import { useActionState } from 'react'
-import { editarProveedor, type EstadoFormulario } from '../../actions'
+import { useActionState, useState, useTransition } from 'react'
+import { editarProveedor, buscarRazonSocialPorRuc, type EstadoFormulario } from '../../actions'
 
 type Proveedor = {
   id: number
@@ -17,10 +17,50 @@ export function EditarProveedorForm({ proveedor }: { proveedor: Proveedor }) {
   const [estado, formAction] = useActionState<EstadoFormulario, FormData>(editarProveedor, {
     error: null,
   })
+  const [ruc, setRuc] = useState(proveedor.ruc ?? '')
+  const [nombre, setNombre] = useState(proveedor.nombre)
+  const [errorRuc, setErrorRuc] = useState<string | null>(null)
+  const [buscando, startBusqueda] = useTransition()
+
+  function buscarRuc() {
+    setErrorRuc(null)
+    startBusqueda(async () => {
+      const resultado = await buscarRazonSocialPorRuc(ruc)
+      if ('error' in resultado) {
+        setErrorRuc(resultado.error)
+      } else {
+        setNombre(resultado.nombre)
+      }
+    })
+  }
 
   return (
     <form action={formAction} className="mt-6 space-y-4">
       <input type="hidden" name="id" value={proveedor.id} />
+
+      <div>
+        <label className="block text-sm font-medium text-[#1e293b]">RUC</label>
+        <div className="mt-1 flex gap-2">
+          <input
+            type="text"
+            name="ruc"
+            value={ruc}
+            onChange={(e) => setRuc(e.target.value)}
+            maxLength={11}
+            placeholder="11 dígitos"
+            className="flex-1 rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#1e293b]"
+          />
+          <button
+            type="button"
+            onClick={buscarRuc}
+            disabled={buscando || ruc.length !== 11}
+            className="shrink-0 rounded-lg bg-[#eef2ff] px-3 py-2 text-sm font-medium text-[#4f46e5] hover:bg-[#e0e7ff] disabled:opacity-50"
+          >
+            {buscando ? 'Buscando...' : 'Buscar'}
+          </button>
+        </div>
+        {errorRuc && <p className="mt-1 text-xs text-red-600">{errorRuc}</p>}
+      </div>
 
       <div>
         <label className="block text-sm font-medium text-[#1e293b]">Razón social *</label>
@@ -28,16 +68,8 @@ export function EditarProveedorForm({ proveedor }: { proveedor: Proveedor }) {
           type="text"
           name="nombre"
           required
-          defaultValue={proveedor.nombre}
-          className="mt-1 w-full rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#1e293b]"
-        />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-[#1e293b]">RUC</label>
-        <input
-          type="text"
-          name="ruc"
-          defaultValue={proveedor.ruc ?? ''}
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
           className="mt-1 w-full rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#1e293b]"
         />
       </div>
