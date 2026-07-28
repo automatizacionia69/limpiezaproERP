@@ -323,7 +323,7 @@ export function NuevaCotizacionForm({
           </div>
         </div>
 
-        <div className="mt-3 space-y-1 text-sm">
+        <div className="mt-3 space-y-1 text-sm text-[#1e293b]">
           <p>
             <span className="font-bold text-[#1e293b]">Cliente:</span> {clienteSeleccionado?.nombre ?? '—'}
           </p>
@@ -351,7 +351,7 @@ export function NuevaCotizacionForm({
               lineasValidas.map((l, i) => {
                 const producto = productos.find((p) => p.id === l.producto_id)
                 return (
-                  <tr key={i} className="border-b border-[#f1f5f9]">
+                  <tr key={i} className="border-b border-[#f1f5f9] text-[#1e293b]">
                     <td className="py-2">{producto?.nombre ?? '—'}</td>
                     <td className="py-2">{l.cantidad}</td>
                     <td className="py-2 text-right">

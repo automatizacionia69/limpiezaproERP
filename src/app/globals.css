@@ -12,12 +12,10 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* Este ERP es exclusivamente de tema claro (sin modo oscuro implementado).
+   No seguir prefers-color-scheme: dark aquí — de lo contrario cualquier
+   texto sin color explícito hereda blanco y queda invisible sobre fondos
+   claros en toda la app. */
 
 body {
   background: var(--background);

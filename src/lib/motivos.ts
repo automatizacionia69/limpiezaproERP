@@ -28,3 +28,14 @@ export const TIPO_COMPROBANTE_LABELS: Record<string, string> = {
 export const DIAS_CREDITO_OPCIONES = ['Contado', '7 días', '15 días', '30 días', '45 días', '60 días'] as const
 
 export const MEDIOS_PAGO = ['Transferencia', 'Efectivo', 'Yape', 'Plin'] as const
+
+export function calcularFechaVencimiento(fechaEmisionISO: string, diasCredito: string): string {
+  if (!fechaEmisionISO || diasCredito === 'Contado') return 'Al contado'
+
+  const dias = parseInt(diasCredito, 10)
+  if (!dias) return 'Al contado'
+
+  const fecha = new Date(`${fechaEmisionISO}T00:00:00`)
+  fecha.setDate(fecha.getDate() + dias)
+  return fecha.toLocaleDateString('es-PE')
+}

@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { requierePermiso } from '@/lib/permisos'
 import { DescargarPdfBoton } from './descargar-pdf-boton'
 import { ConvertirVentaBoton } from './convertir-venta-boton'
+import { calcularFechaVencimiento } from '@/lib/motivos'
 
 type DetalleRow = {
   id: number
@@ -89,6 +90,14 @@ export default async function CotizacionPage({
               <p className="flex justify-between text-[#1e293b]">
                 <span className="text-[#64748b]">Días de crédito</span>
                 <span className="font-semibold">{cotizacion.dias_credito}</span>
+              </p>
+              <p className="flex justify-between text-[#1e293b]">
+                <span className="text-[#64748b]">
+                  {cotizacion.dias_credito === 'Contado' ? 'Condición de pago' : 'Fecha de vencimiento'}
+                </span>
+                <span className="font-semibold">
+                  {calcularFechaVencimiento(cotizacion.fecha, cotizacion.dias_credito)}
+                </span>
               </p>
               <p className="flex justify-between text-[#1e293b]">
                 <span className="text-[#64748b]">Medio de pago</span>

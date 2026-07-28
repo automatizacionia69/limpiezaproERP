@@ -3,7 +3,7 @@
 import { useActionState, useMemo, useState } from 'react'
 import { emitirComprobante, type EstadoFormulario } from '../../actions'
 import { IGV_TASA } from '@/lib/cotizaciones'
-import { DIAS_CREDITO_OPCIONES, MEDIOS_PAGO, TIPO_COMPROBANTE_LABELS } from '@/lib/motivos'
+import { DIAS_CREDITO_OPCIONES, MEDIOS_PAGO, TIPO_COMPROBANTE_LABELS, calcularFechaVencimiento } from '@/lib/motivos'
 import { Buscador } from '@/components/buscador'
 
 type Cliente = { id: number; nombre: string; documento: string | null }
@@ -332,12 +332,18 @@ export function EmitirComprobanteForm({
             </div>
           </div>
 
-          <div className="mt-3 space-y-1 text-sm">
+          <div className="mt-3 space-y-1 text-sm text-[#1e293b]">
             <p>
               <span className="font-bold text-[#1e293b]">Cliente:</span> {clienteSeleccionado?.nombre ?? '—'}
             </p>
             <p>
               <span className="font-bold text-[#1e293b]">Vendedor:</span> {vendedorSeleccionado?.nombre ?? '—'}
+            </p>
+            <p>
+              <span className="font-bold text-[#1e293b]">
+                {diasCredito === 'Contado' ? 'Condición de pago:' : 'Fecha de vencimiento:'}
+              </span>{' '}
+              {calcularFechaVencimiento(fecha, diasCredito)}
             </p>
           </div>
 
@@ -360,7 +366,7 @@ export function EmitirComprobanteForm({
                 lineasValidas.map((l, i) => {
                   const producto = productos.find((p) => p.id === l.producto_id)
                   return (
-                    <tr key={i} className="border-b border-[#f1f5f9]">
+                    <tr key={i} className="border-b border-[#f1f5f9] text-[#1e293b]">
                       <td className="py-2">{producto?.nombre ?? '—'}</td>
                       <td className="py-2">{l.cantidad}</td>
                       <td className="py-2 text-right">S/ {(Number(l.cantidad) * Number(l.precio_unitario || 0)).toFixed(2)}</td>

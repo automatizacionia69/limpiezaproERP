@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { requierePermiso } from '@/lib/permisos'
-import { TIPO_COMPROBANTE_LABELS } from '@/lib/motivos'
+import { TIPO_COMPROBANTE_LABELS, calcularFechaVencimiento } from '@/lib/motivos'
 import { AnularComprobanteForm } from './anular-form'
 import { NotaDebitoForm } from './nota-debito-form'
 import { ImprimirBoton } from '@/components/imprimir-boton'
@@ -158,6 +158,14 @@ export default async function ComprobantePage({
               <p className="flex justify-between text-[#1e293b]">
                 <span className="text-[#64748b]">Días de crédito</span>
                 <span className="font-semibold">{comprobante.dias_credito}</span>
+              </p>
+              <p className="flex justify-between text-[#1e293b]">
+                <span className="text-[#64748b]">
+                  {comprobante.dias_credito === 'Contado' ? 'Condición de pago' : 'Fecha de vencimiento'}
+                </span>
+                <span className="font-semibold">
+                  {calcularFechaVencimiento(comprobante.fecha_emision, comprobante.dias_credito)}
+                </span>
               </p>
               <p className="flex justify-between text-[#1e293b]">
                 <span className="text-[#64748b]">Medio de pago</span>
