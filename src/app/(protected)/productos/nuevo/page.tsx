@@ -10,8 +10,10 @@ export default async function NuevoProductoPage() {
 
   return (
     <div className="mx-auto max-w-lg">
-      <h1 className="text-xl font-semibold text-slate-900">Agregar producto</h1>
-      <ProductoForm unidades={unidades ?? []} categorias={categorias ?? []} />
+      <h1 className="text-xl font-semibold text-[#2b303a]">Agregar producto</h1>
+      <div className="mt-5 rounded-2xl border border-[#e8ebf1] bg-white p-6 shadow-[0_1px_3px_rgba(31,37,51,.06)]">
+        <ProductoForm unidades={unidades ?? []} categorias={categorias ?? []} />
+      </div>
     </div>
   )
 }

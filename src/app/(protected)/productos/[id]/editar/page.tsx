@@ -28,13 +28,15 @@ export default async function EditarProductoPage({
 
   return (
     <div className="mx-auto max-w-lg">
-      <h1 className="text-xl font-semibold text-slate-900">Editar producto</h1>
-      <EditarProductoForm
-        producto={producto}
-        unidades={unidades ?? []}
-        categorias={categorias ?? []}
-        zonas={zonas ?? []}
-      />
+      <h1 className="text-xl font-semibold text-[#2b303a]">Editar producto</h1>
+      <div className="mt-5 rounded-2xl border border-[#e8ebf1] bg-white p-6 shadow-[0_1px_3px_rgba(31,37,51,.06)]">
+        <EditarProductoForm
+          producto={producto}
+          unidades={unidades ?? []}
+          categorias={categorias ?? []}
+          zonas={zonas ?? []}
+        />
+      </div>
     </div>
   )
 }
