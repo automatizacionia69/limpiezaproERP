@@ -59,6 +59,18 @@ export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <Link
+            href="/categorias"
+            className="rounded-2xl border-2 border-[#e2e8f0] bg-white px-4 py-3 text-sm font-bold text-[#1e293b] transition-all hover:border-violet-300 hover:bg-violet-50"
+          >
+            🏷️ Categorías
+          </Link>
+          <Link
+            href="/unidades"
+            className="rounded-2xl border-2 border-[#e2e8f0] bg-white px-4 py-3 text-sm font-bold text-[#1e293b] transition-all hover:border-fuchsia-300 hover:bg-fuchsia-50"
+          >
+            📏 Unidades
+          </Link>
           <div className="relative">
             <svg
               viewBox="0 0 24 24"
