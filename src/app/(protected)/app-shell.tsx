@@ -76,7 +76,7 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="mx-auto max-w-[1440px] px-8 py-10 print:max-w-none print:p-0">{children}</main>
+        <main className="w-full px-8 py-10 2xl:px-12 print:max-w-none print:p-0">{children}</main>
       </div>
     </div>
   )

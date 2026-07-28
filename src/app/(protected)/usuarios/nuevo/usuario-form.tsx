@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { crearUsuario, type EstadoFormulario } from '../actions'
 
 const CAMPO =
@@ -11,12 +11,17 @@ export function UsuarioForm() {
   const [estado, formAction] = useActionState<EstadoFormulario, FormData>(crearUsuario, {
     error: null,
   })
+  const [rol, setRol] = useState('almacen')
 
   return (
     <form action={formAction} className="mt-6 space-y-5">
       <div>
         <label className={LABEL}>Nombre completo *</label>
         <input type="text" name="nombre" required autoFocus className={CAMPO} />
+      </div>
+      <div>
+        <label className={LABEL}>DNI *</label>
+        <input type="text" name="dni" required maxLength={8} placeholder="8 dígitos" className={CAMPO} />
       </div>
       <div>
         <label className={LABEL}>Correo *</label>
@@ -29,7 +34,13 @@ export function UsuarioForm() {
       </div>
       <div>
         <label className={LABEL}>Rol *</label>
-        <select name="rol" required defaultValue="almacen" className={CAMPO}>
+        <select
+          name="rol"
+          required
+          value={rol}
+          onChange={(e) => setRol(e.target.value)}
+          className={CAMPO}
+        >
           <option value="admin" className="text-[#1e293b]">
             Administrador
           </option>
@@ -41,6 +52,16 @@ export function UsuarioForm() {
           </option>
         </select>
       </div>
+
+      {rol === 'almacen' && (
+        <div>
+          <label className={LABEL}>Brevete *</label>
+          <input type="text" name="brevete" required className={CAMPO} />
+          <p className="mt-1.5 text-xs font-medium text-[#94a3b8]">
+            Obligatorio para Almacén — reparto/manejo de vehículos.
+          </p>
+        </div>
+      )}
 
       {estado.error && (
         <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">

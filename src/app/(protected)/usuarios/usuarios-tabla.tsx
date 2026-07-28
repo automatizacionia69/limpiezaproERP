@@ -15,7 +15,7 @@ const ROLE_BADGE: Record<string, string> = {
   ventas: 'bg-teal-100 text-teal-700',
 }
 
-type UsuarioRow = { id: string; nombre: string; rol: string }
+type UsuarioRow = { id: string; nombre: string; rol: string; dni: string | null; brevete: string | null }
 
 export function UsuariosTabla({ usuarios }: { usuarios: UsuarioRow[] }) {
   const [filtro, setFiltro] = useState('')
@@ -70,7 +70,9 @@ export function UsuariosTabla({ usuarios }: { usuarios: UsuarioRow[] }) {
             <thead>
               <tr className="border-b-2 border-[#f1f5f9] bg-[#f8fafc] text-[#64748b]">
                 <th className="px-6 py-4 font-bold">Nombre</th>
+                <th className="px-6 py-4 font-bold">DNI</th>
                 <th className="px-6 py-4 font-bold">Rol</th>
+                <th className="px-6 py-4 font-bold">Brevete</th>
                 <th className="px-6 py-4 text-right font-bold">Acciones</th>
               </tr>
             </thead>
@@ -78,11 +80,13 @@ export function UsuariosTabla({ usuarios }: { usuarios: UsuarioRow[] }) {
               {filtrados.map((u) => (
                 <tr key={u.id} className="border-b border-[#f1f5f9] text-[#1e293b] transition-colors hover:bg-rose-50/40">
                   <td className="px-6 py-4 font-bold">{u.nombre}</td>
+                  <td className="px-6 py-4 font-medium text-[#64748b]">{u.dni ?? '—'}</td>
                   <td className="px-6 py-4">
                     <span className={`rounded-full px-3 py-1 text-[11px] font-bold ${ROLE_BADGE[u.rol] ?? 'bg-slate-100 text-slate-700'}`}>
                       {ROLE_LABELS[u.rol] ?? u.rol}
                     </span>
                   </td>
+                  <td className="px-6 py-4 font-medium text-[#64748b]">{u.brevete ?? '—'}</td>
                   <td className="px-6 py-4 text-right">
                     <Link
                       href={`/usuarios/${u.id}/editar`}

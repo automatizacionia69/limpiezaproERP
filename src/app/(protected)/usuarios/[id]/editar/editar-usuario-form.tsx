@@ -1,9 +1,9 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { editarUsuario, type EstadoFormulario } from '../../actions'
 
-type Usuario = { id: string; nombre: string; rol: string }
+type Usuario = { id: string; nombre: string; rol: string; dni: string | null; brevete: string | null }
 
 const CAMPO =
   'mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] bg-white px-4 py-3 text-base text-[#1e293b] outline-none transition-all focus:border-rose-500 focus:ring-4 focus:ring-rose-100'
@@ -13,6 +13,7 @@ export function EditarUsuarioForm({ usuario }: { usuario: Usuario }) {
   const [estado, formAction] = useActionState<EstadoFormulario, FormData>(editarUsuario, {
     error: null,
   })
+  const [rol, setRol] = useState(usuario.rol)
 
   return (
     <form action={formAction} className="mt-6 space-y-5">
@@ -22,8 +23,26 @@ export function EditarUsuarioForm({ usuario }: { usuario: Usuario }) {
         <input type="text" name="nombre" required defaultValue={usuario.nombre} className={CAMPO} />
       </div>
       <div>
+        <label className={LABEL}>DNI *</label>
+        <input
+          type="text"
+          name="dni"
+          required
+          maxLength={8}
+          placeholder="8 dígitos"
+          defaultValue={usuario.dni ?? ''}
+          className={CAMPO}
+        />
+      </div>
+      <div>
         <label className={LABEL}>Rol *</label>
-        <select name="rol" required defaultValue={usuario.rol} className={CAMPO}>
+        <select
+          name="rol"
+          required
+          value={rol}
+          onChange={(e) => setRol(e.target.value)}
+          className={CAMPO}
+        >
           <option value="admin" className="text-[#1e293b]">
             Administrador
           </option>
@@ -35,6 +54,16 @@ export function EditarUsuarioForm({ usuario }: { usuario: Usuario }) {
           </option>
         </select>
       </div>
+
+      {rol === 'almacen' && (
+        <div>
+          <label className={LABEL}>Brevete *</label>
+          <input type="text" name="brevete" required defaultValue={usuario.brevete ?? ''} className={CAMPO} />
+          <p className="mt-1.5 text-xs font-medium text-[#94a3b8]">
+            Obligatorio para Almacén — reparto/manejo de vehículos.
+          </p>
+        </div>
+      )}
 
       {estado.error && (
         <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
