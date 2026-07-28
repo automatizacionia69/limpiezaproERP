@@ -1,7 +1,8 @@
 'use client'
 
 import { useActionState, useMemo, useState } from 'react'
-import { crearCotizacion, IGV_TASA, type EstadoFormulario } from '../actions'
+import { crearCotizacion, type EstadoFormulario } from '../actions'
+import { IGV_TASA } from '@/lib/cotizaciones'
 
 type Cliente = { id: number; nombre: string; documento: string | null }
 type Producto = { id: number; nombre: string; precio_venta: number | null }

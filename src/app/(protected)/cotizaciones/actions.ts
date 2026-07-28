@@ -3,8 +3,7 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-
-export const IGV_TASA = 0.18
+import { IGV_TASA } from '@/lib/cotizaciones'
 
 export type EstadoFormulario = { error: string | null }
 
