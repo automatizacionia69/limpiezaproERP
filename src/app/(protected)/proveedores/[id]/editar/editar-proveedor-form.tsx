@@ -1,7 +1,8 @@
 'use client'
 
 import { useActionState, useState, useTransition } from 'react'
-import { editarProveedor, buscarRazonSocialPorRuc, type EstadoFormulario } from '../../actions'
+import { editarProveedor, type EstadoFormulario } from '../../actions'
+import { buscarRazonSocialPorRuc } from '@/lib/decolecta'
 
 type Proveedor = {
   id: number

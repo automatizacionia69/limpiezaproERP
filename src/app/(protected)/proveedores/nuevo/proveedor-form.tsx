@@ -1,7 +1,8 @@
 'use client'
 
 import { useActionState, useState, useTransition } from 'react'
-import { crearProveedor, buscarRazonSocialPorRuc, type EstadoFormulario } from '../actions'
+import { crearProveedor, type EstadoFormulario } from '../actions'
+import { buscarRazonSocialPorRuc } from '@/lib/decolecta'
 
 const CAMPO =
   'mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] bg-white px-4 py-3 text-base text-[#1e293b] outline-none transition-all focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100'
