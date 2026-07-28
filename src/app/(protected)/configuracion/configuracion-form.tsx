@@ -13,7 +13,7 @@ type Configuracion = {
 }
 
 const CAMPO =
-  'mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] bg-white px-4 py-3 text-base text-[#1e293b] outline-none transition-all focus:border-violet-500 focus:ring-4 focus:ring-violet-100 disabled:bg-[#f8fafc] disabled:opacity-70'
+  'mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] bg-white px-4 py-3 text-base text-[#1e293b] outline-none transition-all focus:border-slate-500 focus:ring-4 focus:ring-slate-100 disabled:bg-[#f8fafc] disabled:opacity-70'
 const LABEL = 'block text-sm font-bold text-[#1e293b]'
 
 export function ConfiguracionForm({
@@ -109,7 +109,7 @@ export function ConfiguracionForm({
       {puedeEditar ? (
         <button
           type="submit"
-          className="w-full rounded-xl bg-gradient-to-r from-violet-500 to-purple-500 py-3.5 text-base font-bold text-white shadow-lg shadow-violet-500/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-violet-500/40"
+          className="w-full rounded-xl bg-gradient-to-r from-slate-600 to-gray-700 py-3.5 text-base font-bold text-white shadow-lg shadow-slate-500/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-slate-500/40"
         >
           Guardar configuración
         </button>

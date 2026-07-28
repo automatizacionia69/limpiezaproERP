@@ -86,7 +86,7 @@ export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
               value={filtro}
               onChange={(e) => setFiltro(e.target.value)}
               placeholder="Filtrar..."
-              className="rounded-2xl border-2 border-[#e2e8f0] bg-white py-2.5 pr-4 pl-10 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+              className="rounded-2xl border-2 border-[#e2e8f0] bg-white py-2.5 pr-4 pl-10 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
             />
           </div>
           <Link
