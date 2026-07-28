@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { requierePermiso } from '@/lib/permisos'
 
 const TIPO_BADGE: Record<string, string> = {
   entrada: 'bg-emerald-100 text-emerald-700',
@@ -40,6 +41,7 @@ export default async function KardexProductoPage({
 }: {
   params: Promise<{ id: string }>
 }) {
+  await requierePermiso('productos')
   const { id } = await params
   const supabase = await createClient()
 

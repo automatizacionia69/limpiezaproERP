@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { requierePermiso } from '@/lib/permisos'
 
 const REPORTES = [
   {
@@ -17,7 +18,8 @@ const REPORTES = [
   },
 ]
 
-export default function ReportesPage() {
+export default async function ReportesPage() {
+  await requierePermiso('reportes')
   return (
     <div>
       <h1 className="text-2xl font-extrabold text-[#1e293b]">📈 Reportes</h1>

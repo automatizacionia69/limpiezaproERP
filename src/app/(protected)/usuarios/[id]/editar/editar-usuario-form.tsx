@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { editarUsuario, type EstadoFormulario } from '../../actions'
+import { MODULOS } from '@/lib/modulos'
 
 type Usuario = { id: string; nombre: string; rol: string; dni: string | null; brevete: string | null }
 
@@ -9,7 +10,13 @@ const CAMPO =
   'mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] bg-white px-4 py-3 text-base text-[#1e293b] outline-none transition-all focus:border-rose-500 focus:ring-4 focus:ring-rose-100'
 const LABEL = 'block text-sm font-bold text-[#1e293b]'
 
-export function EditarUsuarioForm({ usuario }: { usuario: Usuario }) {
+export function EditarUsuarioForm({
+  usuario,
+  modulosActivos,
+}: {
+  usuario: Usuario
+  modulosActivos: string[]
+}) {
   const [estado, formAction] = useActionState<EstadoFormulario, FormData>(editarUsuario, {
     error: null,
   })
@@ -62,6 +69,32 @@ export function EditarUsuarioForm({ usuario }: { usuario: Usuario }) {
           <p className="mt-1.5 text-xs font-medium text-[#94a3b8]">
             Obligatorio para Almacén — reparto/manejo de vehículos.
           </p>
+        </div>
+      )}
+
+      {rol !== 'admin' && (
+        <div>
+          <label className={LABEL}>Módulos a los que tiene acceso</label>
+          <p className="mt-1 text-xs font-medium text-[#94a3b8]">
+            Por defecto un usuario no-administrador no ve ningún módulo. Marca los que puede usar.
+          </p>
+          <div className="mt-2.5 grid grid-cols-2 gap-2.5">
+            {MODULOS.map((m) => (
+              <label
+                key={m.clave}
+                className="flex cursor-pointer items-center gap-2.5 rounded-xl border-2 border-[#e2e8f0] px-3.5 py-2.5 text-sm font-semibold text-[#1e293b] transition-colors has-[:checked]:border-rose-400 has-[:checked]:bg-rose-50"
+              >
+                <input
+                  type="checkbox"
+                  name="modulos"
+                  value={m.clave}
+                  defaultChecked={modulosActivos.includes(m.clave)}
+                  className="h-4 w-4 accent-rose-500"
+                />
+                {m.label}
+              </label>
+            ))}
+          </div>
         </div>
       )}
 

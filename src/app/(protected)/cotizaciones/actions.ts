@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { tienePermiso } from '@/lib/permisos'
 import { IGV_TASA } from '@/lib/cotizaciones'
 
 export type EstadoFormulario = { error: string | null }
@@ -13,6 +14,10 @@ export async function crearCotizacion(
   _prevState: EstadoFormulario,
   formData: FormData
 ): Promise<EstadoFormulario> {
+  if (!(await tienePermiso('cotizaciones'))) {
+    return { error: 'No tienes permiso para esta acción.' }
+  }
+
   const clienteId = formData.get('cliente_id') as string
   const fecha = formData.get('fecha') as string
   const diasCredito = formData.get('dias_credito') as string
@@ -94,6 +99,10 @@ export async function crearCotizacion(
 }
 
 export async function eliminarCotizacion(id: number) {
+  if (!(await tienePermiso('cotizaciones'))) {
+    throw new Error('No tienes permiso para esta acción.')
+  }
+
   const supabase = await createClient()
   const { error } = await supabase.from('cotizaciones').delete().eq('id', id)
 
@@ -105,6 +114,10 @@ export async function eliminarCotizacion(id: number) {
 }
 
 export async function convertirCotizacionAVenta(cotizacionId: number) {
+  if (!(await tienePermiso('cotizaciones')) || !(await tienePermiso('ventas'))) {
+    throw new Error('No tienes permiso para esta acción.')
+  }
+
   const supabase = await createClient()
   const {
     data: { user },

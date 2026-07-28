@@ -1,6 +1,8 @@
+import { requierePermiso } from '@/lib/permisos'
 import { ProveedorForm } from './proveedor-form'
 
-export default function NuevoProveedorPage() {
+export default async function NuevoProveedorPage() {
+  await requierePermiso('proveedores')
   return (
     <div className="mx-auto max-w-lg">
       <h1 className="text-2xl font-extrabold text-[#1e293b]">Agregar proveedor</h1>

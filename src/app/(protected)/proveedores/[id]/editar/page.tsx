@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { requierePermiso } from '@/lib/permisos'
 import { EditarProveedorForm } from './editar-proveedor-form'
 
 export default async function EditarProveedorPage({
@@ -7,6 +8,7 @@ export default async function EditarProveedorPage({
 }: {
   params: Promise<{ id: string }>
 }) {
+  await requierePermiso('proveedores')
   const { id } = await params
   const supabase = await createClient()
 

@@ -22,18 +22,20 @@ export function AppShell({
   children,
   nombre,
   rol,
+  modulosPermitidos,
   signOutAction,
 }: {
   children: React.ReactNode
   nombre: string
   rol: string
+  modulosPermitidos: string[]
   signOutAction: () => Promise<void>
 }) {
   const [collapsed, setCollapsed] = useState(false)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f8fafc] to-[#eef2ff]">
-      <Sidebar collapsed={collapsed} />
+      <Sidebar collapsed={collapsed} rol={rol} modulosPermitidos={modulosPermitidos} />
 
       <div className={`transition-[padding] duration-200 print:pl-0 ${collapsed ? 'pl-20' : 'pl-72'}`}>
         <header className="flex h-20 items-center justify-between border-b border-[#e2e8f0] bg-white/80 px-8 backdrop-blur-sm print:hidden">

@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { tienePermiso } from '@/lib/permisos'
 
 export type EstadoFormulario = { error: string | null }
 
@@ -9,6 +10,10 @@ export async function registrarMovimiento(
   _prevState: EstadoFormulario,
   formData: FormData
 ): Promise<EstadoFormulario> {
+  if (!(await tienePermiso('movimientos'))) {
+    return { error: 'No tienes permiso para esta acción.' }
+  }
+
   const productoId = formData.get('producto_id') as string
   const tipo = formData.get('tipo') as string
   const cantidad = formData.get('cantidad') as string

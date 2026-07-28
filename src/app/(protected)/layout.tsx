@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { obtenerModulosPermitidos } from '@/lib/permisos'
 import { signOut } from './actions'
 import { AppShell } from './app-shell'
 
@@ -38,8 +39,15 @@ export default async function ProtectedLayout({
     redirect('/login?error=sin-perfil')
   }
 
+  const modulosPermitidos = await obtenerModulosPermitidos(user.id, perfil.rol)
+
   return (
-    <AppShell nombre={perfil.nombre} rol={perfil.rol} signOutAction={signOut}>
+    <AppShell
+      nombre={perfil.nombre}
+      rol={perfil.rol}
+      modulosPermitidos={[...modulosPermitidos]}
+      signOutAction={signOut}
+    >
       {children}
     </AppShell>
   )

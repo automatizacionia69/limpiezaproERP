@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { requierePermiso } from '@/lib/permisos'
 import { DescargarCsvBoton } from '@/components/descargar-csv-boton'
 import { ImprimirBoton } from '@/components/imprimir-boton'
 
@@ -36,6 +37,7 @@ export default async function ReporteMovimientosPage({
 }: {
   searchParams: Promise<{ desde?: string; hasta?: string }>
 }) {
+  await requierePermiso('reportes')
   const { desde = haceUnMesISO(), hasta = hoyISO() } = await searchParams
 
   const supabase = await createClient()

@@ -1,6 +1,8 @@
+import { requierePermiso } from '@/lib/permisos'
 import { ClienteForm } from './cliente-form'
 
-export default function NuevoClientePage() {
+export default async function NuevoClientePage() {
+  await requierePermiso('clientes')
   return (
     <div className="mx-auto max-w-lg">
       <h1 className="text-2xl font-extrabold text-[#1e293b]">🧑‍🤝‍🧑 Agregar cliente</h1>

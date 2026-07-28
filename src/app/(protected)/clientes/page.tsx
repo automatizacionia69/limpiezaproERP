@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { requierePermiso } from '@/lib/permisos'
 import { ClientesTabla } from './clientes-tabla'
 
 type ClienteRow = {
@@ -10,6 +11,7 @@ type ClienteRow = {
 }
 
 export default async function ClientesPage() {
+  await requierePermiso('clientes')
   const supabase = await createClient()
   const { data: clientes } = await supabase
     .from('clientes')

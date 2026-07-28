@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { tienePermiso } from '@/lib/permisos'
 
 export type EstadoFormulario = { error: string | null }
 
@@ -12,6 +13,10 @@ export async function crearOrdenVenta(
   _prevState: EstadoFormulario,
   formData: FormData
 ): Promise<EstadoFormulario> {
+  if (!(await tienePermiso('ventas'))) {
+    return { error: 'No tienes permiso para esta acción.' }
+  }
+
   const clienteId = formData.get('cliente_id') as string
   const observacion = (formData.get('observacion') as string)?.trim()
   const lineasRaw = formData.get('lineas') as string
@@ -74,6 +79,10 @@ export async function crearOrdenVenta(
 }
 
 export async function facturarOrdenVenta(id: number) {
+  if (!(await tienePermiso('ventas'))) {
+    throw new Error('No tienes permiso para esta acción.')
+  }
+
   const supabase = await createClient()
   const {
     data: { user },
@@ -133,6 +142,10 @@ export async function facturarOrdenVenta(id: number) {
 }
 
 export async function anularOrdenVenta(id: number) {
+  if (!(await tienePermiso('ventas'))) {
+    throw new Error('No tienes permiso para esta acción.')
+  }
+
   const supabase = await createClient()
 
   const { data: orden } = await supabase.from('ordenes_venta').select('estado').eq('id', id).single()

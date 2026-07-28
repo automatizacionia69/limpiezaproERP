@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { tienePermiso } from '@/lib/permisos'
 
 export type EstadoFormulario = { error: string | null }
 
@@ -10,6 +11,10 @@ export async function crearCliente(
   _prevState: EstadoFormulario,
   formData: FormData
 ): Promise<EstadoFormulario> {
+  if (!(await tienePermiso('clientes'))) {
+    return { error: 'No tienes permiso para esta acción.' }
+  }
+
   const nombre = (formData.get('nombre') as string)?.trim()
   const documento = (formData.get('documento') as string)?.trim()
   const telefono = (formData.get('telefono') as string)?.trim()
@@ -40,6 +45,10 @@ export async function editarCliente(
   _prevState: EstadoFormulario,
   formData: FormData
 ): Promise<EstadoFormulario> {
+  if (!(await tienePermiso('clientes'))) {
+    return { error: 'No tienes permiso para esta acción.' }
+  }
+
   const id = formData.get('id') as string
   const nombre = (formData.get('nombre') as string)?.trim()
   const documento = (formData.get('documento') as string)?.trim()
@@ -74,6 +83,10 @@ export async function editarCliente(
 }
 
 export async function eliminarCliente(id: number) {
+  if (!(await tienePermiso('clientes'))) {
+    throw new Error('No tienes permiso para esta acción.')
+  }
+
   const supabase = await createClient()
   const { error } = await supabase.from('clientes').delete().eq('id', id)
 

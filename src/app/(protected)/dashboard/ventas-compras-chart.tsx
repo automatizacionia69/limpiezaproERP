@@ -20,9 +20,9 @@ export function VentasComprasChart({ datos }: { datos: PuntoMes[] }) {
   const hayDatos = datos.some((d) => d.ventas > 0 || d.compras > 0)
 
   return (
-    <div className="overflow-hidden rounded-3xl border-2 border-[#e2e8f0] bg-white shadow-lg shadow-slate-500/5">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b-2 border-[#f1f5f9] px-7 py-5">
-        <h2 className="text-lg font-extrabold text-[#1e293b]">📊 Ventas vs Compras — últimos 6 meses</h2>
+    <div className="overflow-hidden rounded-2xl border border-[#e5e9f0] bg-white shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#e5e9f0] px-7 py-5">
+        <h2 className="text-base font-bold text-[#0f172a]">Ventas vs Compras — últimos 6 meses</h2>
         <div className="flex items-center gap-5 text-xs font-bold">
           <span className="flex items-center gap-2 text-[#1e293b]">
             <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: COLOR_VENTAS }} />

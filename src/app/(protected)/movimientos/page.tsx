@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { requierePermiso } from '@/lib/permisos'
 import { MovimientoForm } from './movimiento-form'
 import { MovimientosTabla } from './movimientos-tabla'
 
@@ -15,6 +16,7 @@ type KardexRow = {
 }
 
 export default async function MovimientosPage() {
+  await requierePermiso('movimientos')
   const supabase = await createClient()
 
   const [{ data: productos }, { data: movimientos }] = await Promise.all([

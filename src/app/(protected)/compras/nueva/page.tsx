@@ -1,7 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
+import { requierePermiso } from '@/lib/permisos'
 import { NuevaCompraForm } from './nueva-compra-form'
 
 export default async function NuevaCompraPage() {
+  await requierePermiso('compras')
   const supabase = await createClient()
   const [{ data: proveedores }, { data: productos }] = await Promise.all([
     supabase.from('proveedores').select('id, nombre').eq('activo', true).order('nombre'),

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { requierePermiso } from '@/lib/permisos'
 import { VentasTabla } from './ventas-tabla'
 
 type OrdenRow = {
@@ -12,6 +13,7 @@ type OrdenRow = {
 }
 
 export default async function VentasPage() {
+  await requierePermiso('ventas')
   const supabase = await createClient()
   const { data: ordenes } = await supabase
     .from('ordenes_venta')

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { requierePermiso } from '@/lib/permisos'
 import { ProveedoresTabla } from './proveedores-tabla'
 
 type ProveedorRow = {
@@ -11,6 +12,7 @@ type ProveedorRow = {
 }
 
 export default async function ProveedoresPage() {
+  await requierePermiso('proveedores')
   const supabase = await createClient()
   const { data: proveedores } = await supabase
     .from('proveedores')

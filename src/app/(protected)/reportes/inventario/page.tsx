@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { requierePermiso } from '@/lib/permisos'
 import { DescargarCsvBoton } from '@/components/descargar-csv-boton'
 import { ImprimirBoton } from '@/components/imprimir-boton'
 
@@ -14,6 +15,7 @@ type ProductoRow = {
 }
 
 export default async function ReporteInventarioPage() {
+  await requierePermiso('reportes')
   const supabase = await createClient()
   const { data: configuracion } = await supabase
     .from('configuracion')

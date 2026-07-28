@@ -4,10 +4,28 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { MODULOS } from '@/lib/modulos'
 
 export type EstadoFormulario = { error: string | null }
 
 const ROLES_VALIDOS = ['admin', 'almacen', 'ventas']
+
+async function guardarPermisos(
+  admin: NonNullable<ReturnType<typeof createAdminClient>>,
+  usuarioId: string,
+  rol: string,
+  seleccionados: string[]
+) {
+  if (rol === 'admin') return
+
+  const filas = MODULOS.map((m) => ({
+    usuario_id: usuarioId,
+    modulo: m.clave,
+    activo: seleccionados.includes(m.clave),
+  }))
+
+  await admin.from('usuarios_permisos').upsert(filas, { onConflict: 'usuario_id,modulo' })
+}
 
 async function verificarEsAdmin(): Promise<boolean> {
   const supabase = await createClient()
@@ -85,6 +103,8 @@ export async function crearUsuario(
     return { error: errorPerfil.message }
   }
 
+  await guardarPermisos(admin, data.user.id, rol, formData.getAll('modulos') as string[])
+
   revalidatePath('/usuarios')
   redirect('/usuarios')
 }
@@ -139,6 +159,8 @@ export async function editarUsuario(
   if (!data || data.length === 0) {
     return { error: 'No se encontró el usuario a editar.' }
   }
+
+  await guardarPermisos(admin, id, rol, formData.getAll('modulos') as string[])
 
   revalidatePath('/usuarios')
   redirect('/usuarios')

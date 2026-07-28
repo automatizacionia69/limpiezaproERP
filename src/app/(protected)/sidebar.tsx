@@ -20,6 +20,7 @@ const NAV_ITEMS = [
   {
     href: '/productos',
     label: 'Productos',
+    modulo: 'productos',
     gradient: 'from-emerald-500 to-teal-500',
     glow: 'shadow-emerald-500/40',
     icon: (
@@ -33,6 +34,7 @@ const NAV_ITEMS = [
   {
     href: '/movimientos',
     label: 'Movimientos',
+    modulo: 'movimientos',
     gradient: 'from-amber-500 to-orange-500',
     glow: 'shadow-amber-500/40',
     icon: (
@@ -46,6 +48,7 @@ const NAV_ITEMS = [
   {
     href: '/compras',
     label: 'Compras',
+    modulo: 'compras',
     gradient: 'from-pink-500 to-rose-500',
     glow: 'shadow-pink-500/40',
     icon: (
@@ -59,6 +62,7 @@ const NAV_ITEMS = [
   {
     href: '/proveedores',
     label: 'Proveedores',
+    modulo: 'proveedores',
     gradient: 'from-cyan-500 to-sky-500',
     glow: 'shadow-cyan-500/40',
     icon: (
@@ -72,6 +76,7 @@ const NAV_ITEMS = [
   {
     href: '/ventas',
     label: 'Ventas',
+    modulo: 'ventas',
     gradient: 'from-teal-500 to-emerald-500',
     glow: 'shadow-teal-500/40',
     icon: (
@@ -85,6 +90,7 @@ const NAV_ITEMS = [
   {
     href: '/clientes',
     label: 'Clientes',
+    modulo: 'clientes',
     gradient: 'from-orange-500 to-amber-500',
     glow: 'shadow-orange-500/40',
     icon: (
@@ -98,6 +104,7 @@ const NAV_ITEMS = [
   {
     href: '/cotizaciones/nueva',
     label: 'Crear Cotización',
+    modulo: 'cotizaciones',
     gradient: 'from-sky-500 to-blue-500',
     glow: 'shadow-sky-500/40',
     exact: true,
@@ -112,6 +119,7 @@ const NAV_ITEMS = [
   {
     href: '/cotizaciones',
     label: 'Consulta de Cotización',
+    modulo: 'cotizaciones',
     gradient: 'from-blue-500 to-indigo-500',
     glow: 'shadow-blue-500/40',
     exact: true,
@@ -126,6 +134,7 @@ const NAV_ITEMS = [
   {
     href: '/reportes',
     label: 'Reportes',
+    modulo: 'reportes',
     gradient: 'from-violet-500 to-purple-500',
     glow: 'shadow-violet-500/40',
     icon: (
@@ -139,6 +148,7 @@ const NAV_ITEMS = [
   {
     href: '/usuarios',
     label: 'Usuarios',
+    adminOnly: true,
     gradient: 'from-rose-500 to-red-500',
     glow: 'shadow-rose-500/40',
     icon: (
@@ -152,6 +162,7 @@ const NAV_ITEMS = [
   {
     href: '/configuracion',
     label: 'Configuración',
+    adminOnly: true,
     gradient: 'from-slate-500 to-gray-600',
     glow: 'shadow-slate-500/40',
     icon: (
@@ -167,8 +178,23 @@ const NAV_ITEMS = [
   },
 ]
 
-export function Sidebar({ collapsed }: { collapsed: boolean }) {
+export function Sidebar({
+  collapsed,
+  rol,
+  modulosPermitidos,
+}: {
+  collapsed: boolean
+  rol: string
+  modulosPermitidos: string[]
+}) {
   const pathname = usePathname()
+  const permitidos = new Set(modulosPermitidos)
+  const esAdmin = rol === 'admin'
+  const items = NAV_ITEMS.filter((item) => {
+    if ('adminOnly' in item && item.adminOnly) return esAdmin
+    if ('modulo' in item && item.modulo) return permitidos.has(item.modulo)
+    return true
+  })
 
   return (
     <aside
@@ -202,7 +228,7 @@ export function Sidebar({ collapsed }: { collapsed: boolean }) {
         </div>
       )}
       <nav className={`space-y-1.5 pb-6 ${collapsed ? 'px-3' : 'px-4'}`}>
-        {NAV_ITEMS.map((item) => {
+        {items.map((item) => {
           const active =
             pathname === item.href ||
             (!('exact' in item && item.exact) && pathname.startsWith(item.href + '/'))

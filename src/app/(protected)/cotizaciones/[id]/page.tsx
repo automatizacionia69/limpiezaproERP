@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { requierePermiso } from '@/lib/permisos'
 import { DescargarPdfBoton } from './descargar-pdf-boton'
 import { ConvertirVentaBoton } from './convertir-venta-boton'
 
@@ -16,6 +17,7 @@ export default async function CotizacionPage({
 }: {
   params: Promise<{ id: string }>
 }) {
+  await requierePermiso('cotizaciones')
   const { id } = await params
   const supabase = await createClient()
 

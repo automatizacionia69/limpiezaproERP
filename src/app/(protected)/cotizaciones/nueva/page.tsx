@@ -1,7 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
+import { requierePermiso } from '@/lib/permisos'
 import { NuevaCotizacionForm } from './nueva-cotizacion-form'
 
 export default async function NuevaCotizacionPage() {
+  await requierePermiso('cotizaciones')
   const supabase = await createClient()
 
   const {
