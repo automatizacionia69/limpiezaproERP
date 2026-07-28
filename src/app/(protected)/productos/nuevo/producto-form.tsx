@@ -68,7 +68,7 @@ export function ProductoForm({
       </div>
 
       <div>
-        <label className={LABEL}>Punto de reorden</label>
+        <label className={LABEL}>Stock mínimo (punto de reorden)</label>
         <input type="number" step="1" min="0" name="punto_reorden" className={CAMPO} />
       </div>
 

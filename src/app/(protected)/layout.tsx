@@ -41,11 +41,17 @@ export default async function ProtectedLayout({
 
   const modulosPermitidos = await obtenerModulosPermitidos(user.id, perfil.rol)
 
+  const { data: stockBajo } = await supabase
+    .from('productos_stock_bajo')
+    .select('id, nombre, cantidad, punto_reorden')
+    .order('nombre')
+
   return (
     <AppShell
       nombre={perfil.nombre}
       rol={perfil.rol}
       modulosPermitidos={[...modulosPermitidos]}
+      stockBajo={stockBajo ?? []}
       signOutAction={signOut}
     >
       {children}

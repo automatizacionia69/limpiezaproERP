@@ -159,8 +159,9 @@ export function NuevaVentaForm({
                   </button>
                 </div>
                 {excedeStock && (
-                  <p className="mt-1 ml-1 text-xs font-medium text-red-600">
-                    ⚠️ Solo hay {producto!.cantidad} en stock — al facturar, esta línea fallará.
+                  <p className="mt-1 ml-1 text-xs font-medium text-amber-600">
+                    ⚠️ Solo hay {producto!.cantidad} en stock — al facturar, esta línea dejará el stock en
+                    negativo ({(producto!.cantidad - Number(l.cantidad)).toFixed(2)}).
                   </p>
                 )}
               </div>

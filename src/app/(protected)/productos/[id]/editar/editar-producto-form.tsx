@@ -113,7 +113,7 @@ export function EditarProductoForm({
       </div>
 
       <div>
-        <label className={LABEL}>Punto de reorden</label>
+        <label className={LABEL}>Stock mínimo (punto de reorden)</label>
         <input
           type="number"
           step="1"
@@ -122,6 +122,9 @@ export function EditarProductoForm({
           defaultValue={producto.punto_reorden ?? ''}
           className={CAMPO}
         />
+        <p className="mt-1.5 text-xs font-medium text-[#94a3b8]">
+          Cuando el stock caiga a este nivel o menos, el producto aparece en la alerta de stock bajo.
+        </p>
       </div>
 
       {estado.error && (

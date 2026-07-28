@@ -2,6 +2,9 @@
 
 import { useState } from 'react'
 import { Sidebar } from './sidebar'
+import { NotificacionesStock } from './notificaciones-stock'
+
+type ProductoStockBajo = { id: number; nombre: string; cantidad: number; punto_reorden: number | null }
 
 const ROLE_LABELS: Record<string, string> = {
   admin: 'Administrador',
@@ -23,12 +26,14 @@ export function AppShell({
   nombre,
   rol,
   modulosPermitidos,
+  stockBajo,
   signOutAction,
 }: {
   children: React.ReactNode
   nombre: string
   rol: string
   modulosPermitidos: string[]
+  stockBajo: ProductoStockBajo[]
   signOutAction: () => Promise<void>
 }) {
   const [collapsed, setCollapsed] = useState(false)
@@ -51,6 +56,7 @@ export function AppShell({
           </button>
 
           <div className="flex items-center gap-4">
+            <NotificacionesStock stockBajo={stockBajo} />
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-sm font-bold text-white shadow-md shadow-indigo-500/30">
               {iniciales(nombre)}
             </div>
