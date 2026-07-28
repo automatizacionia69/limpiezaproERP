@@ -7,6 +7,8 @@ const NAV_ITEMS = [
   {
     href: '/dashboard',
     label: 'Dashboard',
+    gradient: 'from-indigo-500 to-violet-500',
+    glow: 'shadow-indigo-500/40',
     icon: (
       <path
         strokeLinecap="round"
@@ -18,6 +20,8 @@ const NAV_ITEMS = [
   {
     href: '/productos',
     label: 'Productos',
+    gradient: 'from-emerald-500 to-teal-500',
+    glow: 'shadow-emerald-500/40',
     icon: (
       <path
         strokeLinecap="round"
@@ -29,6 +33,8 @@ const NAV_ITEMS = [
   {
     href: '/movimientos',
     label: 'Movimientos',
+    gradient: 'from-amber-500 to-orange-500',
+    glow: 'shadow-amber-500/40',
     icon: (
       <path
         strokeLinecap="round"
@@ -40,6 +46,8 @@ const NAV_ITEMS = [
   {
     href: '/compras',
     label: 'Compras',
+    gradient: 'from-pink-500 to-rose-500',
+    glow: 'shadow-pink-500/40',
     icon: (
       <path
         strokeLinecap="round"
@@ -51,6 +59,8 @@ const NAV_ITEMS = [
   {
     href: '/proveedores',
     label: 'Proveedores',
+    gradient: 'from-cyan-500 to-sky-500',
+    glow: 'shadow-cyan-500/40',
     icon: (
       <path
         strokeLinecap="round"
@@ -61,14 +71,20 @@ const NAV_ITEMS = [
   },
 ]
 
-export function Sidebar() {
+export function Sidebar({ collapsed }: { collapsed: boolean }) {
   const pathname = usePathname()
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-20 w-64 bg-gradient-to-b from-[#0f172a] to-[#1e293b] text-[#94a3b8]">
-      <div className="flex items-center gap-3 border-b border-white/10 px-5 py-4">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#4f46e5] text-white shadow-[0_4px_12px_rgba(79,70,229,.45)]">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="h-5 w-5">
+    <aside
+      className={`fixed inset-y-0 left-0 z-20 bg-gradient-to-b from-[#0f172a] via-[#151b2e] to-[#1e1b3a] transition-[width] duration-200 ${
+        collapsed ? 'w-20' : 'w-72'
+      }`}
+    >
+      <div className="h-1 bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-amber-400" />
+
+      <div className={`flex items-center gap-3 py-6 ${collapsed ? 'justify-center px-2' : 'px-6'}`}>
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white shadow-lg shadow-fuchsia-500/40">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-6 w-6">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -76,32 +92,45 @@ export function Sidebar() {
             />
           </svg>
         </div>
-        <div>
-          <div className="text-sm font-bold leading-tight text-white">LimpiezaPro ERP</div>
-          <div className="text-[11px] leading-tight text-[#94a3b8]">Gestión de Inventarios</div>
-        </div>
+        {!collapsed && (
+          <div>
+            <div className="text-base font-extrabold leading-tight text-white">LimpiezaPro ERP</div>
+            <div className="text-[11px] leading-tight text-indigo-300">Gestión de Inventarios</div>
+          </div>
+        )}
       </div>
 
-      <div className="px-5 pt-4 pb-1.5 text-[10.5px] font-medium tracking-wider text-[#64748b] uppercase">
-        Menú principal
-      </div>
-      <nav className="space-y-1 px-3 pb-6">
+      {!collapsed && (
+        <div className="px-6 pt-2 pb-2 text-[10.5px] font-bold tracking-widest text-indigo-400/60 uppercase">
+          Menú principal
+        </div>
+      )}
+      <nav className={`space-y-1.5 pb-6 ${collapsed ? 'px-3' : 'px-4'}`}>
         {NAV_ITEMS.map((item) => {
           const active = pathname === item.href || pathname.startsWith(item.href + '/')
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium transition-colors ${
+              title={collapsed ? item.label : undefined}
+              className={`group flex items-center gap-3 rounded-2xl py-3.5 text-sm font-bold transition-all ${
+                collapsed ? 'justify-center px-0' : 'px-4'
+              } ${
                 active
-                  ? 'bg-[#4f46e5] text-white'
-                  : 'text-[#94a3b8] hover:bg-white/5 hover:text-white'
+                  ? `bg-gradient-to-r ${item.gradient} text-white shadow-lg ${item.glow}`
+                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
               }`}
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="h-5 w-5 shrink-0">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                className={`h-5 w-5 shrink-0 transition-transform ${active ? '' : 'group-hover:scale-110'}`}
+              >
                 {item.icon}
               </svg>
-              <span>{item.label}</span>
+              {!collapsed && <span>{item.label}</span>}
             </Link>
           )
         })}

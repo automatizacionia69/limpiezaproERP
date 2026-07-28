@@ -11,6 +11,10 @@ function lineaVacia(): Linea {
   return { producto_id: '', cantidad: '', costo_unitario: '' }
 }
 
+const CAMPO =
+  'mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] bg-white px-4 py-3 text-base text-[#1e293b] outline-none transition-all focus:border-pink-500 focus:ring-4 focus:ring-pink-100'
+const LABEL = 'block text-sm font-bold text-[#1e293b]'
+
 export function NuevaCompraForm({
   proveedores,
   productos,
@@ -61,17 +65,12 @@ export function NuevaCompraForm({
   )
 
   return (
-    <form action={formAction} className="mt-6 space-y-5">
+    <form action={formAction} className="mt-6 space-y-6">
       <input type="hidden" name="lineas" value={lineasJson} />
 
       <div>
-        <label className="block text-sm font-medium text-[#1e293b]">Proveedor *</label>
-        <select
-          name="proveedor_id"
-          required
-          defaultValue=""
-          className="mt-1 w-full rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#1e293b]"
-        >
+        <label className={LABEL}>Proveedor *</label>
+        <select name="proveedor_id" required defaultValue="" className={CAMPO}>
           <option value="" disabled className="text-[#1e293b]">
             Selecciona un proveedor
           </option>
@@ -84,33 +83,29 @@ export function NuevaCompraForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-[#1e293b]">Observación</label>
-        <input
-          type="text"
-          name="observacion"
-          className="mt-1 w-full rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#1e293b]"
-        />
+        <label className={LABEL}>Observación</label>
+        <input type="text" name="observacion" className={CAMPO} />
       </div>
 
-      <div>
+      <div className="rounded-2xl bg-[#fdf2f8] p-5">
         <div className="flex items-center justify-between">
-          <label className="block text-sm font-medium text-[#1e293b]">Productos *</label>
+          <label className={LABEL}>Productos *</label>
           <button
             type="button"
             onClick={agregarLinea}
-            className="text-[13px] font-medium text-[#4f46e5] hover:underline"
+            className="rounded-full bg-pink-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm shadow-pink-500/30 transition-all hover:bg-pink-600"
           >
             + Agregar línea
           </button>
         </div>
 
-        <div className="mt-2 space-y-2">
+        <div className="mt-3 space-y-2.5">
           {lineas.map((l, i) => (
             <div key={i} className="flex items-center gap-2">
               <select
                 value={l.producto_id}
                 onChange={(e) => actualizarLinea(i, 'producto_id', e.target.value)}
-                className="flex-1 rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#1e293b]"
+                className="flex-1 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm text-[#1e293b] outline-none focus:border-pink-500"
               >
                 <option value="" className="text-[#1e293b]">
                   Producto...
@@ -128,7 +123,7 @@ export function NuevaCompraForm({
                 placeholder="Cant."
                 value={l.cantidad}
                 onChange={(e) => actualizarLinea(i, 'cantidad', e.target.value)}
-                className="w-24 rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#1e293b]"
+                className="w-24 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm text-[#1e293b] outline-none focus:border-pink-500"
               />
               <input
                 type="number"
@@ -137,16 +132,16 @@ export function NuevaCompraForm({
                 placeholder="Costo"
                 value={l.costo_unitario}
                 onChange={(e) => actualizarLinea(i, 'costo_unitario', e.target.value)}
-                className="w-24 rounded-lg border border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#1e293b]"
+                className="w-24 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm text-[#1e293b] outline-none focus:border-pink-500"
               />
               <button
                 type="button"
                 onClick={() => quitarLinea(i)}
                 disabled={lineas.length === 1}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#64748b] hover:bg-red-50 hover:text-red-600 disabled:opacity-30"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#64748b] transition-all hover:bg-red-100 hover:text-red-600 disabled:opacity-30"
                 title="Quitar línea"
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="h-4 w-4">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -154,25 +149,25 @@ export function NuevaCompraForm({
           ))}
         </div>
 
-        <div className="mt-3 flex justify-end text-sm">
-          <span className="text-[#64748b]">Total: </span>
-          <span className="ml-1 font-semibold text-[#1e293b]">S/ {total.toFixed(2)}</span>
+        <div className="mt-4 flex items-center justify-end gap-2 border-t-2 border-pink-100 pt-3">
+          <span className="text-sm font-medium text-[#64748b]">Total:</span>
+          <span className="text-xl font-extrabold text-pink-600">S/ {total.toFixed(2)}</span>
         </div>
       </div>
 
       {estado.error && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
           {estado.error}
         </p>
       )}
 
       <button
         type="submit"
-        className="w-full rounded-full bg-[#4f46e5] py-2.5 text-sm font-semibold text-white hover:bg-[#4338ca]"
+        className="w-full rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 py-3.5 text-base font-bold text-white shadow-lg shadow-pink-500/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-pink-500/40"
       >
         Guardar orden (pendiente)
       </button>
-      <p className="text-center text-xs text-[#64748b]">
+      <p className="text-center text-xs font-medium text-[#94a3b8]">
         La orden se guarda como "pendiente" — el stock recién se actualiza cuando la marques como
         "Recibida" desde la lista.
       </p>

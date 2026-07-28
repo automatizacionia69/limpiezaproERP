@@ -1,22 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { signOut } from './actions'
-import { Sidebar } from './sidebar'
-
-const ROLE_LABELS: Record<string, string> = {
-  admin: 'Administrador',
-  almacen: 'Almacén',
-  ventas: 'Ventas',
-}
-
-function iniciales(nombre: string) {
-  return nombre
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase())
-    .join('')
-}
+import { AppShell } from './app-shell'
 
 export default async function ProtectedLayout({
   children,
@@ -54,44 +39,8 @@ export default async function ProtectedLayout({
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
-      <Sidebar />
-
-      <div className="pl-64">
-        <header className="flex h-16 items-center justify-between border-b border-[#e2e8f0] bg-white px-6">
-          <div className="text-sm font-semibold text-[#1e293b]" />
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#4f46e5] text-sm font-semibold text-white">
-              {iniciales(perfil.nombre)}
-            </div>
-            <div className="hidden text-right sm:block">
-              <div className="text-[13px] font-semibold leading-tight text-[#1e293b]">
-                {perfil.nombre}
-              </div>
-              <div className="text-[11px] leading-tight text-[#64748b]">
-                {ROLE_LABELS[perfil.rol] ?? perfil.rol}
-              </div>
-            </div>
-            <form action={signOut}>
-              <button
-                type="submit"
-                title="Cerrar sesión"
-                className="flex h-9 w-9 items-center justify-center rounded-full text-[#64748b] transition-colors hover:bg-red-50 hover:text-red-600"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="h-5 w-5">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l3 3m0 0-3 3m3-3H3"
-                  />
-                </svg>
-              </button>
-            </form>
-          </div>
-        </header>
-
-        <main className="mx-auto max-w-6xl px-6 py-8">{children}</main>
-      </div>
-    </div>
+    <AppShell nombre={perfil.nombre} rol={perfil.rol} signOutAction={signOut}>
+      {children}
+    </AppShell>
   )
 }

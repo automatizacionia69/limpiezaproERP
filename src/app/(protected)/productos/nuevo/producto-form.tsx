@@ -5,6 +5,10 @@ import { crearProducto, type EstadoFormulario } from '../actions'
 
 type Opcion = { id: number; nombre: string }
 
+const CAMPO =
+  'mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] bg-white px-4 py-3 text-base text-[#1e293b] outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100'
+const LABEL = 'block text-sm font-bold text-[#1e293b]'
+
 export function ProductoForm({
   unidades,
   categorias,
@@ -17,34 +21,20 @@ export function ProductoForm({
   })
 
   return (
-    <form action={formAction} className="mt-6 space-y-4">
+    <form action={formAction} className="mt-6 space-y-5">
       <div>
-        <label className="block text-sm font-medium text-slate-700">Nombre *</label>
-        <input
-          type="text"
-          name="nombre"
-          required
-          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
-        />
+        <label className={LABEL}>Nombre *</label>
+        <input type="text" name="nombre" required className={CAMPO} />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-700">Código</label>
-        <input
-          type="text"
-          name="codigo"
-          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
-        />
+        <label className={LABEL}>Código</label>
+        <input type="text" name="codigo" className={CAMPO} />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-700">Unidad *</label>
-        <select
-          name="unidad_id"
-          required
-          defaultValue=""
-          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
-        >
+        <label className={LABEL}>Unidad *</label>
+        <select name="unidad_id" required defaultValue="" className={CAMPO}>
           <option value="" disabled className="text-slate-900">
             Selecciona una unidad
           </option>
@@ -57,12 +47,8 @@ export function ProductoForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-700">Categoría</label>
-        <select
-          name="categoria_id"
-          defaultValue=""
-          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
-        >
+        <label className={LABEL}>Categoría</label>
+        <select name="categoria_id" defaultValue="" className={CAMPO}>
           <option value="" className="text-slate-900">
             Sin categoría
           </option>
@@ -75,36 +61,24 @@ export function ProductoForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-700">Precio de venta</label>
-        <input
-          type="number"
-          step="0.01"
-          min="0"
-          name="precio_venta"
-          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
-        />
+        <label className={LABEL}>Precio de venta</label>
+        <input type="number" step="0.01" min="0" name="precio_venta" className={CAMPO} />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-700">Punto de reorden</label>
-        <input
-          type="number"
-          step="1"
-          min="0"
-          name="punto_reorden"
-          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
-        />
+        <label className={LABEL}>Punto de reorden</label>
+        <input type="number" step="1" min="0" name="punto_reorden" className={CAMPO} />
       </div>
 
       {estado.error && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
           {estado.error}
         </p>
       )}
 
       <button
         type="submit"
-        className="w-full rounded-full bg-blue-700 py-2.5 text-sm font-semibold text-white hover:bg-blue-600"
+        className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-500/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-emerald-500/40"
       >
         Guardar producto
       </button>

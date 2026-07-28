@@ -48,21 +48,21 @@ export function ProveedoresTabla({ proveedores }: { proveedores: ProveedorRow[] 
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold text-[#1e293b]">Proveedores</h1>
-          <p className="mt-0.5 text-[13px] text-[#64748b]">
+          <h1 className="text-2xl font-extrabold text-[#1e293b]">🚚 Proveedores</h1>
+          <p className="mt-1 text-sm font-medium text-[#64748b]">
             {proveedores.length} proveedor{proveedores.length === 1 ? '' : 'es'}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <div className="relative">
             <svg
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
-              strokeWidth={1.75}
-              className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#64748b]"
+              strokeWidth={2}
+              className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-[#94a3b8]"
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
             </svg>
@@ -71,66 +71,66 @@ export function ProveedoresTabla({ proveedores }: { proveedores: ProveedorRow[] 
               value={filtro}
               onChange={(e) => setFiltro(e.target.value)}
               placeholder="Filtrar..."
-              className="rounded-full border border-[#e2e8f0] bg-white py-2 pr-4 pl-9 text-[13.5px] text-[#1e293b] outline-none focus:border-[#4f46e5]"
+              className="rounded-2xl border-2 border-[#e2e8f0] bg-white py-2.5 pr-4 pl-10 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
             />
           </div>
           <Link
             href="/proveedores/nuevo"
-            className="flex items-center gap-1.5 rounded-full bg-[#4f46e5] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#4338ca]"
+            className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 to-sky-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-cyan-500/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-cyan-500/40"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="h-4 w-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
-            Nuevo
+            Nuevo proveedor
           </Link>
         </div>
       </div>
 
       {errorEliminar && (
-        <p role="alert" className="mt-4 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-700">
+        <p role="alert" className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
           {errorEliminar}
         </p>
       )}
 
-      <div className="mt-5 overflow-hidden rounded-2xl border border-[#e2e8f0] bg-white shadow-[0_1px_3px_rgba(15,23,42,.06)]">
+      <div className="mt-6 overflow-hidden rounded-3xl border-2 border-[#e2e8f0] bg-white shadow-lg shadow-slate-500/5">
         {proveedores.length === 0 ? (
-          <p className="p-10 text-center text-sm text-[#64748b]">
+          <p className="p-12 text-center text-sm font-medium text-[#64748b]">
             No hay registros. Usa el botón{' '}
-            <Link href="/proveedores/nuevo" className="font-medium text-[#4f46e5]">
-              Nuevo
+            <Link href="/proveedores/nuevo" className="font-bold text-cyan-600">
+              Nuevo proveedor
             </Link>{' '}
             para agregar el primero.
           </p>
         ) : filtrados.length === 0 ? (
-          <p className="p-10 text-center text-sm text-[#64748b]">Ningún proveedor coincide con “{filtro}”.</p>
+          <p className="p-12 text-center text-sm font-medium text-[#64748b]">Ningún proveedor coincide con “{filtro}”.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-[13.5px]">
               <thead>
-                <tr className="border-b border-[#e2e8f0] text-[#64748b]">
-                  <th className="px-5 py-3 font-medium">Razón social</th>
-                  <th className="px-5 py-3 font-medium">RUC</th>
-                  <th className="px-5 py-3 font-medium">Contacto</th>
-                  <th className="px-5 py-3 font-medium">Teléfono</th>
-                  <th className="px-5 py-3 font-medium">Correo</th>
-                  <th className="px-5 py-3 text-right font-medium">Acciones</th>
+                <tr className="border-b-2 border-[#f1f5f9] bg-[#f8fafc] text-[#64748b]">
+                  <th className="px-6 py-4 font-bold">Razón social</th>
+                  <th className="px-6 py-4 font-bold">RUC</th>
+                  <th className="px-6 py-4 font-bold">Contacto</th>
+                  <th className="px-6 py-4 font-bold">Teléfono</th>
+                  <th className="px-6 py-4 font-bold">Correo</th>
+                  <th className="px-6 py-4 text-right font-bold">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {filtrados.map((p) => (
-                  <tr key={p.id} className="border-b border-[#f1f5f9] text-[#1e293b] hover:bg-[#f8fafc]">
-                    <td className="px-5 py-3 font-medium">{p.nombre}</td>
-                    <td className="px-5 py-3 text-[#64748b]">{p.ruc ?? '—'}</td>
-                    <td className="px-5 py-3 text-[#64748b]">{p.contacto ?? '—'}</td>
-                    <td className="px-5 py-3 text-[#64748b]">{p.telefono ?? '—'}</td>
-                    <td className="px-5 py-3 text-[#64748b]">{p.email ?? '—'}</td>
-                    <td className="px-5 py-3 text-right whitespace-nowrap">
+                  <tr key={p.id} className="border-b border-[#f1f5f9] text-[#1e293b] transition-colors hover:bg-cyan-50/40">
+                    <td className="px-6 py-4 font-bold">{p.nombre}</td>
+                    <td className="px-6 py-4 text-[#64748b]">{p.ruc ?? '—'}</td>
+                    <td className="px-6 py-4 text-[#64748b]">{p.contacto ?? '—'}</td>
+                    <td className="px-6 py-4 text-[#64748b]">{p.telefono ?? '—'}</td>
+                    <td className="px-6 py-4 text-[#64748b]">{p.email ?? '—'}</td>
+                    <td className="px-6 py-4 text-right whitespace-nowrap">
                       <Link
                         href={`/proveedores/${p.id}/editar`}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-[#64748b] transition-colors hover:bg-[#4f46e5]/10 hover:text-[#4f46e5]"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] transition-all hover:bg-cyan-100 hover:text-cyan-600"
                         title="Editar"
                       >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="h-4 w-4">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
                           <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
@@ -143,9 +143,9 @@ export function ProveedoresTabla({ proveedores }: { proveedores: ProveedorRow[] 
                         onClick={() => handleEliminar(p.id, p.nombre)}
                         disabled={isPending && pendienteId === p.id}
                         title="Eliminar"
-                        className="ml-1 inline-flex h-8 w-8 items-center justify-center rounded-lg text-[#64748b] transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                        className="ml-1.5 inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] transition-all hover:bg-red-100 hover:text-red-600 disabled:opacity-50"
                       >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="h-4 w-4">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
                           <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
