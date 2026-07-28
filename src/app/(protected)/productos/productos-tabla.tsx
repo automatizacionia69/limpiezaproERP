@@ -156,6 +156,19 @@ export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
                       </td>
                       <td className="px-6 py-4 text-right whitespace-nowrap">
                         <Link
+                          href={`/productos/${p.id}/kardex`}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] transition-all hover:bg-amber-100 hover:text-amber-600"
+                          title="Ver kardex"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M3 13.5V3.75m0 9.75a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5V13.5M3 13.5h18M3 13.5l3.75-6.75L12 12l4.5-6 3 3.75"
+                            />
+                          </svg>
+                        </Link>
+                        <Link
                           href={`/productos/${p.id}/editar`}
                           className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] transition-all hover:bg-indigo-100 hover:text-indigo-600"
                           title="Editar"
