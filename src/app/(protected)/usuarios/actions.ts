@@ -165,3 +165,38 @@ export async function editarUsuario(
   revalidatePath('/usuarios')
   redirect('/usuarios')
 }
+
+export async function eliminarUsuario(id: string) {
+  if (!(await verificarEsAdmin())) {
+    throw new Error('Solo un administrador puede eliminar usuarios.')
+  }
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (user?.id === id) {
+    throw new Error('No puedes eliminar tu propio usuario.')
+  }
+
+  const admin = createAdminClient()
+  if (!admin) {
+    throw new Error(
+      'Falta configurar SUPABASE_SERVICE_ROLE_KEY en .env.local para poder eliminar usuarios desde aquí.'
+    )
+  }
+
+  const { error } = await admin.auth.admin.deleteUser(id)
+
+  if (error) {
+    const mensaje = error.message?.toLowerCase() ?? ''
+    if (mensaje.includes('foreign key') || mensaje.includes('violat')) {
+      throw new Error(
+        'No se puede eliminar: este usuario tiene ventas, compras u otros movimientos registrados en el sistema.'
+      )
+    }
+    throw new Error(error.message)
+  }
+
+  revalidatePath('/usuarios')
+}

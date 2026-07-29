@@ -1,10 +1,12 @@
 'use client'
 
+import { imprimirEnModoClaro } from '@/lib/imprimir'
+
 export function DescargarPdfBoton() {
   return (
     <button
       type="button"
-      onClick={() => window.print()}
+      onClick={imprimirEnModoClaro}
       className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-500 px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-sky-500/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-sky-500/40 print:hidden"
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5">
