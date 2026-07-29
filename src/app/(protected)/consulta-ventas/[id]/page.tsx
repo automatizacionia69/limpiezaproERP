@@ -109,7 +109,7 @@ export default async function ComprobantePage({
   return (
     <div>
       <div className="mb-6 flex items-center justify-between print:hidden">
-        <Link href="/consulta-ventas" className="text-sm font-bold text-[#64748b] hover:text-lime-600">
+        <Link href="/consulta-ventas" className="text-sm font-bold text-[#64748b] dark:text-slate-400 hover:text-lime-600">
           ← Volver a Consulta de Ventas
         </Link>
         <ImprimirBoton className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-lime-500 to-green-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-lime-500/30 transition-all hover:-translate-y-0.5">
@@ -117,66 +117,66 @@ export default async function ComprobantePage({
         </ImprimirBoton>
       </div>
 
-      <div className="mx-auto max-w-4xl rounded-3xl border-2 border-[#e2e8f0] bg-white p-10 shadow-lg shadow-slate-500/5 print:max-w-none print:rounded-none print:border-0 print:p-0 print:shadow-none">
+      <div className="mx-auto max-w-4xl rounded-3xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] p-10 shadow-lg shadow-slate-500/5 print:max-w-none print:rounded-none print:border-0 print:p-0 print:shadow-none">
         {comprobante.estado === 'anulado' && (
           <div className="mb-6 rounded-xl border-2 border-red-300 bg-red-50 px-4 py-2.5 text-center text-sm font-extrabold tracking-wide text-red-700 uppercase">
             🚫 Comprobante anulado
           </div>
         )}
 
-        <div className="flex items-start justify-between gap-6 border-b-2 border-[#1e293b] pb-5">
+        <div className="flex items-start justify-between gap-6 border-b-2 border-[#1e293b] dark:border-slate-600 pb-5">
           <div>
-            <h1 className="text-xl font-extrabold text-[#1e293b]">
+            <h1 className="text-xl font-extrabold text-[#1e293b] dark:text-slate-100">
               {configuracion?.empresa ?? 'Distribuidora LimpiezaPro'}
             </h1>
-            <p className="mt-1 text-xs text-[#64748b]">
+            <p className="mt-1 text-xs text-[#64748b] dark:text-slate-400">
               {configuracion?.direccion || 'Piura, Perú'}
             </p>
-            <p className="text-xs text-[#64748b]">{configuracion?.telefono && `Teléfono: ${configuracion.telefono}`}</p>
+            <p className="text-xs text-[#64748b] dark:text-slate-400">{configuracion?.telefono && `Teléfono: ${configuracion.telefono}`}</p>
           </div>
-          <div className="w-56 shrink-0 rounded-xl border-2 border-[#1e293b] p-4 text-center">
-            {configuracion?.ruc && <p className="text-xs font-bold text-[#1e293b]">RUC {configuracion.ruc}</p>}
-            <p className="mt-1 text-sm font-extrabold tracking-wide text-[#1e293b] uppercase">{tipoLabel}</p>
+          <div className="w-56 shrink-0 rounded-xl border-2 border-[#1e293b] dark:border-slate-600 p-4 text-center">
+            {configuracion?.ruc && <p className="text-xs font-bold text-[#1e293b] dark:text-slate-100">RUC {configuracion.ruc}</p>}
+            <p className="mt-1 text-sm font-extrabold tracking-wide text-[#1e293b] dark:text-slate-100 uppercase">{tipoLabel}</p>
             <p className="mt-1 text-lg font-extrabold text-lime-600">{comprobante.numero}</p>
           </div>
         </div>
 
         <div className="mt-5 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
-          <div className="rounded-xl border border-[#e2e8f0] p-4">
-            <p className="text-[10px] font-bold tracking-wide text-[#94a3b8] uppercase">Cliente</p>
-            <p className="mt-1 font-bold text-[#1e293b]">{cliente?.nombre ?? '—'}</p>
-            <p className="text-[#64748b]">
+          <div className="rounded-xl border border-[#e2e8f0] dark:border-slate-700 p-4">
+            <p className="text-[10px] font-bold tracking-wide text-[#94a3b8] dark:text-slate-500 uppercase">Cliente</p>
+            <p className="mt-1 font-bold text-[#1e293b] dark:text-slate-100">{cliente?.nombre ?? '—'}</p>
+            <p className="text-[#64748b] dark:text-slate-400">
               {comprobante.tipo === 'factura' ? 'RUC' : 'Documento'}: {cliente?.documento || '—'}
             </p>
-            {cliente?.direccion && <p className="text-[#64748b]">{cliente.direccion}</p>}
+            {cliente?.direccion && <p className="text-[#64748b] dark:text-slate-400">{cliente.direccion}</p>}
           </div>
-          <div className="rounded-xl border border-[#e2e8f0] p-4">
-            <p className="text-[10px] font-bold tracking-wide text-[#94a3b8] uppercase">Datos de la venta</p>
+          <div className="rounded-xl border border-[#e2e8f0] dark:border-slate-700 p-4">
+            <p className="text-[10px] font-bold tracking-wide text-[#94a3b8] dark:text-slate-500 uppercase">Datos de la venta</p>
             <div className="mt-1.5 space-y-0.5">
-              <p className="flex justify-between text-[#1e293b]">
-                <span className="text-[#64748b]">Fecha de emisión</span>
+              <p className="flex justify-between text-[#1e293b] dark:text-slate-100">
+                <span className="text-[#64748b] dark:text-slate-400">Fecha de emisión</span>
                 <span className="font-semibold">
                   {new Date(`${comprobante.fecha_emision}T00:00:00`).toLocaleDateString('es-PE')}
                 </span>
               </p>
-              <p className="flex justify-between text-[#1e293b]">
-                <span className="text-[#64748b]">Días de crédito</span>
+              <p className="flex justify-between text-[#1e293b] dark:text-slate-100">
+                <span className="text-[#64748b] dark:text-slate-400">Días de crédito</span>
                 <span className="font-semibold">{comprobante.dias_credito}</span>
               </p>
-              <p className="flex justify-between text-[#1e293b]">
-                <span className="text-[#64748b]">
+              <p className="flex justify-between text-[#1e293b] dark:text-slate-100">
+                <span className="text-[#64748b] dark:text-slate-400">
                   {comprobante.dias_credito === 'Contado' ? 'Condición de pago' : 'Fecha de vencimiento'}
                 </span>
                 <span className="font-semibold">
                   {calcularFechaVencimiento(comprobante.fecha_emision, comprobante.dias_credito)}
                 </span>
               </p>
-              <p className="flex justify-between text-[#1e293b]">
-                <span className="text-[#64748b]">Medio de pago</span>
+              <p className="flex justify-between text-[#1e293b] dark:text-slate-100">
+                <span className="text-[#64748b] dark:text-slate-400">Medio de pago</span>
                 <span className="font-semibold">{comprobante.medio_pago}</span>
               </p>
-              <p className="flex justify-between text-[#1e293b]">
-                <span className="text-[#64748b]">Vendedor</span>
+              <p className="flex justify-between text-[#1e293b] dark:text-slate-100">
+                <span className="text-[#64748b] dark:text-slate-400">Vendedor</span>
                 <span className="font-semibold">{vendedor?.nombre ?? '—'}</span>
               </p>
             </div>
@@ -185,7 +185,7 @@ export default async function ComprobantePage({
 
         <table className="mt-6 w-full text-left text-sm">
           <thead>
-            <tr className="border-y-2 border-[#1e293b] text-[#1e293b]">
+            <tr className="border-y-2 border-[#1e293b] dark:border-slate-600 text-[#1e293b] dark:text-slate-100">
               <th className="py-2 font-bold">Descripción</th>
               <th className="py-2 font-bold">Cantidad</th>
               <th className="py-2 font-bold">P. unit.</th>
@@ -194,7 +194,7 @@ export default async function ComprobantePage({
           </thead>
           <tbody>
             {(detalles ?? []).map((d) => (
-              <tr key={d.id} className="border-b border-[#f1f5f9]">
+              <tr key={d.id} className="border-b border-[#f1f5f9] dark:border-slate-800">
                 <td className="py-2.5">{d.productos?.nombre ?? '—'}</td>
                 <td className="py-2.5">{d.cantidad}</td>
                 <td className="py-2.5">S/ {Number(d.precio_unitario).toFixed(2)}</td>
@@ -207,21 +207,21 @@ export default async function ComprobantePage({
         </table>
 
         <div className="mt-6 flex justify-end">
-          <div className="w-64 space-y-1.5 rounded-xl border border-[#e2e8f0] p-4">
-            <p className="flex justify-between text-sm text-[#64748b]">
+          <div className="w-64 space-y-1.5 rounded-xl border border-[#e2e8f0] dark:border-slate-700 p-4">
+            <p className="flex justify-between text-sm text-[#64748b] dark:text-slate-400">
               <span>Op. gravada</span>
-              <span className="font-semibold text-[#1e293b]">S/ {Number(comprobante.subtotal).toFixed(2)}</span>
+              <span className="font-semibold text-[#1e293b] dark:text-slate-100">S/ {Number(comprobante.subtotal).toFixed(2)}</span>
             </p>
-            <p className="flex justify-between text-sm text-[#64748b]">
+            <p className="flex justify-between text-sm text-[#64748b] dark:text-slate-400">
               <span>IGV (18%)</span>
-              <span className="font-semibold text-[#1e293b]">S/ {Number(comprobante.igv).toFixed(2)}</span>
+              <span className="font-semibold text-[#1e293b] dark:text-slate-100">S/ {Number(comprobante.igv).toFixed(2)}</span>
             </p>
-            <p className="flex justify-between border-t-2 border-[#1e293b] pt-2 text-lg font-extrabold text-[#1e293b]">
+            <p className="flex justify-between border-t-2 border-[#1e293b] dark:border-slate-600 pt-2 text-lg font-extrabold text-[#1e293b] dark:text-slate-100">
               <span>Importe total</span>
               <span>S/ {Number(comprobante.total).toFixed(2)}</span>
             </p>
             {(totalNotasCredito > 0 || totalNotasDebito > 0) && (
-              <p className="flex justify-between border-t border-dashed border-[#e2e8f0] pt-2 text-sm font-bold text-lime-700">
+              <p className="flex justify-between border-t border-dashed border-[#e2e8f0] dark:border-slate-700 pt-2 text-sm font-bold text-lime-700">
                 <span>Saldo actual a pagar</span>
                 <span>S/ {saldoActual.toFixed(2)}</span>
               </p>
@@ -230,17 +230,17 @@ export default async function ComprobantePage({
         </div>
 
         {((notasCredito && notasCredito.length > 0) || (notasDebito && notasDebito.length > 0)) && (
-          <div className="mt-8 border-t-2 border-[#f1f5f9] pt-6">
-            <p className="text-xs font-bold tracking-wide text-[#94a3b8] uppercase">Notas asociadas</p>
+          <div className="mt-8 border-t-2 border-[#f1f5f9] dark:border-slate-800 pt-6">
+            <p className="text-xs font-bold tracking-wide text-[#94a3b8] dark:text-slate-500 uppercase">Notas asociadas</p>
             <div className="mt-3 space-y-2">
               {(notasCredito ?? []).map((n) => (
                 <div key={`nc-${n.id}`} className="flex items-center justify-between rounded-xl bg-red-50 px-4 py-2.5 text-sm">
                   <div>
                     <span className="font-bold text-red-700">{n.numero}</span>{' '}
-                    <span className="text-[#64748b]">
+                    <span className="text-[#64748b] dark:text-slate-400">
                       — Nota de crédito · {n.motivo} · anexada a {tipoLabel} {comprobante.numero}
                     </span>
-                    {n.observacion && <p className="text-xs text-[#94a3b8]">{n.observacion}</p>}
+                    {n.observacion && <p className="text-xs text-[#94a3b8] dark:text-slate-500">{n.observacion}</p>}
                   </div>
                   <div className="flex shrink-0 items-center gap-3">
                     <span className="font-bold text-red-700">− S/ {Number(n.monto).toFixed(2)}</span>
@@ -254,10 +254,10 @@ export default async function ComprobantePage({
                 <div key={`nd-${n.id}`} className="flex items-center justify-between rounded-xl bg-amber-50 px-4 py-2.5 text-sm">
                   <div>
                     <span className="font-bold text-amber-700">{n.numero}</span>{' '}
-                    <span className="text-[#64748b]">
+                    <span className="text-[#64748b] dark:text-slate-400">
                       — Nota de débito · {n.motivo} · anexada a {tipoLabel} {comprobante.numero}
                     </span>
-                    {n.observacion && <p className="text-xs text-[#94a3b8]">{n.observacion}</p>}
+                    {n.observacion && <p className="text-xs text-[#94a3b8] dark:text-slate-500">{n.observacion}</p>}
                   </div>
                   <div className="flex shrink-0 items-center gap-3">
                     <span className="font-bold text-amber-700">+ S/ {Number(n.monto).toFixed(2)}</span>
@@ -271,7 +271,7 @@ export default async function ComprobantePage({
           </div>
         )}
 
-        <p className="mt-10 text-center text-[11px] text-[#94a3b8]">
+        <p className="mt-10 text-center text-[11px] text-[#94a3b8] dark:text-slate-500">
           Representación de {tipoLabel.toLowerCase()} generada por LimpiezaPro ERP — sin validez tributaria
           (sin integración con SUNAT).
         </p>
@@ -279,9 +279,9 @@ export default async function ComprobantePage({
 
       {comprobante.estado === 'emitido' && (
         <div className="mx-auto mt-6 grid max-w-5xl grid-cols-1 gap-5 lg:grid-cols-[1.4fr_1fr] print:hidden">
-          <div className="rounded-3xl border-2 border-red-100 bg-white p-6 shadow-lg shadow-red-500/5">
-            <h2 className="text-base font-extrabold text-[#1e293b]">🚫 Anular con Nota de Crédito</h2>
-            <p className="mt-1 text-xs font-medium text-[#64748b]">
+          <div className="rounded-3xl border-2 border-red-100 bg-white dark:bg-[#141a2e] p-6 shadow-lg shadow-red-500/5">
+            <h2 className="text-base font-extrabold text-[#1e293b] dark:text-slate-100">🚫 Anular con Nota de Crédito</h2>
+            <p className="mt-1 text-xs font-medium text-[#64748b] dark:text-slate-400">
               N° {comprobante.numero} — solo "Anulación", "Anulación por error en el RUC" y "Devolución total"
               revierten todo el stock y anulan el comprobante. "Devolución por ítem" y "Descuento por ítem" te
               dejan elegir cuántas unidades de cada producto.
@@ -294,9 +294,9 @@ export default async function ComprobantePage({
             />
           </div>
 
-          <div className="rounded-3xl border-2 border-amber-100 bg-white p-6 shadow-lg shadow-amber-500/5">
-            <h2 className="text-base font-extrabold text-[#1e293b]">➕ Registrar Nota de Débito</h2>
-            <p className="mt-1 text-xs font-medium text-[#64748b]">
+          <div className="rounded-3xl border-2 border-amber-100 bg-white dark:bg-[#141a2e] p-6 shadow-lg shadow-amber-500/5">
+            <h2 className="text-base font-extrabold text-[#1e293b] dark:text-slate-100">➕ Registrar Nota de Débito</h2>
+            <p className="mt-1 text-xs font-medium text-[#64748b] dark:text-slate-400">
               Un cargo adicional sobre este comprobante (interés, aumento de valor, etc.).
             </p>
             <NotaDebitoForm comprobanteId={comprobante.id} />

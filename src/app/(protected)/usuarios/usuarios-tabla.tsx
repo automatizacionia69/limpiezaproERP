@@ -30,14 +30,14 @@ export function UsuariosTabla({ usuarios }: { usuarios: UsuarioRow[] }) {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-[#1e293b]">👥 Usuarios</h1>
-          <p className="mt-1 text-sm font-medium text-[#64748b]">
+          <h1 className="text-2xl font-extrabold text-[#1e293b] dark:text-slate-100">👥 Usuarios</h1>
+          <p className="mt-1 text-sm font-medium text-[#64748b] dark:text-slate-400">
             {usuarios.length} usuario{usuarios.length === 1 ? '' : 's'}
           </p>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-[#94a3b8]">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-[#94a3b8] dark:text-slate-500">
               <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
             </svg>
             <input
@@ -45,7 +45,7 @@ export function UsuariosTabla({ usuarios }: { usuarios: UsuarioRow[] }) {
               value={filtro}
               onChange={(e) => setFiltro(e.target.value)}
               placeholder="Filtrar..."
-              className="rounded-2xl border-2 border-[#e2e8f0] bg-white py-2.5 pr-4 pl-10 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-rose-500 focus:ring-4 focus:ring-rose-100"
+              className="rounded-2xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] py-2.5 pr-4 pl-10 text-sm font-medium text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-rose-500 focus:ring-4 focus:ring-rose-100"
             />
           </div>
           <Link
@@ -60,15 +60,15 @@ export function UsuariosTabla({ usuarios }: { usuarios: UsuarioRow[] }) {
         </div>
       </div>
 
-      <div className="mt-6 overflow-hidden rounded-3xl border-2 border-[#e2e8f0] bg-white shadow-lg shadow-slate-500/5">
+      <div className="mt-6 overflow-hidden rounded-3xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] shadow-lg shadow-slate-500/5">
         {usuarios.length === 0 ? (
-          <p className="p-12 text-center text-sm font-medium text-[#64748b]">No hay usuarios registrados.</p>
+          <p className="p-12 text-center text-sm font-medium text-[#64748b] dark:text-slate-400">No hay usuarios registrados.</p>
         ) : filtrados.length === 0 ? (
-          <p className="p-12 text-center text-sm font-medium text-[#64748b]">Ningún usuario coincide con “{filtro}”.</p>
+          <p className="p-12 text-center text-sm font-medium text-[#64748b] dark:text-slate-400">Ningún usuario coincide con “{filtro}”.</p>
         ) : (
           <table className="w-full text-left text-[13.5px]">
             <thead>
-              <tr className="border-b-2 border-[#f1f5f9] bg-[#f8fafc] text-[#64748b]">
+              <tr className="border-b-2 border-[#f1f5f9] dark:border-slate-800 bg-[#f8fafc] dark:bg-slate-800/60 text-[#64748b] dark:text-slate-400">
                 <th className="px-6 py-4 font-bold">Nombre</th>
                 <th className="px-6 py-4 font-bold">DNI</th>
                 <th className="px-6 py-4 font-bold">Rol</th>
@@ -78,19 +78,19 @@ export function UsuariosTabla({ usuarios }: { usuarios: UsuarioRow[] }) {
             </thead>
             <tbody>
               {filtrados.map((u) => (
-                <tr key={u.id} className="border-b border-[#f1f5f9] text-[#1e293b] transition-colors hover:bg-rose-50/40">
+                <tr key={u.id} className="border-b border-[#f1f5f9] dark:border-slate-800 text-[#1e293b] dark:text-slate-100 transition-colors hover:bg-rose-50/40">
                   <td className="px-6 py-4 font-bold">{u.nombre}</td>
-                  <td className="px-6 py-4 font-medium text-[#64748b]">{u.dni ?? '—'}</td>
+                  <td className="px-6 py-4 font-medium text-[#64748b] dark:text-slate-400">{u.dni ?? '—'}</td>
                   <td className="px-6 py-4">
                     <span className={`rounded-full px-3 py-1 text-[11px] font-bold ${ROLE_BADGE[u.rol] ?? 'bg-slate-100 text-slate-700'}`}>
                       {ROLE_LABELS[u.rol] ?? u.rol}
                     </span>
                   </td>
-                  <td className="px-6 py-4 font-medium text-[#64748b]">{u.brevete ?? '—'}</td>
+                  <td className="px-6 py-4 font-medium text-[#64748b] dark:text-slate-400">{u.brevete ?? '—'}</td>
                   <td className="px-6 py-4 text-right">
                     <Link
                       href={`/usuarios/${u.id}/editar`}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] transition-all hover:bg-rose-100 hover:text-rose-600"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] dark:text-slate-400 transition-all hover:bg-rose-100 hover:text-rose-600"
                       title="Editar"
                     >
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">

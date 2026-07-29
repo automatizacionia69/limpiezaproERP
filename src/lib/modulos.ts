@@ -5,6 +5,7 @@ export const MODULOS = [
   { clave: 'proveedores', label: 'Proveedores' },
   { clave: 'ventas', label: 'Ventas' },
   { clave: 'consulta_ventas', label: 'Consulta de Ventas' },
+  { clave: 'guias_remision', label: 'Guías de Remisión' },
   { clave: 'clientes', label: 'Clientes' },
   { clave: 'cotizaciones', label: 'Cotizaciones' },
   { clave: 'reportes', label: 'Reportes' },

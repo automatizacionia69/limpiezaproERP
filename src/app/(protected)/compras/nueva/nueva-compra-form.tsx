@@ -12,9 +12,19 @@ function lineaVacia(): Linea {
   return { producto_id: '', cantidad: '', costo_unitario: '' }
 }
 
+function hoyISO() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+const TIPOS_DOCUMENTO = [
+  { valor: 'factura', label: 'Factura' },
+  { valor: 'boleta', label: 'Boleta' },
+  { valor: 'guia_remision', label: 'Guía de remisión' },
+] as const
+
 const CAMPO =
-  'mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] bg-white px-4 py-3 text-base text-[#1e293b] outline-none transition-all focus:border-pink-500 focus:ring-4 focus:ring-pink-100'
-const LABEL = 'block text-sm font-bold text-[#1e293b]'
+  'mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-3 text-base text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-pink-500 focus:ring-4 focus:ring-pink-100'
+const LABEL = 'block text-sm font-bold text-[#1e293b] dark:text-slate-100'
 
 export function NuevaCompraForm({
   proveedores,
@@ -27,6 +37,8 @@ export function NuevaCompraForm({
     error: null,
   })
   const [proveedorId, setProveedorId] = useState<number | ''>('')
+  const [fechaRegistro, setFechaRegistro] = useState(hoyISO())
+  const [tipoDocumento, setTipoDocumento] = useState<(typeof TIPOS_DOCUMENTO)[number]['valor']>('factura')
   const [lineas, setLineas] = useState<Linea[]>([lineaVacia()])
 
   function actualizarLinea(i: number, campo: keyof Linea, valor: string) {
@@ -72,17 +84,63 @@ export function NuevaCompraForm({
     <form action={formAction} className="mt-6 space-y-6">
       <input type="hidden" name="lineas" value={lineasJson} />
 
-      <div>
-        <label className={LABEL}>Proveedor *</label>
-        <div className="mt-1.5">
-          <Buscador
-            opciones={proveedores}
-            valor={proveedorId}
-            onChange={(id) => setProveedorId(Number(id) || '')}
-            placeholder="Escribe el nombre del proveedor..."
-            name="proveedor_id"
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <label className={LABEL}>Proveedor *</label>
+          <div className="mt-1.5">
+            <Buscador
+              opciones={proveedores}
+              valor={proveedorId}
+              onChange={(id) => setProveedorId(Number(id) || '')}
+              placeholder="Escribe el nombre del proveedor..."
+              name="proveedor_id"
+              required
+            />
+          </div>
+        </div>
+        <div>
+          <label className={LABEL}>Fecha de registro *</label>
+          <input
+            type="date"
+            name="fecha_registro"
             required
+            value={fechaRegistro}
+            onChange={(e) => setFechaRegistro(e.target.value)}
+            className={CAMPO}
           />
+        </div>
+      </div>
+
+      <div className="rounded-2xl border-2 border-[#e2e8f0] dark:border-slate-700 p-5">
+        <label className={LABEL}>Documento del proveedor *</label>
+        <p className="mt-1 text-xs font-medium text-[#94a3b8] dark:text-slate-500">
+          Todo ingreso debe respaldarse con Factura, Boleta o Guía de remisión del proveedor.
+        </p>
+        <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div>
+            <label className="block text-xs font-bold text-[#64748b] dark:text-slate-400">Tipo *</label>
+            <select
+              name="tipo_documento"
+              required
+              value={tipoDocumento}
+              onChange={(e) => setTipoDocumento(e.target.value as (typeof TIPOS_DOCUMENTO)[number]['valor'])}
+              className={CAMPO}
+            >
+              {TIPOS_DOCUMENTO.map((t) => (
+                <option key={t.valor} value={t.valor} className="text-[#1e293b] dark:text-slate-100">
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-[#64748b] dark:text-slate-400">Serie *</label>
+            <input type="text" name="documento_serie" required placeholder="F001" className={CAMPO} />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-[#64748b] dark:text-slate-400">Número *</label>
+            <input type="text" name="documento_numero" required placeholder="000123" className={CAMPO} />
+          </div>
         </div>
       </div>
 
@@ -91,7 +149,7 @@ export function NuevaCompraForm({
         <input type="text" name="observacion" className={CAMPO} />
       </div>
 
-      <div className="rounded-2xl bg-[#fdf2f8] p-5">
+      <div className="rounded-2xl bg-[#fdf2f8] dark:bg-slate-800/40 p-5">
         <div className="flex items-center justify-between">
           <label className={LABEL}>Productos *</label>
           <button
@@ -121,7 +179,7 @@ export function NuevaCompraForm({
                 placeholder="Cant."
                 value={l.cantidad}
                 onChange={(e) => actualizarLinea(i, 'cantidad', e.target.value)}
-                className="w-24 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm text-[#1e293b] outline-none focus:border-pink-500"
+                className="w-24 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2.5 text-sm text-[#1e293b] dark:text-slate-100 outline-none focus:border-pink-500"
               />
               <input
                 type="number"
@@ -130,13 +188,13 @@ export function NuevaCompraForm({
                 placeholder="Costo"
                 value={l.costo_unitario}
                 onChange={(e) => actualizarLinea(i, 'costo_unitario', e.target.value)}
-                className="w-24 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm text-[#1e293b] outline-none focus:border-pink-500"
+                className="w-24 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2.5 text-sm text-[#1e293b] dark:text-slate-100 outline-none focus:border-pink-500"
               />
               <button
                 type="button"
                 onClick={() => quitarLinea(i)}
                 disabled={lineas.length === 1}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#64748b] transition-all hover:bg-red-100 hover:text-red-600 disabled:opacity-30"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white dark:bg-[#141a2e] text-[#64748b] dark:text-slate-400 transition-all hover:bg-red-100 hover:text-red-600 disabled:opacity-30"
                 title="Quitar línea"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
@@ -148,7 +206,7 @@ export function NuevaCompraForm({
         </div>
 
         <div className="mt-4 flex items-center justify-end gap-2 border-t-2 border-pink-100 pt-3">
-          <span className="text-sm font-medium text-[#64748b]">Total:</span>
+          <span className="text-sm font-medium text-[#64748b] dark:text-slate-400">Total:</span>
           <span className="text-xl font-extrabold text-pink-600">S/ {total.toFixed(2)}</span>
         </div>
       </div>
@@ -165,7 +223,7 @@ export function NuevaCompraForm({
       >
         Guardar orden (pendiente)
       </button>
-      <p className="text-center text-xs font-medium text-[#94a3b8]">
+      <p className="text-center text-xs font-medium text-[#94a3b8] dark:text-slate-500">
         La orden se guarda como "pendiente" — el stock recién se actualiza cuando la marques como
         "Recibida" desde la lista.
       </p>

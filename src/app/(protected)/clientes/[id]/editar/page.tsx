@@ -12,21 +12,24 @@ export default async function EditarClientePage({
   const { id } = await params
   const supabase = await createClient()
 
-  const { data: cliente } = await supabase
-    .from('clientes')
-    .select('id, nombre, documento, telefono, email, direccion')
-    .eq('id', id)
-    .single()
+  const [{ data: cliente }, { data: vendedores }] = await Promise.all([
+    supabase
+      .from('clientes')
+      .select('id, nombre, documento, telefono, email, direccion, vendedor_id')
+      .eq('id', id)
+      .single(),
+    supabase.from('usuarios_perfil').select('id, nombre').order('nombre'),
+  ])
 
   if (!cliente) {
     notFound()
   }
 
   return (
-    <div className="mx-auto max-w-lg">
-      <h1 className="text-2xl font-extrabold text-[#1e293b]">🧑‍🤝‍🧑 Editar cliente</h1>
-      <div className="mt-5 rounded-3xl border-2 border-[#e2e8f0] bg-white p-8 shadow-lg shadow-slate-500/5">
-        <EditarClienteForm cliente={cliente} />
+    <div>
+      <h1 className="text-2xl font-extrabold text-[#1e293b] dark:text-slate-100">🧑‍🤝‍🧑 Editar cliente</h1>
+      <div className="mt-5 rounded-3xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] p-8 shadow-lg shadow-slate-500/5">
+        <EditarClienteForm cliente={cliente} vendedores={vendedores ?? []} />
       </div>
     </div>
   )

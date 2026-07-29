@@ -25,13 +25,13 @@ export default async function VentasPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-[#1e293b]">💰 Ventas</h1>
-          <p className="mt-1 text-sm font-medium text-[#64748b]">Órdenes de venta a clientes</p>
+          <h1 className="text-2xl font-extrabold text-[#1e293b] dark:text-slate-100">💰 Ventas</h1>
+          <p className="mt-1 text-sm font-medium text-[#64748b] dark:text-slate-400">Órdenes de venta a clientes</p>
         </div>
         <div className="flex items-center gap-3">
           <Link
             href="/clientes"
-            className="rounded-2xl border-2 border-[#e2e8f0] bg-white px-5 py-3 text-sm font-bold text-[#1e293b] transition-all hover:border-orange-300 hover:bg-orange-50"
+            className="rounded-2xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-5 py-3 text-sm font-bold text-[#1e293b] dark:text-slate-100 transition-all hover:border-orange-300 hover:bg-orange-50"
           >
             Clientes
           </Link>

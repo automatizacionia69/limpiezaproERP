@@ -19,10 +19,23 @@ export async function crearOrdenCompra(
 
   const proveedorId = formData.get('proveedor_id') as string
   const observacion = (formData.get('observacion') as string)?.trim()
+  const fechaRegistro = formData.get('fecha_registro') as string
+  const tipoDocumento = formData.get('tipo_documento') as string
+  const documentoSerie = (formData.get('documento_serie') as string)?.trim()
+  const documentoNumero = (formData.get('documento_numero') as string)?.trim()
   const lineasRaw = formData.get('lineas') as string
 
   if (!proveedorId) {
     return { error: 'Selecciona un proveedor.' }
+  }
+  if (!fechaRegistro) {
+    return { error: 'Selecciona la fecha de registro.' }
+  }
+  if (!['factura', 'boleta', 'guia_remision'].includes(tipoDocumento)) {
+    return { error: 'Selecciona el tipo de documento del proveedor.' }
+  }
+  if (!documentoSerie || !documentoNumero) {
+    return { error: 'Toda compra debe respaldarse con un documento del proveedor: registra la serie y el número.' }
   }
 
   let lineas: Linea[]
@@ -53,6 +66,10 @@ export async function crearOrdenCompra(
       proveedor_id: Number(proveedorId),
       usuario_id: user?.id ?? null,
       observacion: observacion || null,
+      fecha_registro: fechaRegistro,
+      tipo_documento: tipoDocumento,
+      documento_serie: documentoSerie,
+      documento_numero: documentoNumero,
       total,
     })
     .select('id')

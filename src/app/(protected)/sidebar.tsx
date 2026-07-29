@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
 
 const NAV_ITEMS = [
   {
@@ -21,6 +22,7 @@ const NAV_ITEMS = [
     href: '/productos',
     label: 'Productos',
     modulo: 'productos',
+    grupo: 'inventario',
     gradient: 'from-emerald-500 to-teal-500',
     glow: 'shadow-emerald-500/40',
     icon: (
@@ -35,6 +37,7 @@ const NAV_ITEMS = [
     href: '/movimientos',
     label: 'Movimientos',
     modulo: 'movimientos',
+    grupo: 'inventario',
     gradient: 'from-amber-500 to-orange-500',
     glow: 'shadow-amber-500/40',
     icon: (
@@ -49,6 +52,7 @@ const NAV_ITEMS = [
     href: '/compras',
     label: 'Compras',
     modulo: 'compras',
+    grupo: 'inventario',
     gradient: 'from-pink-500 to-rose-500',
     glow: 'shadow-pink-500/40',
     icon: (
@@ -63,6 +67,7 @@ const NAV_ITEMS = [
     href: '/proveedores',
     label: 'Proveedores',
     modulo: 'proveedores',
+    grupo: 'inventario',
     gradient: 'from-cyan-500 to-sky-500',
     glow: 'shadow-cyan-500/40',
     icon: (
@@ -77,6 +82,7 @@ const NAV_ITEMS = [
     href: '/ventas',
     label: 'Ventas',
     modulo: 'ventas',
+    grupo: 'ventas',
     gradient: 'from-teal-500 to-emerald-500',
     glow: 'shadow-teal-500/40',
     icon: (
@@ -91,6 +97,7 @@ const NAV_ITEMS = [
     href: '/consulta-ventas',
     label: 'Consulta de Ventas',
     modulo: 'consulta_ventas',
+    grupo: 'ventas',
     gradient: 'from-lime-500 to-green-600',
     glow: 'shadow-lime-500/40',
     icon: (
@@ -102,9 +109,25 @@ const NAV_ITEMS = [
     ),
   },
   {
+    href: '/guias-remision',
+    label: 'Guías de Remisión',
+    modulo: 'guias_remision',
+    grupo: 'ventas',
+    gradient: 'from-fuchsia-500 to-purple-600',
+    glow: 'shadow-fuchsia-500/40',
+    icon: (
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M9 12h3.75M9 15h3.75M9 18h3.75M3.75 6.75h16.5M4.5 3.75h15a.75.75 0 0 1 .75.75v15a.75.75 0 0 1-.75.75h-15a.75.75 0 0 1-.75-.75v-15a.75.75 0 0 1 .75-.75Z"
+      />
+    ),
+  },
+  {
     href: '/clientes',
     label: 'Clientes',
     modulo: 'clientes',
+    grupo: 'ventas',
     gradient: 'from-orange-500 to-amber-500',
     glow: 'shadow-orange-500/40',
     icon: (
@@ -119,6 +142,7 @@ const NAV_ITEMS = [
     href: '/cotizaciones/nueva',
     label: 'Crear Cotización',
     modulo: 'cotizaciones',
+    grupo: 'ventas',
     gradient: 'from-sky-500 to-blue-500',
     glow: 'shadow-sky-500/40',
     exact: true,
@@ -134,6 +158,7 @@ const NAV_ITEMS = [
     href: '/cotizaciones',
     label: 'Consulta de Cotización',
     modulo: 'cotizaciones',
+    grupo: 'ventas',
     gradient: 'from-blue-500 to-indigo-500',
     glow: 'shadow-blue-500/40',
     exact: true,
@@ -149,6 +174,7 @@ const NAV_ITEMS = [
     href: '/reportes',
     label: 'Reportes',
     modulo: 'reportes',
+    grupo: 'administracion',
     gradient: 'from-violet-500 to-purple-500',
     glow: 'shadow-violet-500/40',
     icon: (
@@ -163,6 +189,7 @@ const NAV_ITEMS = [
     href: '/usuarios',
     label: 'Usuarios',
     adminOnly: true,
+    grupo: 'administracion',
     gradient: 'from-rose-500 to-red-500',
     glow: 'shadow-rose-500/40',
     icon: (
@@ -177,6 +204,7 @@ const NAV_ITEMS = [
     href: '/configuracion',
     label: 'Configuración',
     adminOnly: true,
+    grupo: 'administracion',
     gradient: 'from-slate-500 to-gray-600',
     glow: 'shadow-slate-500/40',
     icon: (
@@ -191,6 +219,22 @@ const NAV_ITEMS = [
     ),
   },
 ]
+
+const GRUPO_LABELS: Record<string, string> = {
+  inventario: 'Inventario',
+  ventas: 'Ventas',
+  administracion: 'Administración',
+}
+
+const ORDEN_GRUPOS = ['inventario', 'ventas', 'administracion'] as const
+
+type NavItem = (typeof NAV_ITEMS)[number]
+
+const TODOS_ABIERTOS: Record<string, boolean> = { inventario: true, ventas: true, administracion: true }
+
+function esActivo(item: NavItem, pathname: string) {
+  return pathname === item.href || (!('exact' in item && item.exact) && pathname.startsWith(item.href + '/'))
+}
 
 export function Sidebar({
   collapsed,
@@ -210,15 +254,80 @@ export function Sidebar({
     return true
   })
 
+  const sinGrupo = items.filter((item) => !('grupo' in item && item.grupo))
+  const grupos = ORDEN_GRUPOS.map((clave) => ({
+    clave,
+    items: items.filter((item) => 'grupo' in item && item.grupo === clave),
+  })).filter((g) => g.items.length > 0)
+
+  // Todos abiertos en SSR (evita mismatch de hidratación); la preferencia
+  // guardada se aplica recién en el cliente.
+  const [abiertos, setAbiertos] = useState<Record<string, boolean>>(TODOS_ABIERTOS)
+
+  useEffect(() => {
+    try {
+      const guardado = localStorage.getItem('sidebar-grupos')
+      if (guardado) setAbiertos({ ...TODOS_ABIERTOS, ...JSON.parse(guardado) })
+    } catch {}
+  }, [])
+
+  // El grupo de la página activa siempre queda abierto para no perder de vista dónde estás.
+  useEffect(() => {
+    const grupoActivo = grupos.find((g) => g.items.some((item) => esActivo(item, pathname)))
+    if (grupoActivo) {
+      setAbiertos((prev) => (prev[grupoActivo.clave] ? prev : { ...prev, [grupoActivo.clave]: true }))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname])
+
+  function alternarGrupo(clave: string) {
+    setAbiertos((prev) => {
+      const siguiente = { ...prev, [clave]: !prev[clave] }
+      try {
+        localStorage.setItem('sidebar-grupos', JSON.stringify(siguiente))
+      } catch {}
+      return siguiente
+    })
+  }
+
+  function renderItem(item: NavItem) {
+    const active = esActivo(item, pathname)
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        title={collapsed ? item.label : undefined}
+        className={`group flex items-center gap-3 rounded-2xl py-3.5 text-sm font-bold transition-all ${
+          collapsed ? 'justify-center px-0' : 'px-4'
+        } ${
+          active
+            ? `bg-gradient-to-r ${item.gradient} text-white shadow-lg ${item.glow}`
+            : 'text-slate-400 hover:bg-white/5 hover:text-white'
+        }`}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          className={`h-5 w-5 shrink-0 transition-transform ${active ? '' : 'group-hover:scale-110'}`}
+        >
+          {item.icon}
+        </svg>
+        {!collapsed && <span>{item.label}</span>}
+      </Link>
+    )
+  }
+
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-20 bg-gradient-to-b from-[#0f172a] via-[#151b2e] to-[#1e1b3a] transition-[width] duration-200 print:hidden ${
+      className={`fixed inset-y-0 left-0 z-20 flex h-full flex-col bg-gradient-to-b from-[#0f172a] via-[#151b2e] to-[#1e1b3a] transition-[width] duration-200 print:hidden ${
         collapsed ? 'w-20' : 'w-72'
       }`}
     >
-      <div className="h-1 bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-amber-400" />
+      <div className="h-1 shrink-0 bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-amber-400" />
 
-      <div className={`flex items-center gap-3 py-6 ${collapsed ? 'justify-center px-2' : 'px-6'}`}>
+      <div className={`flex shrink-0 items-center gap-3 py-6 ${collapsed ? 'justify-center px-2' : 'px-6'}`}>
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white shadow-lg shadow-fuchsia-500/40">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-6 w-6">
             <path
@@ -237,39 +346,48 @@ export function Sidebar({
       </div>
 
       {!collapsed && (
-        <div className="px-6 pt-2 pb-2 text-[10.5px] font-bold tracking-widest text-indigo-400/60 uppercase">
+        <div className="shrink-0 px-6 pt-2 pb-2 text-[10.5px] font-bold tracking-widest text-indigo-400/60 uppercase">
           Menú principal
         </div>
       )}
-      <nav className={`space-y-1.5 pb-6 ${collapsed ? 'px-3' : 'px-4'}`}>
-        {items.map((item) => {
-          const active =
-            pathname === item.href ||
-            (!('exact' in item && item.exact) && pathname.startsWith(item.href + '/'))
+      <nav className={`flex-1 space-y-1.5 overflow-y-auto pb-6 ${collapsed ? 'px-3' : 'px-4'}`}>
+        {sinGrupo.map((item) => renderItem(item))}
+
+        {grupos.map((g) => {
+          const abierto = collapsed || abiertos[g.clave]
+          const tieneActivo = g.items.some((item) => esActivo(item, pathname))
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              title={collapsed ? item.label : undefined}
-              className={`group flex items-center gap-3 rounded-2xl py-3.5 text-sm font-bold transition-all ${
-                collapsed ? 'justify-center px-0' : 'px-4'
-              } ${
-                active
-                  ? `bg-gradient-to-r ${item.gradient} text-white shadow-lg ${item.glow}`
-                  : 'text-slate-400 hover:bg-white/5 hover:text-white'
-              }`}
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                className={`h-5 w-5 shrink-0 transition-transform ${active ? '' : 'group-hover:scale-110'}`}
+            <div key={g.clave}>
+              {collapsed ? (
+                <div className="my-2 border-t border-white/10" />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => alternarGrupo(g.clave)}
+                  className={`mt-3 flex w-full items-center justify-between rounded-xl px-4 py-2 text-[10.5px] font-bold tracking-widest uppercase transition-colors ${
+                    tieneActivo ? 'text-indigo-300' : 'text-indigo-400/60 hover:text-indigo-300'
+                  } hover:bg-white/5`}
+                >
+                  <span>{GRUPO_LABELS[g.clave]}</span>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                    className={`h-3.5 w-3.5 transition-transform duration-200 ${abierto ? 'rotate-180' : ''}`}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                  </svg>
+                </button>
+              )}
+              <div
+                className={`grid transition-[grid-template-rows] duration-200 ${
+                  abierto ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+                }`}
               >
-                {item.icon}
-              </svg>
-              {!collapsed && <span>{item.label}</span>}
-            </Link>
+                <div className="space-y-1.5 overflow-hidden">{g.items.map((item) => renderItem(item))}</div>
+              </div>
+            </div>
           )
         })}
       </nav>

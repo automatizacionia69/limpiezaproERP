@@ -12,13 +12,13 @@ export function EditarCategoriaForm({ categoria }: { categoria: { id: number; no
     <form action={formAction} className="mt-6 space-y-5">
       <input type="hidden" name="id" value={categoria.id} />
       <div>
-        <label className="block text-sm font-bold text-[#1e293b]">Nombre *</label>
+        <label className="block text-sm font-bold text-[#1e293b] dark:text-slate-100">Nombre *</label>
         <input
           type="text"
           name="nombre"
           required
           defaultValue={categoria.nombre}
-          className="mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] bg-white px-4 py-3 text-base text-[#1e293b] outline-none transition-all focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
+          className="mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-3 text-base text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
         />
       </div>
 

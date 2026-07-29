@@ -63,40 +63,40 @@ export default async function KardexProductoPage({
 
   return (
     <div>
-      <Link href="/productos" className="text-sm font-bold text-[#64748b] hover:text-indigo-600">
+      <Link href="/productos" className="text-sm font-bold text-[#64748b] dark:text-slate-400 hover:text-indigo-600">
         ← Volver a Productos
       </Link>
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-[#1e293b]">📊 Kardex — {producto.nombre}</h1>
-          <p className="mt-1 text-sm font-medium text-[#64748b]">
+          <h1 className="text-2xl font-extrabold text-[#1e293b] dark:text-slate-100">📊 Kardex — {producto.nombre}</h1>
+          <p className="mt-1 text-sm font-medium text-[#64748b] dark:text-slate-400">
             {producto.codigo ? `Código: ${producto.codigo} · ` : ''}
             {movimientos?.length ?? 0} movimiento{(movimientos?.length ?? 0) === 1 ? '' : 's'}
           </p>
         </div>
         <div className="flex gap-3">
-          <div className="rounded-2xl border-2 border-indigo-100 bg-white px-5 py-3 text-center shadow-sm">
-            <p className="text-[11px] font-bold text-[#64748b]">Stock actual</p>
-            <p className="text-xl font-extrabold text-[#1e293b]">{producto.cantidad}</p>
+          <div className="rounded-2xl border-2 border-indigo-100 bg-white dark:bg-[#141a2e] px-5 py-3 text-center shadow-sm">
+            <p className="text-[11px] font-bold text-[#64748b] dark:text-slate-400">Stock actual</p>
+            <p className="text-xl font-extrabold text-[#1e293b] dark:text-slate-100">{producto.cantidad}</p>
           </div>
-          <div className="rounded-2xl border-2 border-emerald-100 bg-white px-5 py-3 text-center shadow-sm">
-            <p className="text-[11px] font-bold text-[#64748b]">Costo promedio</p>
-            <p className="text-xl font-extrabold text-[#1e293b]">S/ {Number(producto.costo).toFixed(2)}</p>
+          <div className="rounded-2xl border-2 border-emerald-100 bg-white dark:bg-[#141a2e] px-5 py-3 text-center shadow-sm">
+            <p className="text-[11px] font-bold text-[#64748b] dark:text-slate-400">Costo promedio</p>
+            <p className="text-xl font-extrabold text-[#1e293b] dark:text-slate-100">S/ {Number(producto.costo).toFixed(2)}</p>
           </div>
         </div>
       </div>
 
-      <div className="mt-6 overflow-hidden rounded-3xl border-2 border-[#e2e8f0] bg-white shadow-lg shadow-slate-500/5">
+      <div className="mt-6 overflow-hidden rounded-3xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] shadow-lg shadow-slate-500/5">
         {!movimientos || movimientos.length === 0 ? (
-          <p className="p-12 text-center text-sm font-medium text-[#64748b]">
+          <p className="p-12 text-center text-sm font-medium text-[#64748b] dark:text-slate-400">
             Este producto todavía no tiene movimientos registrados.
           </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-[13.5px]">
               <thead>
-                <tr className="border-b-2 border-[#f1f5f9] bg-[#f8fafc] text-[#64748b]">
+                <tr className="border-b-2 border-[#f1f5f9] dark:border-slate-800 bg-[#f8fafc] dark:bg-slate-800/60 text-[#64748b] dark:text-slate-400">
                   <th className="px-6 py-4 font-bold">Fecha</th>
                   <th className="px-6 py-4 font-bold">Tipo</th>
                   <th className="px-6 py-4 font-bold">Cantidad</th>
@@ -110,8 +110,8 @@ export default async function KardexProductoPage({
               </thead>
               <tbody>
                 {movimientos.map((m) => (
-                  <tr key={m.id} className="border-b border-[#f1f5f9] text-[#1e293b] transition-colors hover:bg-indigo-50/40">
-                    <td className="px-6 py-4 whitespace-nowrap text-[#64748b]">
+                  <tr key={m.id} className="border-b border-[#f1f5f9] dark:border-slate-800 text-[#1e293b] dark:text-slate-100 transition-colors hover:bg-indigo-50/40">
+                    <td className="px-6 py-4 whitespace-nowrap text-[#64748b] dark:text-slate-400">
                       {new Date(m.creado_en).toLocaleString('es-PE', {
                         day: '2-digit',
                         month: '2-digit',
@@ -129,16 +129,16 @@ export default async function KardexProductoPage({
                       {m.efecto_cantidad > 0 ? '+' : ''}
                       {m.efecto_cantidad}
                     </td>
-                    <td className="px-6 py-4 text-[#64748b]">
+                    <td className="px-6 py-4 text-[#64748b] dark:text-slate-400">
                       {m.costo_unitario !== null ? `S/ ${Number(m.costo_unitario).toFixed(2)}` : '—'}
                     </td>
-                    <td className="px-6 py-4 text-[#64748b]">
+                    <td className="px-6 py-4 text-[#64748b] dark:text-slate-400">
                       {m.valor_movimiento !== null ? `S/ ${Number(m.valor_movimiento).toFixed(2)}` : '—'}
                     </td>
                     <td className="px-6 py-4 font-bold">{m.saldo_cantidad}</td>
                     <td className="px-6 py-4 font-bold text-indigo-600">S/ {Number(m.saldo_valor).toFixed(2)}</td>
-                    <td className="px-6 py-4 text-[#64748b]">{m.motivo ?? '—'}</td>
-                    <td className="px-6 py-4 text-[#64748b]">{m.usuario_nombre ?? '—'}</td>
+                    <td className="px-6 py-4 text-[#64748b] dark:text-slate-400">{m.motivo ?? '—'}</td>
+                    <td className="px-6 py-4 text-[#64748b] dark:text-slate-400">{m.usuario_nombre ?? '—'}</td>
                   </tr>
                 ))}
               </tbody>

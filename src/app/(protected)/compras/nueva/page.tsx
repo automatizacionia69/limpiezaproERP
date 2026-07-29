@@ -12,10 +12,10 @@ export default async function NuevaCompraPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <h1 className="text-2xl font-extrabold text-[#1e293b]">🛒 Nueva orden de compra</h1>
-      <div className="mt-5 rounded-3xl border-2 border-[#e2e8f0] bg-white p-8 shadow-lg shadow-slate-500/5">
+      <h1 className="text-2xl font-extrabold text-[#1e293b] dark:text-slate-100">🛒 Nueva orden de compra</h1>
+      <div className="mt-5 rounded-3xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] p-8 shadow-lg shadow-slate-500/5">
         {!proveedores || proveedores.length === 0 ? (
-          <p className="text-sm font-medium text-[#64748b]">
+          <p className="text-sm font-medium text-[#64748b] dark:text-slate-400">
             Todavía no hay proveedores — crea uno primero en Proveedores.
           </p>
         ) : (

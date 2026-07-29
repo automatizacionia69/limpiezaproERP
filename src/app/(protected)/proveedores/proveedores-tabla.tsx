@@ -50,8 +50,8 @@ export function ProveedoresTabla({ proveedores }: { proveedores: ProveedorRow[] 
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-[#1e293b]">🚚 Proveedores</h1>
-          <p className="mt-1 text-sm font-medium text-[#64748b]">
+          <h1 className="text-2xl font-extrabold text-[#1e293b] dark:text-slate-100">🚚 Proveedores</h1>
+          <p className="mt-1 text-sm font-medium text-[#64748b] dark:text-slate-400">
             {proveedores.length} proveedor{proveedores.length === 1 ? '' : 'es'}
           </p>
         </div>
@@ -62,7 +62,7 @@ export function ProveedoresTabla({ proveedores }: { proveedores: ProveedorRow[] 
               fill="none"
               stroke="currentColor"
               strokeWidth={2}
-              className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-[#94a3b8]"
+              className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-[#94a3b8] dark:text-slate-500"
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
             </svg>
@@ -71,7 +71,7 @@ export function ProveedoresTabla({ proveedores }: { proveedores: ProveedorRow[] 
               value={filtro}
               onChange={(e) => setFiltro(e.target.value)}
               placeholder="Filtrar..."
-              className="rounded-2xl border-2 border-[#e2e8f0] bg-white py-2.5 pr-4 pl-10 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+              className="rounded-2xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] py-2.5 pr-4 pl-10 text-sm font-medium text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
             />
           </div>
           <Link
@@ -92,9 +92,9 @@ export function ProveedoresTabla({ proveedores }: { proveedores: ProveedorRow[] 
         </p>
       )}
 
-      <div className="mt-6 overflow-hidden rounded-3xl border-2 border-[#e2e8f0] bg-white shadow-lg shadow-slate-500/5">
+      <div className="mt-6 overflow-hidden rounded-3xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] shadow-lg shadow-slate-500/5">
         {proveedores.length === 0 ? (
-          <p className="p-12 text-center text-sm font-medium text-[#64748b]">
+          <p className="p-12 text-center text-sm font-medium text-[#64748b] dark:text-slate-400">
             No hay registros. Usa el botón{' '}
             <Link href="/proveedores/nuevo" className="font-bold text-cyan-600">
               Nuevo proveedor
@@ -102,12 +102,12 @@ export function ProveedoresTabla({ proveedores }: { proveedores: ProveedorRow[] 
             para agregar el primero.
           </p>
         ) : filtrados.length === 0 ? (
-          <p className="p-12 text-center text-sm font-medium text-[#64748b]">Ningún proveedor coincide con “{filtro}”.</p>
+          <p className="p-12 text-center text-sm font-medium text-[#64748b] dark:text-slate-400">Ningún proveedor coincide con “{filtro}”.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-[13.5px]">
               <thead>
-                <tr className="border-b-2 border-[#f1f5f9] bg-[#f8fafc] text-[#64748b]">
+                <tr className="border-b-2 border-[#f1f5f9] dark:border-slate-800 bg-[#f8fafc] dark:bg-slate-800/60 text-[#64748b] dark:text-slate-400">
                   <th className="px-6 py-4 font-bold">Razón social</th>
                   <th className="px-6 py-4 font-bold">RUC</th>
                   <th className="px-6 py-4 font-bold">Contacto</th>
@@ -118,16 +118,16 @@ export function ProveedoresTabla({ proveedores }: { proveedores: ProveedorRow[] 
               </thead>
               <tbody>
                 {filtrados.map((p) => (
-                  <tr key={p.id} className="border-b border-[#f1f5f9] text-[#1e293b] transition-colors hover:bg-cyan-50/40">
+                  <tr key={p.id} className="border-b border-[#f1f5f9] dark:border-slate-800 text-[#1e293b] dark:text-slate-100 transition-colors hover:bg-cyan-50/40">
                     <td className="px-6 py-4 font-bold">{p.nombre}</td>
-                    <td className="px-6 py-4 text-[#64748b]">{p.ruc ?? '—'}</td>
-                    <td className="px-6 py-4 text-[#64748b]">{p.contacto ?? '—'}</td>
-                    <td className="px-6 py-4 text-[#64748b]">{p.telefono ?? '—'}</td>
-                    <td className="px-6 py-4 text-[#64748b]">{p.email ?? '—'}</td>
+                    <td className="px-6 py-4 text-[#64748b] dark:text-slate-400">{p.ruc ?? '—'}</td>
+                    <td className="px-6 py-4 text-[#64748b] dark:text-slate-400">{p.contacto ?? '—'}</td>
+                    <td className="px-6 py-4 text-[#64748b] dark:text-slate-400">{p.telefono ?? '—'}</td>
+                    <td className="px-6 py-4 text-[#64748b] dark:text-slate-400">{p.email ?? '—'}</td>
                     <td className="px-6 py-4 text-right whitespace-nowrap">
                       <Link
                         href={`/proveedores/${p.id}/editar`}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] transition-all hover:bg-cyan-100 hover:text-cyan-600"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] dark:text-slate-400 transition-all hover:bg-cyan-100 hover:text-cyan-600"
                         title="Editar"
                       >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
@@ -143,7 +143,7 @@ export function ProveedoresTabla({ proveedores }: { proveedores: ProveedorRow[] 
                         onClick={() => handleEliminar(p.id, p.nombre)}
                         disabled={isPending && pendienteId === p.id}
                         title="Eliminar"
-                        className="ml-1.5 inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] transition-all hover:bg-red-100 hover:text-red-600 disabled:opacity-50"
+                        className="ml-1.5 inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] dark:text-slate-400 transition-all hover:bg-red-100 hover:text-red-600 disabled:opacity-50"
                       >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
                           <path

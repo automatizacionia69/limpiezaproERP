@@ -19,8 +19,8 @@ const TIPOS = [
 ]
 
 const CAMPO =
-  'mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] bg-white px-4 py-3 text-base text-[#1e293b] outline-none transition-all focus:border-amber-500 focus:ring-4 focus:ring-amber-100'
-const LABEL = 'block text-sm font-bold text-[#1e293b]'
+  'mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-3 text-base text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-amber-500 focus:ring-4 focus:ring-amber-100'
+const LABEL = 'block text-sm font-bold text-[#1e293b] dark:text-slate-100'
 
 export function MovimientoForm({ productos }: { productos: Producto[] }) {
   const [estado, formAction] = useActionState<EstadoFormulario, FormData>(registrarMovimiento, {
@@ -42,7 +42,7 @@ export function MovimientoForm({ productos }: { productos: Producto[] }) {
               type="button"
               onClick={() => setTipo(t.valor)}
               className={`rounded-xl py-3 text-sm font-bold transition-all ${
-                tipo === t.valor ? t.activo : 'bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0]'
+                tipo === t.valor ? t.activo : 'bg-[#f1f5f9] dark:bg-slate-800 text-[#64748b] dark:text-slate-400 hover:bg-[#e2e8f0] dark:hover:bg-slate-700'
               }`}
             >
               <div className="text-lg">{t.emoji}</div>
@@ -70,7 +70,7 @@ export function MovimientoForm({ productos }: { productos: Producto[] }) {
         <label className={LABEL}>{CANTIDAD_LABEL[tipo]} *</label>
         <input type="number" step="1" min="0" name="cantidad" required className={CAMPO} />
         {tipo === 'ajuste' && (
-          <p className="mt-1.5 text-xs font-medium text-[#94a3b8]">
+          <p className="mt-1.5 text-xs font-medium text-[#94a3b8] dark:text-slate-500">
             Es el total real contado, no la diferencia — el sistema calcula el ajuste solo.
           </p>
         )}

@@ -24,8 +24,8 @@ export default async function CotizacionesPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-[#1e293b]">🔎 Consulta de Cotización</h1>
-          <p className="mt-1 text-sm font-medium text-[#64748b]">
+          <h1 className="text-2xl font-extrabold text-[#1e293b] dark:text-slate-100">🔎 Consulta de Cotización</h1>
+          <p className="mt-1 text-sm font-medium text-[#64748b] dark:text-slate-400">
             {cotizaciones?.length ?? 0} cotización{(cotizaciones?.length ?? 0) === 1 ? '' : 'es'} guardada{(cotizaciones?.length ?? 0) === 1 ? '' : 's'}
           </p>
         </div>

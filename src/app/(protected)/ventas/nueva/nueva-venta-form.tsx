@@ -13,8 +13,8 @@ function lineaVacia(): Linea {
 }
 
 const CAMPO =
-  'mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] bg-white px-4 py-3 text-base text-[#1e293b] outline-none transition-all focus:border-teal-500 focus:ring-4 focus:ring-teal-100'
-const LABEL = 'block text-sm font-bold text-[#1e293b]'
+  'mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-3 text-base text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-teal-500 focus:ring-4 focus:ring-teal-100'
+const LABEL = 'block text-sm font-bold text-[#1e293b] dark:text-slate-100'
 
 export function NuevaVentaForm({
   clientes,
@@ -101,7 +101,7 @@ export function NuevaVentaForm({
         <input type="text" name="observacion" className={CAMPO} />
       </div>
 
-      <div className="rounded-2xl bg-teal-50 p-5">
+      <div className="rounded-2xl bg-teal-50 dark:bg-slate-800/40 p-5">
         <div className="flex items-center justify-between">
           <label className={LABEL}>Productos *</label>
           <button
@@ -135,7 +135,7 @@ export function NuevaVentaForm({
                     placeholder="Cant."
                     value={l.cantidad}
                     onChange={(e) => actualizarLinea(i, 'cantidad', e.target.value)}
-                    className="w-24 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm text-[#1e293b] outline-none focus:border-teal-500"
+                    className="w-24 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2.5 text-sm text-[#1e293b] dark:text-slate-100 outline-none focus:border-teal-500"
                   />
                   <input
                     type="number"
@@ -144,13 +144,13 @@ export function NuevaVentaForm({
                     placeholder="Precio"
                     value={l.precio_unitario}
                     onChange={(e) => actualizarLinea(i, 'precio_unitario', e.target.value)}
-                    className="w-24 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm text-[#1e293b] outline-none focus:border-teal-500"
+                    className="w-24 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2.5 text-sm text-[#1e293b] dark:text-slate-100 outline-none focus:border-teal-500"
                   />
                   <button
                     type="button"
                     onClick={() => quitarLinea(i)}
                     disabled={lineas.length === 1}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#64748b] transition-all hover:bg-red-100 hover:text-red-600 disabled:opacity-30"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white dark:bg-[#141a2e] text-[#64748b] dark:text-slate-400 transition-all hover:bg-red-100 hover:text-red-600 disabled:opacity-30"
                     title="Quitar línea"
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
@@ -170,7 +170,7 @@ export function NuevaVentaForm({
         </div>
 
         <div className="mt-4 flex items-center justify-end gap-2 border-t-2 border-teal-100 pt-3">
-          <span className="text-sm font-medium text-[#64748b]">Total:</span>
+          <span className="text-sm font-medium text-[#64748b] dark:text-slate-400">Total:</span>
           <span className="text-xl font-extrabold text-teal-600">S/ {total.toFixed(2)}</span>
         </div>
       </div>
@@ -187,7 +187,7 @@ export function NuevaVentaForm({
       >
         Guardar orden (pendiente)
       </button>
-      <p className="text-center text-xs font-medium text-[#94a3b8]">
+      <p className="text-center text-xs font-medium text-[#94a3b8] dark:text-slate-500">
         La orden se guarda como "pendiente" — el stock recién se descuenta cuando la marques como
         "Facturada" desde la lista.
       </p>

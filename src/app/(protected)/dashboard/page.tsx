@@ -88,7 +88,7 @@ export default async function DashboardPage() {
     : { data: null }
 
   const inicioMes = inicioDeMesISO()
-  const inicioMesFecha = aFechaISO(new Date())
+  const inicioMesFecha = aFechaISO(inicioMesesAtras(0))
   const inicioSeisMeses = inicioMesesAtras(5).toISOString()
   const inicioSeisMesesFecha = aFechaISO(inicioMesesAtras(5))
 
@@ -180,35 +180,35 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <h2 className="mt-8 text-xs font-bold tracking-widest text-[#94a3b8] uppercase">Inventario</h2>
+      <h2 className="mt-8 text-xs font-bold tracking-widest text-[#94a3b8] dark:text-slate-500 uppercase">Inventario</h2>
       <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-[#e5e9f0] bg-white p-6 shadow-sm transition-all hover:border-indigo-200 hover:shadow-md">
+        <div className="rounded-2xl border border-[#e5e9f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] p-6 shadow-sm transition-all hover:border-indigo-200 hover:shadow-md">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="h-5 w-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-8.25 4.5-8.25-4.5M20.25 7.5v9l-8.25 4.5m8.25-13.5-8.25-4.5-8.25 4.5m16.5 0-8.25 4.5m-8.25-4.5v9l8.25 4.5m-8.25-13.5 8.25 4.5m0 9v-9" />
               </svg>
             </div>
-            <p className="text-xs font-bold tracking-wide text-[#94a3b8] uppercase">Total de productos</p>
+            <p className="text-xs font-bold tracking-wide text-[#94a3b8] dark:text-slate-500 uppercase">Total de productos</p>
           </div>
-          <p className="mt-4 text-3xl font-extrabold text-[#0f172a]">{totalProductos}</p>
+          <p className="mt-4 text-3xl font-extrabold text-[#0f172a] dark:text-white">{totalProductos}</p>
         </div>
 
-        <div className="rounded-2xl border border-[#e5e9f0] bg-white p-6 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md">
+        <div className="rounded-2xl border border-[#e5e9f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] p-6 shadow-sm transition-all hover:border-emerald-200 hover:shadow-md">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} className="h-5 w-5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-4.5-5.25 4.5 4.5 4.5-4.5M7.5 8.25 12 3.75l4.5 4.5" />
               </svg>
             </div>
-            <p className="text-xs font-bold tracking-wide text-[#94a3b8] uppercase">Valor del inventario</p>
+            <p className="text-xs font-bold tracking-wide text-[#94a3b8] dark:text-slate-500 uppercase">Valor del inventario</p>
           </div>
-          <p className="mt-4 text-3xl font-extrabold text-[#0f172a]">S/ {valorInventario.toFixed(2)}</p>
+          <p className="mt-4 text-3xl font-extrabold text-[#0f172a] dark:text-white">S/ {valorInventario.toFixed(2)}</p>
         </div>
 
         <div
-          className={`rounded-2xl border bg-white p-6 shadow-sm transition-all hover:shadow-md ${
-            hayStockBajo ? 'border-amber-200 hover:border-amber-300' : 'border-[#e5e9f0] hover:border-slate-300'
+          className={`rounded-2xl border bg-white dark:bg-[#141a2e] p-6 shadow-sm transition-all hover:shadow-md ${
+            hayStockBajo ? 'border-amber-200 hover:border-amber-300' : 'border-[#e5e9f0] dark:border-slate-700 hover:border-slate-300'
           }`}
         >
           <div className="flex items-center gap-3">
@@ -221,48 +221,48 @@ export default async function DashboardPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
               </svg>
             </div>
-            <p className="text-xs font-bold tracking-wide text-[#94a3b8] uppercase">Con stock bajo</p>
+            <p className="text-xs font-bold tracking-wide text-[#94a3b8] dark:text-slate-500 uppercase">Con stock bajo</p>
           </div>
-          <p className="mt-4 text-3xl font-extrabold text-[#0f172a]">{stockBajo?.length ?? 0}</p>
+          <p className="mt-4 text-3xl font-extrabold text-[#0f172a] dark:text-white">{stockBajo?.length ?? 0}</p>
         </div>
       </div>
 
-      <h2 className="mt-8 text-xs font-bold tracking-widest text-[#94a3b8] uppercase">Este mes</h2>
+      <h2 className="mt-8 text-xs font-bold tracking-widest text-[#94a3b8] dark:text-slate-500 uppercase">Este mes</h2>
       <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Link
           href="/ventas"
-          className="rounded-2xl border border-[#e5e9f0] border-l-[3px] border-l-teal-500 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+          className="rounded-2xl border border-[#e5e9f0] dark:border-slate-700 border-l-[3px] border-l-teal-500 bg-white dark:bg-[#141a2e] p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
         >
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-50 text-base">💰</div>
-          <p className="mt-3 text-xs font-bold tracking-wide text-[#94a3b8] uppercase">Ventas facturadas</p>
-          <p className="mt-1 text-2xl font-extrabold text-[#0f172a]">S/ {totalVentasMes.toFixed(2)}</p>
+          <p className="mt-3 text-xs font-bold tracking-wide text-[#94a3b8] dark:text-slate-500 uppercase">Ventas facturadas</p>
+          <p className="mt-1 text-2xl font-extrabold text-[#0f172a] dark:text-white">S/ {totalVentasMes.toFixed(2)}</p>
         </Link>
 
         <Link
           href="/compras"
-          className="rounded-2xl border border-[#e5e9f0] border-l-[3px] border-l-pink-500 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+          className="rounded-2xl border border-[#e5e9f0] dark:border-slate-700 border-l-[3px] border-l-pink-500 bg-white dark:bg-[#141a2e] p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
         >
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-pink-50 text-base">🛒</div>
-          <p className="mt-3 text-xs font-bold tracking-wide text-[#94a3b8] uppercase">Compras recibidas</p>
-          <p className="mt-1 text-2xl font-extrabold text-[#0f172a]">S/ {totalComprasMes.toFixed(2)}</p>
+          <p className="mt-3 text-xs font-bold tracking-wide text-[#94a3b8] dark:text-slate-500 uppercase">Compras recibidas</p>
+          <p className="mt-1 text-2xl font-extrabold text-[#0f172a] dark:text-white">S/ {totalComprasMes.toFixed(2)}</p>
         </Link>
 
         <Link
           href="/cotizaciones"
-          className="rounded-2xl border border-[#e5e9f0] border-l-[3px] border-l-sky-500 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+          className="rounded-2xl border border-[#e5e9f0] dark:border-slate-700 border-l-[3px] border-l-sky-500 bg-white dark:bg-[#141a2e] p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
         >
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-50 text-base">📝</div>
-          <p className="mt-3 text-xs font-bold tracking-wide text-[#94a3b8] uppercase">Cotizaciones creadas</p>
-          <p className="mt-1 text-2xl font-extrabold text-[#0f172a]">{cotizacionesMes ?? 0}</p>
+          <p className="mt-3 text-xs font-bold tracking-wide text-[#94a3b8] dark:text-slate-500 uppercase">Cotizaciones creadas</p>
+          <p className="mt-1 text-2xl font-extrabold text-[#0f172a] dark:text-white">{cotizacionesMes ?? 0}</p>
         </Link>
 
         <Link
           href="/ventas"
-          className="rounded-2xl border border-[#e5e9f0] border-l-[3px] border-l-amber-500 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+          className="rounded-2xl border border-[#e5e9f0] dark:border-slate-700 border-l-[3px] border-l-amber-500 bg-white dark:bg-[#141a2e] p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
         >
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-50 text-base">⏳</div>
-          <p className="mt-3 text-xs font-bold tracking-wide text-[#94a3b8] uppercase">Ventas por facturar</p>
-          <p className="mt-1 text-2xl font-extrabold text-[#0f172a]">{ventasPendientes ?? 0}</p>
+          <p className="mt-3 text-xs font-bold tracking-wide text-[#94a3b8] dark:text-slate-500 uppercase">Ventas por facturar</p>
+          <p className="mt-1 text-2xl font-extrabold text-[#0f172a] dark:text-white">{ventasPendientes ?? 0}</p>
         </Link>
       </div>
 
@@ -270,19 +270,19 @@ export default async function DashboardPage() {
         <VentasComprasChart datos={datosGrafico} />
       </div>
 
-      <div className="mt-8 overflow-hidden rounded-2xl border border-[#e5e9f0] bg-white shadow-sm">
-        <div className="border-b border-[#e5e9f0] px-7 py-5">
-          <h2 className="text-base font-bold text-[#0f172a]">Productos con stock bajo</h2>
+      <div className="mt-8 overflow-hidden rounded-2xl border border-[#e5e9f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] shadow-sm">
+        <div className="border-b border-[#e5e9f0] dark:border-slate-700 px-7 py-5">
+          <h2 className="text-base font-bold text-[#0f172a] dark:text-white">Productos con stock bajo</h2>
         </div>
         {!stockBajo || stockBajo.length === 0 ? (
-          <p className="p-10 text-center text-sm font-medium text-[#64748b]">
+          <p className="p-10 text-center text-sm font-medium text-[#64748b] dark:text-slate-400">
             🎉 Ningún producto está por debajo de su punto de reorden.
           </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-[13.5px]">
               <thead>
-                <tr className="border-b-2 border-[#f1f5f9] text-[#64748b]">
+                <tr className="border-b-2 border-[#f1f5f9] dark:border-slate-800 text-[#64748b] dark:text-slate-400">
                   <th className="px-7 py-3 font-bold">Producto</th>
                   <th className="px-7 py-3 font-bold">Cantidad</th>
                   <th className="px-7 py-3 font-bold">Unidad</th>
@@ -291,15 +291,15 @@ export default async function DashboardPage() {
               </thead>
               <tbody>
                 {stockBajo.map((p) => (
-                  <tr key={p.id} className="border-b border-[#f1f5f9] text-[#1e293b] hover:bg-amber-50/50">
+                  <tr key={p.id} className="border-b border-[#f1f5f9] dark:border-slate-800 text-[#1e293b] dark:text-slate-100 hover:bg-amber-50/50">
                     <td className="px-7 py-3 font-semibold">{p.nombre}</td>
                     <td className="px-7 py-3">
                       <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">
                         {p.cantidad}
                       </span>
                     </td>
-                    <td className="px-7 py-3 text-[#64748b]">{p.unidad_nombre ?? '—'}</td>
-                    <td className="px-7 py-3 text-[#64748b]">{p.punto_reorden ?? '—'}</td>
+                    <td className="px-7 py-3 text-[#64748b] dark:text-slate-400">{p.unidad_nombre ?? '—'}</td>
+                    <td className="px-7 py-3 text-[#64748b] dark:text-slate-400">{p.punto_reorden ?? '—'}</td>
                   </tr>
                 ))}
               </tbody>

@@ -20,15 +20,15 @@ export function VentasComprasChart({ datos }: { datos: PuntoMes[] }) {
   const hayDatos = datos.some((d) => d.ventas > 0 || d.compras > 0)
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#e5e9f0] bg-white shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#e5e9f0] px-7 py-5">
-        <h2 className="text-base font-bold text-[#0f172a]">Ventas vs Compras — últimos 6 meses</h2>
+    <div className="overflow-hidden rounded-2xl border border-[#e5e9f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#e5e9f0] dark:border-slate-700 px-7 py-5">
+        <h2 className="text-base font-bold text-[#0f172a] dark:text-white">Ventas vs Compras — últimos 6 meses</h2>
         <div className="flex items-center gap-5 text-xs font-bold">
-          <span className="flex items-center gap-2 text-[#1e293b]">
+          <span className="flex items-center gap-2 text-[#1e293b] dark:text-slate-100">
             <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: COLOR_VENTAS }} />
             Ventas
           </span>
-          <span className="flex items-center gap-2 text-[#1e293b]">
+          <span className="flex items-center gap-2 text-[#1e293b] dark:text-slate-100">
             <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: COLOR_COMPRAS }} />
             Compras
           </span>
@@ -37,13 +37,13 @@ export function VentasComprasChart({ datos }: { datos: PuntoMes[] }) {
 
       <div className="px-7 py-8">
         {!hayDatos ? (
-          <p className="py-16 text-center text-sm font-medium text-[#64748b]">
+          <p className="py-16 text-center text-sm font-medium text-[#64748b] dark:text-slate-400">
             Aún no hay ventas ni compras registradas en este periodo.
           </p>
         ) : (
           <div className="flex gap-6">
             <div
-              className="flex flex-col justify-between text-right text-[11px] font-semibold text-[#94a3b8]"
+              className="flex flex-col justify-between text-right text-[11px] font-semibold text-[#94a3b8] dark:text-slate-500"
               style={{ height: ALTURA_CHART }}
             >
               {NIVELES_GRILLA.map((g) => (
@@ -54,7 +54,7 @@ export function VentasComprasChart({ datos }: { datos: PuntoMes[] }) {
             <div className="relative flex-1">
               <div className="absolute inset-0 flex flex-col justify-between">
                 {NIVELES_GRILLA.map((g) => (
-                  <div key={g} className="border-t border-[#f1f5f9]" />
+                  <div key={g} className="border-t border-[#f1f5f9] dark:border-slate-800" />
                 ))}
               </div>
 
@@ -75,7 +75,7 @@ export function VentasComprasChart({ datos }: { datos: PuntoMes[] }) {
                         style={{ height: Math.max(2, (d.compras / maxValor) * ALTURA_CHART), backgroundColor: COLOR_COMPRAS }}
                       />
                     </div>
-                    <span className="mt-2 text-[11px] font-bold text-[#64748b] capitalize">{d.mes}</span>
+                    <span className="mt-2 text-[11px] font-bold text-[#64748b] dark:text-slate-400 capitalize">{d.mes}</span>
                   </div>
                 ))}
               </div>

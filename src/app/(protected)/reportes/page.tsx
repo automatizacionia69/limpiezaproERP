@@ -22,8 +22,8 @@ export default async function ReportesPage() {
   await requierePermiso('reportes')
   return (
     <div>
-      <h1 className="text-2xl font-extrabold text-[#1e293b]">📈 Reportes</h1>
-      <p className="mt-1 text-sm font-medium text-[#64748b]">
+      <h1 className="text-2xl font-extrabold text-[#1e293b] dark:text-slate-100">📈 Reportes</h1>
+      <p className="mt-1 text-sm font-medium text-[#64748b] dark:text-slate-400">
         Exporta o imprime la información de tu inventario.
       </p>
 
@@ -32,7 +32,7 @@ export default async function ReportesPage() {
           <Link
             key={r.href}
             href={r.href}
-            className="group overflow-hidden rounded-3xl border-2 border-[#e2e8f0] bg-white shadow-lg shadow-slate-500/5 transition-all hover:-translate-y-1 hover:shadow-xl"
+            className="group overflow-hidden rounded-3xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] shadow-lg shadow-slate-500/5 transition-all hover:-translate-y-1 hover:shadow-xl"
           >
             <div className={`h-2 bg-gradient-to-r ${r.gradiente}`} />
             <div className="p-7">
@@ -41,8 +41,8 @@ export default async function ReportesPage() {
               >
                 {r.emoji}
               </div>
-              <h2 className="mt-4 text-lg font-extrabold text-[#1e293b]">{r.titulo}</h2>
-              <p className="mt-1 text-sm text-[#64748b]">{r.descripcion}</p>
+              <h2 className="mt-4 text-lg font-extrabold text-[#1e293b] dark:text-slate-100">{r.titulo}</h2>
+              <p className="mt-1 text-sm text-[#64748b] dark:text-slate-400">{r.descripcion}</p>
             </div>
           </Link>
         ))}

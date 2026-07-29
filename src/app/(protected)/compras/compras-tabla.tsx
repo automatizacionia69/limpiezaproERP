@@ -27,7 +27,17 @@ type OrdenRow = {
   estado: string
   total: number
   creado_en: string
+  fecha_registro: string
+  tipo_documento: string
+  documento_serie: string | null
+  documento_numero: string | null
   proveedores: { nombre: string } | null
+}
+
+const TIPO_DOCUMENTO_LABELS: Record<string, string> = {
+  factura: 'Factura',
+  boleta: 'Boleta',
+  guia_remision: 'Guía de remisión',
 }
 
 type Filtros = { proveedor: string; numero: string; desde: string; hasta: string }
@@ -103,43 +113,43 @@ export function ComprasTabla({ ordenes }: { ordenes: OrdenRow[] }) {
         </p>
       )}
 
-      <form onSubmit={buscar} className="mb-4 flex flex-wrap items-end gap-3 rounded-2xl border-2 border-[#e2e8f0] bg-white p-4">
+      <form onSubmit={buscar} className="mb-4 flex flex-wrap items-end gap-3 rounded-2xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] p-4">
         <div>
-          <label className="block text-xs font-bold text-[#64748b]">Proveedor</label>
+          <label className="block text-xs font-bold text-[#64748b] dark:text-slate-400">Proveedor</label>
           <input
             type="text"
             value={borrador.proveedor}
             onChange={(e) => setBorrador((b) => ({ ...b, proveedor: e.target.value }))}
             placeholder="Nombre del proveedor..."
-            className="mt-1 w-48 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-pink-500 focus:ring-4 focus:ring-pink-100"
+            className="mt-1 w-48 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2.5 text-sm font-medium text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-pink-500 focus:ring-4 focus:ring-pink-100"
           />
         </div>
         <div>
-          <label className="block text-xs font-bold text-[#64748b]">Número</label>
+          <label className="block text-xs font-bold text-[#64748b] dark:text-slate-400">Número</label>
           <input
             type="text"
             value={borrador.numero}
             onChange={(e) => setBorrador((b) => ({ ...b, numero: e.target.value }))}
             placeholder="OC-00001..."
-            className="mt-1 w-36 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-pink-500 focus:ring-4 focus:ring-pink-100"
+            className="mt-1 w-36 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2.5 text-sm font-medium text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-pink-500 focus:ring-4 focus:ring-pink-100"
           />
         </div>
         <div>
-          <label className="block text-xs font-bold text-[#64748b]">Desde</label>
+          <label className="block text-xs font-bold text-[#64748b] dark:text-slate-400">Desde</label>
           <input
             type="date"
             value={borrador.desde}
             onChange={(e) => setBorrador((b) => ({ ...b, desde: e.target.value }))}
-            className="mt-1 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-pink-500 focus:ring-4 focus:ring-pink-100"
+            className="mt-1 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2.5 text-sm font-medium text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-pink-500 focus:ring-4 focus:ring-pink-100"
           />
         </div>
         <div>
-          <label className="block text-xs font-bold text-[#64748b]">Hasta</label>
+          <label className="block text-xs font-bold text-[#64748b] dark:text-slate-400">Hasta</label>
           <input
             type="date"
             value={borrador.hasta}
             onChange={(e) => setBorrador((b) => ({ ...b, hasta: e.target.value }))}
-            className="mt-1 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-pink-500 focus:ring-4 focus:ring-pink-100"
+            className="mt-1 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2.5 text-sm font-medium text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-pink-500 focus:ring-4 focus:ring-pink-100"
           />
         </div>
         <button
@@ -152,26 +162,27 @@ export function ComprasTabla({ ordenes }: { ordenes: OrdenRow[] }) {
           <button
             type="button"
             onClick={limpiar}
-            className="rounded-xl border-2 border-[#e2e8f0] bg-white px-5 py-2.5 text-sm font-bold text-[#64748b] transition-all hover:bg-[#f8fafc]"
+            className="rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-5 py-2.5 text-sm font-bold text-[#64748b] dark:text-slate-400 transition-all hover:bg-[#f8fafc]"
           >
             Limpiar
           </button>
         )}
       </form>
 
-      <div className="overflow-hidden rounded-3xl border-2 border-[#e2e8f0] bg-white shadow-lg shadow-slate-500/5">
+      <div className="overflow-hidden rounded-3xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] shadow-lg shadow-slate-500/5">
         {ordenes.length === 0 ? (
-          <p className="p-12 text-center text-sm font-medium text-[#64748b]">Todavía no hay órdenes de compra.</p>
+          <p className="p-12 text-center text-sm font-medium text-[#64748b] dark:text-slate-400">Todavía no hay órdenes de compra.</p>
         ) : filtradas.length === 0 ? (
-          <p className="p-12 text-center text-sm font-medium text-[#64748b]">Ninguna orden coincide con la búsqueda.</p>
+          <p className="p-12 text-center text-sm font-medium text-[#64748b] dark:text-slate-400">Ninguna orden coincide con la búsqueda.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-[13.5px]">
               <thead>
-                <tr className="border-b-2 border-[#f1f5f9] bg-[#f8fafc] text-[#64748b]">
+                <tr className="border-b-2 border-[#f1f5f9] dark:border-slate-800 bg-[#f8fafc] dark:bg-slate-800/60 text-[#64748b] dark:text-slate-400">
                   <th className="px-6 py-4 font-bold">Número</th>
                   <th className="px-6 py-4 font-bold">Fecha</th>
                   <th className="px-6 py-4 font-bold">Proveedor</th>
+                  <th className="px-6 py-4 font-bold">Documento</th>
                   <th className="px-6 py-4 font-bold">Total</th>
                   <th className="px-6 py-4 font-bold">Estado</th>
                   <th className="px-6 py-4 text-right font-bold">Acciones</th>
@@ -179,12 +190,20 @@ export function ComprasTabla({ ordenes }: { ordenes: OrdenRow[] }) {
               </thead>
               <tbody>
                 {filtradas.map((o) => (
-                  <tr key={o.id} className="border-b border-[#f1f5f9] text-[#1e293b] transition-colors hover:bg-pink-50/40">
+                  <tr key={o.id} className="border-b border-[#f1f5f9] dark:border-slate-800 text-[#1e293b] dark:text-slate-100 transition-colors hover:bg-pink-50/40">
                     <td className="px-6 py-4 font-bold">{o.numero}</td>
-                    <td className="px-6 py-4 text-[#64748b]">
+                    <td className="px-6 py-4 text-[#64748b] dark:text-slate-400">
                       {new Date(o.creado_en).toLocaleDateString('es-PE')}
                     </td>
                     <td className="px-6 py-4">{o.proveedores?.nombre ?? '—'}</td>
+                    <td className="px-6 py-4 text-[#64748b] dark:text-slate-400">
+                      {TIPO_DOCUMENTO_LABELS[o.tipo_documento] ?? o.tipo_documento}
+                      {o.documento_serie && o.documento_numero && (
+                        <span className="ml-1 font-semibold text-[#1e293b] dark:text-slate-100">
+                          {o.documento_serie}-{o.documento_numero}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 font-semibold">S/ {Number(o.total).toFixed(2)}</td>
                     <td className="px-6 py-4">
                       <span

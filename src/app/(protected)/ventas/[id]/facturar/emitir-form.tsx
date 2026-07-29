@@ -7,7 +7,7 @@ import { DIAS_CREDITO_OPCIONES, MEDIOS_PAGO, TIPO_COMPROBANTE_LABELS, calcularFe
 import { Buscador } from '@/components/buscador'
 
 type Cliente = { id: number; nombre: string; documento: string | null }
-type Producto = { id: number; nombre: string; precio_venta: number | null }
+type Producto = { id: number; nombre: string; cantidad: number; precio_venta: number | null }
 type Vendedor = { id: string; nombre: string }
 type Linea = { producto_id: number | ''; cantidad: number | ''; precio_unitario: number | '' }
 type TipoComprobante = 'factura' | 'boleta' | 'nota_venta' | 'ticket'
@@ -23,8 +23,8 @@ function hoyISO() {
 }
 
 const CAMPO =
-  'mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] bg-white px-4 py-3 text-base text-[#1e293b] outline-none transition-all focus:border-teal-500 focus:ring-4 focus:ring-teal-100'
-const LABEL = 'block text-sm font-bold text-[#1e293b]'
+  'mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-3 text-base text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-teal-500 focus:ring-4 focus:ring-teal-100'
+const LABEL = 'block text-sm font-bold text-[#1e293b] dark:text-slate-100'
 
 export function EmitirComprobanteForm({
   ordenId,
@@ -60,6 +60,11 @@ export function EmitirComprobanteForm({
       : [lineaVacia()]
   )
   const [vistaPrevia, setVistaPrevia] = useState(false)
+
+  const opcionesProductos = useMemo(
+    () => productos.map((p) => ({ id: p.id, nombre: p.nombre, subtitulo: `stock: ${p.cantidad}` })),
+    [productos]
+  )
 
   const clienteSeleccionado = clientes.find((c) => c.id === clienteId)
   const documentoCliente = (clienteSeleccionado?.documento ?? '').trim()
@@ -116,18 +121,18 @@ export function EmitirComprobanteForm({
   return (
     <div className="mt-5">
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_460px]">
-        <form action={formAction} className="rounded-3xl border-2 border-[#e2e8f0] bg-white p-8 shadow-lg shadow-slate-500/5">
+        <form action={formAction} className="rounded-3xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] p-8 shadow-lg shadow-slate-500/5">
           <input type="hidden" name="orden_id" value={ordenId} />
           <input type="hidden" name="lineas" value={lineasJson} />
           <input type="hidden" name="cliente_id" value={clienteId} />
           <input type="hidden" name="vendedor_id" value={vendedorId} />
 
-          <div className="flex gap-2 border-b-2 border-[#f1f5f9]">
+          <div className="flex gap-2 border-b-2 border-[#f1f5f9] dark:border-slate-800">
             <button
               type="button"
               onClick={() => setTab('venta')}
               className={`-mb-0.5 rounded-t-xl border-b-2 px-5 py-3 text-sm font-bold transition-all ${
-                tab === 'venta' ? 'border-teal-500 text-teal-600' : 'border-transparent text-[#64748b] hover:text-[#1e293b]'
+                tab === 'venta' ? 'border-teal-500 text-teal-600' : 'border-transparent text-[#64748b] dark:text-slate-400 hover:text-[#1e293b]'
               }`}
             >
               🧾 Comprobante
@@ -136,7 +141,7 @@ export function EmitirComprobanteForm({
               type="button"
               onClick={() => setTab('vendedor')}
               className={`-mb-0.5 rounded-t-xl border-b-2 px-5 py-3 text-sm font-bold transition-all ${
-                tab === 'vendedor' ? 'border-teal-500 text-teal-600' : 'border-transparent text-[#64748b] hover:text-[#1e293b]'
+                tab === 'vendedor' ? 'border-teal-500 text-teal-600' : 'border-transparent text-[#64748b] dark:text-slate-400 hover:text-[#1e293b]'
               }`}
             >
               🧑‍💼 Vendedor
@@ -156,7 +161,7 @@ export function EmitirComprobanteForm({
                   {TIPOS.map((t) => {
                     const deshabilitado = (t === 'factura' && !tieneRuc) || (t === 'boleta' && tieneRuc)
                     return (
-                      <option key={t} value={t} disabled={deshabilitado} className="text-[#1e293b]">
+                      <option key={t} value={t} disabled={deshabilitado} className="text-[#1e293b] dark:text-slate-100">
                         {TIPO_COMPROBANTE_LABELS[t]}
                         {t === 'factura' && !tieneRuc ? ' (requiere cliente con RUC)' : ''}
                         {t === 'boleta' && tieneRuc ? ' (cliente tiene RUC — usa Factura)' : ''}
@@ -202,7 +207,7 @@ export function EmitirComprobanteForm({
                 <label className={LABEL}>Días de crédito</label>
                 <select name="dias_credito" value={diasCredito} onChange={(e) => setDiasCredito(e.target.value)} className={CAMPO}>
                   {DIAS_CREDITO_OPCIONES.map((d) => (
-                    <option key={d} value={d} className="text-[#1e293b]">
+                    <option key={d} value={d} className="text-[#1e293b] dark:text-slate-100">
                       {d}
                     </option>
                   ))}
@@ -212,7 +217,7 @@ export function EmitirComprobanteForm({
                 <label className={LABEL}>Medio de pago</label>
                 <select name="medio_pago" value={medioPago} onChange={(e) => setMedioPago(e.target.value)} className={CAMPO}>
                   {MEDIOS_PAGO.map((m) => (
-                    <option key={m} value={m} className="text-[#1e293b]">
+                    <option key={m} value={m} className="text-[#1e293b] dark:text-slate-100">
                       {m}
                     </option>
                   ))}
@@ -220,7 +225,7 @@ export function EmitirComprobanteForm({
               </div>
             </div>
 
-            <div className="rounded-2xl bg-teal-50 p-5">
+            <div className="rounded-2xl bg-teal-50 dark:bg-slate-800/40 p-5">
               <div className="flex items-center justify-between">
                 <label className={LABEL}>Productos *</label>
                 <button
@@ -233,55 +238,78 @@ export function EmitirComprobanteForm({
               </div>
 
               <div className="mt-3 space-y-2.5">
-                {lineas.map((l, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <div className="flex-1">
-                      <Buscador
-                        opciones={productos}
-                        valor={l.producto_id}
-                        onChange={(id) => actualizarProductoLinea(i, id)}
-                        placeholder="Buscar producto..."
-                      />
+                {lineas.map((l, i) => {
+                  const producto = productos.find((p) => p.id === l.producto_id)
+                  const excedeStock = producto && l.cantidad !== '' && Number(l.cantidad) > producto.cantidad
+                  return (
+                    <div key={i}>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1">
+                          <Buscador
+                            opciones={opcionesProductos}
+                            valor={l.producto_id}
+                            onChange={(id) => actualizarProductoLinea(i, id)}
+                            placeholder="Buscar producto..."
+                          />
+                        </div>
+                        {producto && (
+                          <span
+                            className={`shrink-0 rounded-lg px-2.5 py-2 text-center text-[11px] font-bold ${
+                              producto.cantidad <= 0
+                                ? 'bg-red-100 text-red-700'
+                                : 'bg-teal-100 text-teal-700'
+                            }`}
+                            title="Stock disponible"
+                          >
+                            📦 {producto.cantidad}
+                          </span>
+                        )}
+                        <input
+                          type="number"
+                          min="1"
+                          step="1"
+                          placeholder="Cant."
+                          value={l.cantidad}
+                          onChange={(e) => actualizarLinea(i, 'cantidad', e.target.value)}
+                          className="w-24 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2.5 text-sm text-[#1e293b] dark:text-slate-100 outline-none focus:border-teal-500"
+                        />
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="Precio"
+                          value={l.precio_unitario}
+                          onChange={(e) => actualizarLinea(i, 'precio_unitario', e.target.value)}
+                          className="w-24 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2.5 text-sm text-[#1e293b] dark:text-slate-100 outline-none focus:border-teal-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => quitarLinea(i)}
+                          disabled={lineas.length === 1}
+                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white dark:bg-[#141a2e] text-[#64748b] dark:text-slate-400 transition-all hover:bg-red-100 hover:text-red-600 disabled:opacity-30"
+                          title="Quitar línea"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                      {excedeStock && (
+                        <p className="mt-1 pl-1 text-xs font-medium text-amber-600">
+                          ⚠️ Supera el stock disponible ({producto!.cantidad}) — la venta se permitirá igual y el stock quedará negativo.
+                        </p>
+                      )}
                     </div>
-                    <input
-                      type="number"
-                      min="1"
-                      step="1"
-                      placeholder="Cant."
-                      value={l.cantidad}
-                      onChange={(e) => actualizarLinea(i, 'cantidad', e.target.value)}
-                      className="w-24 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm text-[#1e293b] outline-none focus:border-teal-500"
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="Precio"
-                      value={l.precio_unitario}
-                      onChange={(e) => actualizarLinea(i, 'precio_unitario', e.target.value)}
-                      className="w-24 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm text-[#1e293b] outline-none focus:border-teal-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => quitarLinea(i)}
-                      disabled={lineas.length === 1}
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-[#64748b] transition-all hover:bg-red-100 hover:text-red-600 disabled:opacity-30"
-                      title="Quitar línea"
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
 
               <div className="mt-4 space-y-1 border-t-2 border-teal-100 pt-3 text-right">
-                <p className="text-sm text-[#64748b]">
-                  Subtotal (sin IGV): <span className="font-bold text-[#1e293b]">S/ {subtotal.toFixed(2)}</span>
+                <p className="text-sm text-[#64748b] dark:text-slate-400">
+                  Subtotal (sin IGV): <span className="font-bold text-[#1e293b] dark:text-slate-100">S/ {subtotal.toFixed(2)}</span>
                 </p>
-                <p className="text-sm text-[#64748b]">
-                  IGV ({(IGV_TASA * 100).toFixed(0)}%): <span className="font-bold text-[#1e293b]">S/ {igv.toFixed(2)}</span>
+                <p className="text-sm text-[#64748b] dark:text-slate-400">
+                  IGV ({(IGV_TASA * 100).toFixed(0)}%): <span className="font-bold text-[#1e293b] dark:text-slate-100">S/ {igv.toFixed(2)}</span>
                 </p>
                 <p className="text-lg font-extrabold text-teal-600">Total: S/ {total.toFixed(2)}</p>
               </div>
@@ -300,7 +328,7 @@ export function EmitirComprobanteForm({
                   required
                 />
               </div>
-              <p className="mt-1.5 text-xs font-medium text-[#94a3b8]">
+              <p className="mt-1.5 text-xs font-medium text-[#94a3b8] dark:text-slate-500">
                 Por defecto queda seleccionado quien está registrando la venta — cámbialo si fue otra persona.
               </p>
             </div>
@@ -310,7 +338,7 @@ export function EmitirComprobanteForm({
             <button
               type="button"
               onClick={() => setVistaPrevia((v) => !v)}
-              className="flex-1 rounded-xl border-2 border-teal-200 bg-white py-3.5 text-base font-bold text-teal-700 transition-all hover:bg-teal-50 xl:hidden"
+              className="flex-1 rounded-xl border-2 border-teal-200 bg-white dark:bg-[#141a2e] py-3.5 text-base font-bold text-teal-700 transition-all hover:bg-teal-50 xl:hidden"
             >
               👁️ {vistaPrevia ? 'Ocultar' : 'Vista previa'}
             </button>
@@ -327,34 +355,34 @@ export function EmitirComprobanteForm({
               {estado.error}
             </p>
           )}
-          <p className="mt-2 text-center text-xs font-medium text-[#94a3b8]">
+          <p className="mt-2 text-center text-xs font-medium text-[#94a3b8] dark:text-slate-500">
             Al grabar se descuenta el stock y se genera el comprobante con numeración correlativa.
           </p>
         </form>
 
-        <aside className={`rounded-3xl border-2 border-teal-200 bg-white p-7 shadow-lg xl:sticky xl:top-6 xl:block ${vistaPrevia ? 'block' : 'hidden'}`}>
+        <aside className={`rounded-3xl border-2 border-teal-200 bg-white dark:bg-[#141a2e] p-7 shadow-lg xl:sticky xl:top-6 xl:block ${vistaPrevia ? 'block' : 'hidden'}`}>
           <p className="mb-4 text-center text-xs font-bold tracking-widest text-teal-500 uppercase">👁️ Vista previa</p>
-          <div className="flex items-start justify-between border-b-2 border-[#f1f5f9] pb-4">
+          <div className="flex items-start justify-between border-b-2 border-[#f1f5f9] dark:border-slate-800 pb-4">
             <div>
-              <h2 className="text-lg font-extrabold text-[#1e293b]">{empresa}</h2>
-              <p className="text-sm text-[#64748b]">{TIPO_COMPROBANTE_LABELS[tipo]}</p>
+              <h2 className="text-lg font-extrabold text-[#1e293b] dark:text-slate-100">{empresa}</h2>
+              <p className="text-sm text-[#64748b] dark:text-slate-400">{TIPO_COMPROBANTE_LABELS[tipo]}</p>
             </div>
-            <div className="text-right text-xs text-[#64748b]">
+            <div className="text-right text-xs text-[#64748b] dark:text-slate-400">
               <p>Fecha: {fecha || '—'}</p>
               <p>{diasCredito}</p>
               <p>{medioPago}</p>
             </div>
           </div>
 
-          <div className="mt-3 space-y-1 text-sm text-[#1e293b]">
+          <div className="mt-3 space-y-1 text-sm text-[#1e293b] dark:text-slate-100">
             <p>
-              <span className="font-bold text-[#1e293b]">Cliente:</span> {clienteSeleccionado?.nombre ?? '—'}
+              <span className="font-bold text-[#1e293b] dark:text-slate-100">Cliente:</span> {clienteSeleccionado?.nombre ?? '—'}
             </p>
             <p>
-              <span className="font-bold text-[#1e293b]">Vendedor:</span> {vendedorSeleccionado?.nombre ?? '—'}
+              <span className="font-bold text-[#1e293b] dark:text-slate-100">Vendedor:</span> {vendedorSeleccionado?.nombre ?? '—'}
             </p>
             <p>
-              <span className="font-bold text-[#1e293b]">
+              <span className="font-bold text-[#1e293b] dark:text-slate-100">
                 {diasCredito === 'Contado' ? 'Condición de pago:' : 'Fecha de vencimiento:'}
               </span>{' '}
               {calcularFechaVencimiento(fecha, diasCredito)}
@@ -363,7 +391,7 @@ export function EmitirComprobanteForm({
 
           <table className="mt-5 w-full text-left text-[13px]">
             <thead>
-              <tr className="border-b-2 border-[#f1f5f9] text-[#64748b]">
+              <tr className="border-b-2 border-[#f1f5f9] dark:border-slate-800 text-[#64748b] dark:text-slate-400">
                 <th className="py-2 font-bold">Producto</th>
                 <th className="py-2 font-bold">Cant.</th>
                 <th className="py-2 text-right font-bold">Subtotal</th>
@@ -372,7 +400,7 @@ export function EmitirComprobanteForm({
             <tbody>
               {lineasValidas.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="py-6 text-center text-[#94a3b8]">
+                  <td colSpan={3} className="py-6 text-center text-[#94a3b8] dark:text-slate-500">
                     Agrega productos para verlos aquí.
                   </td>
                 </tr>
@@ -380,7 +408,7 @@ export function EmitirComprobanteForm({
                 lineasValidas.map((l, i) => {
                   const producto = productos.find((p) => p.id === l.producto_id)
                   return (
-                    <tr key={i} className="border-b border-[#f1f5f9] text-[#1e293b]">
+                    <tr key={i} className="border-b border-[#f1f5f9] dark:border-slate-800 text-[#1e293b] dark:text-slate-100">
                       <td className="py-2">{producto?.nombre ?? '—'}</td>
                       <td className="py-2">{l.cantidad}</td>
                       <td className="py-2 text-right">S/ {(Number(l.cantidad) * Number(l.precio_unitario || 0)).toFixed(2)}</td>
@@ -391,12 +419,12 @@ export function EmitirComprobanteForm({
             </tbody>
           </table>
 
-          <div className="mt-4 space-y-1 border-t-2 border-[#f1f5f9] pt-3 text-right">
-            <p className="text-sm text-[#64748b]">Subtotal: S/ {subtotal.toFixed(2)}</p>
-            <p className="text-sm text-[#64748b]">
+          <div className="mt-4 space-y-1 border-t-2 border-[#f1f5f9] dark:border-slate-800 pt-3 text-right">
+            <p className="text-sm text-[#64748b] dark:text-slate-400">Subtotal: S/ {subtotal.toFixed(2)}</p>
+            <p className="text-sm text-[#64748b] dark:text-slate-400">
               IGV ({(IGV_TASA * 100).toFixed(0)}%): S/ {igv.toFixed(2)}
             </p>
-            <p className="text-lg font-extrabold text-[#1e293b]">Total: S/ {total.toFixed(2)}</p>
+            <p className="text-lg font-extrabold text-[#1e293b] dark:text-slate-100">Total: S/ {total.toFixed(2)}</p>
           </div>
         </aside>
       </div>

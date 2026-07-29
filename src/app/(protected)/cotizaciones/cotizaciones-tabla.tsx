@@ -78,43 +78,43 @@ export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRo
 
   return (
     <div>
-      <form onSubmit={buscar} className="flex flex-wrap items-end gap-3 rounded-2xl border-2 border-[#e2e8f0] bg-white p-4">
+      <form onSubmit={buscar} className="flex flex-wrap items-end gap-3 rounded-2xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] p-4">
         <div>
-          <label className="block text-xs font-bold text-[#64748b]">Cliente</label>
+          <label className="block text-xs font-bold text-[#64748b] dark:text-slate-400">Cliente</label>
           <input
             type="text"
             value={borrador.cliente}
             onChange={(e) => setBorrador((b) => ({ ...b, cliente: e.target.value }))}
             placeholder="Nombre del cliente..."
-            className="mt-1 w-48 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+            className="mt-1 w-48 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2.5 text-sm font-medium text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
           />
         </div>
         <div>
-          <label className="block text-xs font-bold text-[#64748b]">Número</label>
+          <label className="block text-xs font-bold text-[#64748b] dark:text-slate-400">Número</label>
           <input
             type="text"
             value={borrador.numero}
             onChange={(e) => setBorrador((b) => ({ ...b, numero: e.target.value }))}
             placeholder="COT-00001..."
-            className="mt-1 w-36 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+            className="mt-1 w-36 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2.5 text-sm font-medium text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
           />
         </div>
         <div>
-          <label className="block text-xs font-bold text-[#64748b]">Desde</label>
+          <label className="block text-xs font-bold text-[#64748b] dark:text-slate-400">Desde</label>
           <input
             type="date"
             value={borrador.desde}
             onChange={(e) => setBorrador((b) => ({ ...b, desde: e.target.value }))}
-            className="mt-1 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+            className="mt-1 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2.5 text-sm font-medium text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
           />
         </div>
         <div>
-          <label className="block text-xs font-bold text-[#64748b]">Hasta</label>
+          <label className="block text-xs font-bold text-[#64748b] dark:text-slate-400">Hasta</label>
           <input
             type="date"
             value={borrador.hasta}
             onChange={(e) => setBorrador((b) => ({ ...b, hasta: e.target.value }))}
-            className="mt-1 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2.5 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+            className="mt-1 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2.5 text-sm font-medium text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
           />
         </div>
         <button
@@ -127,7 +127,7 @@ export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRo
           <button
             type="button"
             onClick={limpiar}
-            className="rounded-xl border-2 border-[#e2e8f0] bg-white px-5 py-2.5 text-sm font-bold text-[#64748b] transition-all hover:bg-[#f8fafc]"
+            className="rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-5 py-2.5 text-sm font-bold text-[#64748b] dark:text-slate-400 transition-all hover:bg-[#f8fafc]"
           >
             Limpiar
           </button>
@@ -140,9 +140,9 @@ export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRo
         </p>
       )}
 
-      <div className="mt-5 overflow-hidden rounded-3xl border-2 border-[#e2e8f0] bg-white shadow-lg shadow-slate-500/5">
+      <div className="mt-5 overflow-hidden rounded-3xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] shadow-lg shadow-slate-500/5">
         {cotizaciones.length === 0 ? (
-          <p className="p-12 text-center text-sm font-medium text-[#64748b]">
+          <p className="p-12 text-center text-sm font-medium text-[#64748b] dark:text-slate-400">
             Todavía no hay cotizaciones. Usa el botón{' '}
             <Link href="/cotizaciones/nueva" className="font-bold text-sky-600">
               Nueva cotización
@@ -150,14 +150,14 @@ export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRo
             del menú para crear la primera.
           </p>
         ) : filtradas.length === 0 ? (
-          <p className="p-12 text-center text-sm font-medium text-[#64748b]">
+          <p className="p-12 text-center text-sm font-medium text-[#64748b] dark:text-slate-400">
             Ninguna cotización coincide con la búsqueda.
           </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-[13.5px]">
               <thead>
-                <tr className="border-b-2 border-[#f1f5f9] bg-[#f8fafc] text-[#64748b]">
+                <tr className="border-b-2 border-[#f1f5f9] dark:border-slate-800 bg-[#f8fafc] dark:bg-slate-800/60 text-[#64748b] dark:text-slate-400">
                   <th className="px-6 py-4 font-bold">Número</th>
                   <th className="px-6 py-4 font-bold">Fecha</th>
                   <th className="px-6 py-4 font-bold">Cliente</th>
@@ -167,9 +167,9 @@ export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRo
               </thead>
               <tbody>
                 {filtradas.map((c) => (
-                  <tr key={c.id} className="border-b border-[#f1f5f9] text-[#1e293b] transition-colors hover:bg-sky-50/40">
+                  <tr key={c.id} className="border-b border-[#f1f5f9] dark:border-slate-800 text-[#1e293b] dark:text-slate-100 transition-colors hover:bg-sky-50/40">
                     <td className="px-6 py-4 font-bold">{c.numero}</td>
-                    <td className="px-6 py-4 text-[#64748b]">
+                    <td className="px-6 py-4 text-[#64748b] dark:text-slate-400">
                       {new Date(c.fecha + 'T00:00:00').toLocaleDateString('es-PE')}
                     </td>
                     <td className="px-6 py-4">{c.clientes?.nombre ?? '—'}</td>
@@ -177,7 +177,7 @@ export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRo
                     <td className="px-6 py-4 text-right whitespace-nowrap">
                       <Link
                         href={`/cotizaciones/${c.id}`}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] transition-all hover:bg-sky-100 hover:text-sky-600"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] dark:text-slate-400 transition-all hover:bg-sky-100 hover:text-sky-600"
                         title="Ver / Descargar PDF"
                       >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
@@ -190,7 +190,7 @@ export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRo
                         onClick={() => handleConvertir(c.id, c.numero)}
                         disabled={isPending && pendienteId === c.id}
                         title="Convertir a Venta"
-                        className="ml-1.5 inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] transition-all hover:bg-teal-100 hover:text-teal-600 disabled:opacity-50"
+                        className="ml-1.5 inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] dark:text-slate-400 transition-all hover:bg-teal-100 hover:text-teal-600 disabled:opacity-50"
                       >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
                           <path
@@ -205,7 +205,7 @@ export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRo
                         onClick={() => handleEliminar(c.id, c.numero)}
                         disabled={isPending && pendienteId === c.id}
                         title="Eliminar"
-                        className="ml-1.5 inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] transition-all hover:bg-red-100 hover:text-red-600 disabled:opacity-50"
+                        className="ml-1.5 inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] dark:text-slate-400 transition-all hover:bg-red-100 hover:text-red-600 disabled:opacity-50"
                       >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
                           <path

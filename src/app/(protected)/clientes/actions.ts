@@ -20,6 +20,7 @@ export async function crearCliente(
   const telefono = (formData.get('telefono') as string)?.trim()
   const email = (formData.get('email') as string)?.trim()
   const direccion = (formData.get('direccion') as string)?.trim()
+  const vendedorId = (formData.get('vendedor_id') as string)?.trim()
 
   if (!nombre) {
     return { error: 'El nombre es obligatorio.' }
@@ -32,6 +33,7 @@ export async function crearCliente(
     telefono: telefono || null,
     email: email || null,
     direccion: direccion || null,
+    vendedor_id: vendedorId || null,
   })
 
   if (error) {
@@ -55,6 +57,7 @@ export async function editarCliente(
   const telefono = (formData.get('telefono') as string)?.trim()
   const email = (formData.get('email') as string)?.trim()
   const direccion = (formData.get('direccion') as string)?.trim()
+  const vendedorId = (formData.get('vendedor_id') as string)?.trim()
 
   if (!id) {
     return { error: 'Cliente inválido.' }
@@ -72,6 +75,7 @@ export async function editarCliente(
       telefono: telefono || null,
       email: email || null,
       direccion: direccion || null,
+      vendedor_id: vendedorId || null,
     })
     .eq('id', Number(id))
 

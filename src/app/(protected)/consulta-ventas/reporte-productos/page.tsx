@@ -270,11 +270,11 @@ export default async function ReporteVentasPorProductoPage({
 
   return (
     <div>
-      <Link href="/consulta-ventas" className="text-sm font-bold text-[#64748b] hover:text-lime-600">
+      <Link href="/consulta-ventas" className="text-sm font-bold text-[#64748b] dark:text-slate-400 hover:text-lime-600">
         ← Volver a Consulta de Ventas
       </Link>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-extrabold text-[#1e293b]">📦 Reporte de ventas por producto</h1>
+        <h1 className="text-2xl font-extrabold text-[#1e293b] dark:text-slate-100">📦 Reporte de ventas por producto</h1>
         <DescargarExcelBoton
           nombreArchivo={`ventas-por-producto-${desde}-a-${hasta}.xlsx`}
           hoja="Ventas por producto"
@@ -303,23 +303,23 @@ export default async function ReporteVentasPorProductoPage({
         </DescargarExcelBoton>
       </div>
 
-      <form method="get" className="mt-5 flex flex-wrap items-end gap-3 rounded-2xl border-2 border-[#e2e8f0] bg-white p-5">
+      <form method="get" className="mt-5 flex flex-wrap items-end gap-3 rounded-2xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] p-5">
         <div>
-          <label className="block text-xs font-bold text-[#64748b]">Desde</label>
+          <label className="block text-xs font-bold text-[#64748b] dark:text-slate-400">Desde</label>
           <input
             type="date"
             name="desde"
             defaultValue={desde}
-            className="mt-1 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#1e293b] outline-none focus:border-lime-500"
+            className="mt-1 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2 text-sm text-[#1e293b] dark:text-slate-100 outline-none focus:border-lime-500"
           />
         </div>
         <div>
-          <label className="block text-xs font-bold text-[#64748b]">Hasta</label>
+          <label className="block text-xs font-bold text-[#64748b] dark:text-slate-400">Hasta</label>
           <input
             type="date"
             name="hasta"
             defaultValue={hasta}
-            className="mt-1 rounded-xl border-2 border-[#e2e8f0] bg-white px-3 py-2 text-sm text-[#1e293b] outline-none focus:border-lime-500"
+            className="mt-1 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2 text-sm text-[#1e293b] dark:text-slate-100 outline-none focus:border-lime-500"
           />
         </div>
         <button
@@ -330,18 +330,18 @@ export default async function ReporteVentasPorProductoPage({
         </button>
       </form>
 
-      <div className="mt-6 overflow-hidden rounded-3xl border-2 border-[#e2e8f0] bg-white shadow-lg shadow-slate-500/5">
-        <p className="border-b-2 border-[#f1f5f9] px-6 py-4 text-sm font-medium text-[#64748b]">
+      <div className="mt-6 overflow-hidden rounded-3xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] shadow-lg shadow-slate-500/5">
+        <p className="border-b-2 border-[#f1f5f9] dark:border-slate-800 px-6 py-4 text-sm font-medium text-[#64748b] dark:text-slate-400">
           {filas.length} línea{filas.length === 1 ? '' : 's'} entre {desde} y {hasta} · {unidadesGeneral} unidades ·
           Total: S/ {totalGeneral.toFixed(2)}
         </p>
         {filas.length === 0 ? (
-          <p className="p-12 text-center text-sm font-medium text-[#64748b]">No hay ventas en ese rango de fechas.</p>
+          <p className="p-12 text-center text-sm font-medium text-[#64748b] dark:text-slate-400">No hay ventas en ese rango de fechas.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-[13px]">
               <thead>
-                <tr className="border-b-2 border-[#f1f5f9] bg-[#f8fafc] text-[#64748b]">
+                <tr className="border-b-2 border-[#f1f5f9] dark:border-slate-800 bg-[#f8fafc] dark:bg-slate-800/60 text-[#64748b] dark:text-slate-400">
                   <th className="px-5 py-3 font-bold">Fecha</th>
                   <th className="px-5 py-3 font-bold">Tipo</th>
                   <th className="px-5 py-3 font-bold">Número</th>
@@ -355,15 +355,15 @@ export default async function ReporteVentasPorProductoPage({
               </thead>
               <tbody>
                 {filas.map((f, i) => (
-                  <tr key={i} className="border-b border-[#f1f5f9] text-[#1e293b]">
-                    <td className="px-5 py-2.5 whitespace-nowrap text-[#64748b]">{f.fecha}</td>
+                  <tr key={i} className="border-b border-[#f1f5f9] dark:border-slate-800 text-[#1e293b] dark:text-slate-100">
+                    <td className="px-5 py-2.5 whitespace-nowrap text-[#64748b] dark:text-slate-400">{f.fecha}</td>
                     <td className="px-5 py-2.5">{f.tipo}</td>
                     <td className="px-5 py-2.5 font-semibold">{f.numero}</td>
                     <td className="px-5 py-2.5">{f.cliente}</td>
                     <td className="px-5 py-2.5">{f.producto}</td>
-                    <td className="px-5 py-2.5 text-[#64748b]">{f.unidadMedida}</td>
+                    <td className="px-5 py-2.5 text-[#64748b] dark:text-slate-400">{f.unidadMedida}</td>
                     <td className="px-5 py-2.5">{f.cantidad}</td>
-                    <td className="px-5 py-2.5 text-[#64748b]">S/ {f.precioSinIgv.toFixed(2)}</td>
+                    <td className="px-5 py-2.5 text-[#64748b] dark:text-slate-400">S/ {f.precioSinIgv.toFixed(2)}</td>
                     <td className={`px-5 py-2.5 font-semibold ${f.tipo === 'Nota de crédito' ? 'text-red-600' : ''}`}>
                       S/ {f.totalLinea.toFixed(2)}
                     </td>

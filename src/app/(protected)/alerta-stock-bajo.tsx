@@ -55,7 +55,7 @@ export function AlertaStockBajo({ stockBajo }: { stockBajo: ProductoStockBajo[] 
             key={p.id}
             href={`/productos/${p.id}/editar`}
             onClick={cerrar}
-            className="block rounded-lg bg-white px-3 py-2 text-xs font-bold text-[#1e293b] transition-all hover:bg-red-100"
+            className="block rounded-lg bg-white dark:bg-[#141a2e] px-3 py-2 text-xs font-bold text-[#1e293b] dark:text-slate-100 transition-all hover:bg-red-100"
           >
             {p.nombre} — stock: {p.cantidad} (mín. {p.punto_reorden ?? '—'})
           </Link>

@@ -1,8 +1,18 @@
 @import "tailwindcss";
 
+/* Modo oscuro por clase (.dark en <html>), no por prefers-color-scheme del
+   sistema — así el toggle manual manda y cada elemento con color explícito
+   se adapta a propósito vía dark:, en vez de heredar blanco-sobre-blanco. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+}
+
+:root.dark {
+  --background: #0b1120;
+  --foreground: #e2e8f0;
 }
 
 @theme inline {
@@ -11,11 +21,6 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
-
-/* Este ERP es exclusivamente de tema claro (sin modo oscuro implementado).
-   No seguir prefers-color-scheme: dark aquí — de lo contrario cualquier
-   texto sin color explícito hereda blanco y queda invisible sobre fondos
-   claros en toda la app. */
 
 body {
   background: var(--background);

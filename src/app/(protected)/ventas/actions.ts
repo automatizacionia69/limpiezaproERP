@@ -145,7 +145,7 @@ export async function emitirComprobante(
     return { error: 'Esta orden ya fue facturada o anulada.' }
   }
 
-  const { data: cliente } = await supabase.from('clientes').select('documento').eq('id', clienteId).single()
+  const { data: cliente } = await supabase.from('clientes').select('documento, direccion').eq('id', clienteId).single()
   if (tipo === 'factura' && (cliente?.documento ?? '').trim().length !== 11) {
     return {
       error: 'Este cliente no tiene RUC (11 dígitos) — no se puede emitir Factura. Usa Boleta, Nota de venta o Ticket.',
@@ -221,6 +221,17 @@ export async function emitirComprobante(
     return { error: errorComp?.message ?? 'No se pudo emitir el comprobante.' }
   }
 
+  const { error: errorGuia } = await supabase.from('guias_remision').insert({
+    comprobante_id: comprobante.id,
+    fecha,
+    direccion_despacho: cliente?.direccion || null,
+    usuario_id: user?.id ?? null,
+  })
+
+  if (errorGuia) {
+    return { error: errorGuia.message }
+  }
+
   const { error: errorUpdate } = await supabase
     .from('ordenes_venta')
     .update({ estado: 'facturada', facturada_en: new Date().toISOString() })
@@ -235,6 +246,7 @@ export async function emitirComprobante(
   revalidatePath('/movimientos')
   revalidatePath('/dashboard')
   revalidatePath('/consulta-ventas')
+  revalidatePath('/guias-remision')
   redirect(`/consulta-ventas/${comprobante.id}`)
 }
 

@@ -34,15 +34,15 @@ export default async function MovimientosPage() {
   return (
     <div>
       <div>
-        <h1 className="text-2xl font-extrabold text-[#1e293b]">🔄 Movimientos</h1>
-        <p className="mt-1 text-sm font-medium text-[#64748b]">Entradas, salidas y ajustes de inventario</p>
+        <h1 className="text-2xl font-extrabold text-[#1e293b] dark:text-slate-100">🔄 Movimientos</h1>
+        <p className="mt-1 text-sm font-medium text-[#64748b] dark:text-slate-400">Entradas, salidas y ajustes de inventario</p>
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[400px_1fr]">
-        <div className="rounded-3xl border-2 border-[#e2e8f0] bg-white p-7 shadow-lg shadow-slate-500/5">
-          <h2 className="text-base font-extrabold text-[#1e293b]">Registrar movimiento</h2>
+        <div className="rounded-3xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] p-7 shadow-lg shadow-slate-500/5">
+          <h2 className="text-base font-extrabold text-[#1e293b] dark:text-slate-100">Registrar movimiento</h2>
           {!productos || productos.length === 0 ? (
-            <p className="mt-6 text-sm font-medium text-[#64748b]">
+            <p className="mt-6 text-sm font-medium text-[#64748b] dark:text-slate-400">
               Todavía no hay productos — crea uno primero en Productos.
             </p>
           ) : (

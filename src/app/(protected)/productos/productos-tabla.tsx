@@ -53,21 +53,21 @@ export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-[#1e293b]">📦 Productos</h1>
-          <p className="mt-1 text-sm font-medium text-[#64748b]">
+          <h1 className="text-2xl font-extrabold text-[#1e293b] dark:text-slate-100">📦 Productos</h1>
+          <p className="mt-1 text-sm font-medium text-[#64748b] dark:text-slate-400">
             {productos.length} producto{productos.length === 1 ? '' : 's'} en el inventario
           </p>
         </div>
         <div className="flex items-center gap-3">
           <Link
             href="/categorias"
-            className="rounded-2xl border-2 border-[#e2e8f0] bg-white px-4 py-3 text-sm font-bold text-[#1e293b] transition-all hover:border-violet-300 hover:bg-violet-50"
+            className="rounded-2xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-3 text-sm font-bold text-[#1e293b] dark:text-slate-100 transition-all hover:border-violet-300 hover:bg-violet-50"
           >
             🏷️ Categorías
           </Link>
           <Link
             href="/unidades"
-            className="rounded-2xl border-2 border-[#e2e8f0] bg-white px-4 py-3 text-sm font-bold text-[#1e293b] transition-all hover:border-fuchsia-300 hover:bg-fuchsia-50"
+            className="rounded-2xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-3 text-sm font-bold text-[#1e293b] dark:text-slate-100 transition-all hover:border-fuchsia-300 hover:bg-fuchsia-50"
           >
             📏 Unidades
           </Link>
@@ -77,7 +77,7 @@ export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
               fill="none"
               stroke="currentColor"
               strokeWidth={2}
-              className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-[#94a3b8]"
+              className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-[#94a3b8] dark:text-slate-500"
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
             </svg>
@@ -86,7 +86,7 @@ export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
               value={filtro}
               onChange={(e) => setFiltro(e.target.value)}
               placeholder="Filtrar..."
-              className="rounded-2xl border-2 border-[#e2e8f0] bg-white py-2.5 pr-4 pl-10 text-sm font-medium text-[#1e293b] outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+              className="rounded-2xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] py-2.5 pr-4 pl-10 text-sm font-medium text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
             />
           </div>
           <Link
@@ -107,9 +107,9 @@ export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
         </p>
       )}
 
-      <div className="mt-6 overflow-hidden rounded-3xl border-2 border-[#e2e8f0] bg-white shadow-lg shadow-slate-500/5">
+      <div className="mt-6 overflow-hidden rounded-3xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] shadow-lg shadow-slate-500/5">
         {productos.length === 0 ? (
-          <p className="p-12 text-center text-sm font-medium text-[#64748b]">
+          <p className="p-12 text-center text-sm font-medium text-[#64748b] dark:text-slate-400">
             No hay registros. Usa el botón{' '}
             <Link href="/productos/nuevo" className="font-bold text-emerald-600">
               Nuevo producto
@@ -117,12 +117,12 @@ export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
             para agregar el primero.
           </p>
         ) : filtrados.length === 0 ? (
-          <p className="p-12 text-center text-sm font-medium text-[#64748b]">Ningún producto coincide con “{filtro}”.</p>
+          <p className="p-12 text-center text-sm font-medium text-[#64748b] dark:text-slate-400">Ningún producto coincide con “{filtro}”.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-[13.5px]">
               <thead>
-                <tr className="border-b-2 border-[#f1f5f9] bg-[#f8fafc] text-[#64748b]">
+                <tr className="border-b-2 border-[#f1f5f9] dark:border-slate-800 bg-[#f8fafc] dark:bg-slate-800/60 text-[#64748b] dark:text-slate-400">
                   <th className="px-6 py-4 font-bold">Nombre</th>
                   <th className="px-6 py-4 font-bold">Código</th>
                   <th className="px-6 py-4 font-bold">Categoría</th>
@@ -137,11 +137,11 @@ export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
                 {filtrados.map((p) => {
                   const bajo = p.punto_reorden !== null && p.cantidad <= p.punto_reorden
                   return (
-                    <tr key={p.id} className="border-b border-[#f1f5f9] text-[#1e293b] transition-colors hover:bg-indigo-50/40">
+                    <tr key={p.id} className="border-b border-[#f1f5f9] dark:border-slate-800 text-[#1e293b] dark:text-slate-100 transition-colors hover:bg-indigo-50/40">
                       <td className="px-6 py-4 font-bold">{p.nombre}</td>
-                      <td className="px-6 py-4 text-[#64748b]">{p.codigo ?? '—'}</td>
-                      <td className="px-6 py-4 text-[#64748b]">{p.categorias?.nombre ?? '—'}</td>
-                      <td className="px-6 py-4 text-[#64748b]">{p.unidades_medida?.nombre ?? '—'}</td>
+                      <td className="px-6 py-4 text-[#64748b] dark:text-slate-400">{p.codigo ?? '—'}</td>
+                      <td className="px-6 py-4 text-[#64748b] dark:text-slate-400">{p.categorias?.nombre ?? '—'}</td>
+                      <td className="px-6 py-4 text-[#64748b] dark:text-slate-400">{p.unidades_medida?.nombre ?? '—'}</td>
                       <td className="px-6 py-4">
                         <span className="font-semibold">{p.cantidad}</span>
                         {bajo && (
@@ -150,14 +150,14 @@ export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-[#64748b]">S/ {Number(p.costo).toFixed(2)}</td>
-                      <td className="px-6 py-4 text-[#64748b]">
+                      <td className="px-6 py-4 text-[#64748b] dark:text-slate-400">S/ {Number(p.costo).toFixed(2)}</td>
+                      <td className="px-6 py-4 text-[#64748b] dark:text-slate-400">
                         {p.precio_venta !== null ? `S/ ${Number(p.precio_venta).toFixed(2)}` : '—'}
                       </td>
                       <td className="px-6 py-4 text-right whitespace-nowrap">
                         <Link
                           href={`/productos/${p.id}/kardex`}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] transition-all hover:bg-amber-100 hover:text-amber-600"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] dark:text-slate-400 transition-all hover:bg-amber-100 hover:text-amber-600"
                           title="Ver kardex"
                         >
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
@@ -170,7 +170,7 @@ export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
                         </Link>
                         <Link
                           href={`/productos/${p.id}/editar`}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] transition-all hover:bg-indigo-100 hover:text-indigo-600"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] dark:text-slate-400 transition-all hover:bg-indigo-100 hover:text-indigo-600"
                           title="Editar"
                         >
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
@@ -186,7 +186,7 @@ export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
                           onClick={() => handleEliminar(p.id, p.nombre)}
                           disabled={isPending && pendienteId === p.id}
                           title="Eliminar"
-                          className="ml-1.5 inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] transition-all hover:bg-red-100 hover:text-red-600 disabled:opacity-50"
+                          className="ml-1.5 inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] dark:text-slate-400 transition-all hover:bg-red-100 hover:text-red-600 disabled:opacity-50"
                         >
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
                             <path
