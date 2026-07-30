@@ -96,12 +96,29 @@ export default async function ComprobantePage({
   const totalNotasDebito = (notasDebito ?? []).reduce((acc, n) => acc + Number(n.monto), 0)
   const saldoActual = Math.max(0, Number(comprobante.total) - totalNotasCredito + totalNotasDebito)
 
-  const lineasParaAnular = (detalles ?? []).map((d) => ({
-    producto_id: d.producto_id,
-    nombre: d.productos?.nombre ?? `Producto #${d.producto_id}`,
-    cantidadVendida: Number(d.cantidad),
-    precioUnitario: Number(d.precio_unitario),
-    cantidadDisponible: Number(d.cantidad) - (yaDevueltoPorProducto.get(d.producto_id) ?? 0),
+  // Se consolidan las lineas por producto antes de renderizar: el formulario
+  // indexa las cantidades por producto_id, asi que dos filas del mismo producto
+  // leian la misma casilla y la nota se emitia por el doble, reingresando el
+  // doble de stock. El precio es el promedio ponderado de lo facturado.
+  const vendidoPorProducto = new Map<
+    number,
+    { nombre: string; cantidad: number; importe: number }
+  >()
+  for (const d of detalles ?? []) {
+    const previo = vendidoPorProducto.get(d.producto_id)
+    vendidoPorProducto.set(d.producto_id, {
+      nombre: previo?.nombre ?? d.productos?.nombre ?? `Producto #${d.producto_id}`,
+      cantidad: (previo?.cantidad ?? 0) + Number(d.cantidad),
+      importe: (previo?.importe ?? 0) + Number(d.cantidad) * Number(d.precio_unitario),
+    })
+  }
+
+  const lineasParaAnular = [...vendidoPorProducto.entries()].map(([productoId, v]) => ({
+    producto_id: productoId,
+    nombre: v.nombre,
+    cantidadVendida: v.cantidad,
+    precioUnitario: v.cantidad > 0 ? v.importe / v.cantidad : 0,
+    cantidadDisponible: v.cantidad - (yaDevueltoPorProducto.get(productoId) ?? 0),
   }))
 
   const tipoLabel = TIPO_COMPROBANTE_LABELS[comprobante.tipo] ?? comprobante.tipo
@@ -290,6 +307,7 @@ export default async function ComprobantePage({
               comprobanteId={comprobante.id}
               numero={comprobante.numero}
               totalComprobante={Number(comprobante.total)}
+              saldoDisponible={saldoActual}
               lineas={lineasParaAnular}
             />
           </div>

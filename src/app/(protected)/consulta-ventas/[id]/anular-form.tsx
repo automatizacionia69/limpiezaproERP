@@ -3,6 +3,7 @@
 import { useActionState, useMemo, useState } from 'react'
 import { anularComprobante, type EstadoFormulario } from '../actions'
 import { MOTIVOS_NOTA_CREDITO } from '@/lib/motivos'
+import { calcularImportes } from '@/lib/cotizaciones'
 
 type LineaVenta = {
   producto_id: number
@@ -20,11 +21,14 @@ export function AnularComprobanteForm({
   comprobanteId,
   numero,
   totalComprobante,
+  saldoDisponible,
   lineas,
 }: {
   comprobanteId: number
   numero: string
   totalComprobante: number
+  /** Saldo aun acreditable: total + notas de debito − notas de credito previas. */
+  saldoDisponible: number
   lineas: LineaVenta[]
 }) {
   const [estado, formAction] = useActionState<EstadoFormulario, FormData>(anularComprobante, { error: null })
@@ -43,11 +47,21 @@ export function AnularComprobanteForm({
     [lineas, cantidades]
   )
 
+  // El monto por item usa calcularImportes (neto + IGV), la misma convencion
+  // que el server action: antes la pantalla sumaba solo el neto mientras la
+  // anulacion total usaba el total con IGV.
   const monto = motivoInfo?.anula
     ? totalComprobante
     : motivoInfo?.itemizable
-      ? lineasSeleccionadas.reduce((acc, l) => acc + l.cantidad * l.precioUnitario, 0)
+      ? calcularImportes(
+          lineasSeleccionadas.map((l) => ({
+            cantidad: l.cantidad,
+            precio_unitario: l.precioUnitario,
+          }))
+        ).total
       : Number(montoManual || 0)
+
+  const excedeSaldo = monto > saldoDisponible + 0.005
 
   const lineasJson = JSON.stringify(
     lineasSeleccionadas.map((l) => ({
@@ -142,14 +156,25 @@ export function AnularComprobanteForm({
             <span>Total de la factura</span>
             <span className="font-semibold text-[#1e293b] dark:text-slate-100">S/ {totalComprobante.toFixed(2)}</span>
           </p>
+          {saldoDisponible < totalComprobante && (
+            <p className="flex justify-between text-[#64748b] dark:text-slate-400">
+              <span>Saldo pendiente (ya hay notas emitidas)</span>
+              <span className="font-semibold text-[#1e293b] dark:text-slate-100">S/ {saldoDisponible.toFixed(2)}</span>
+            </p>
+          )}
           <p className="flex justify-between text-[#64748b] dark:text-slate-400">
             <span>Monto de esta nota de crédito</span>
             <span className="font-semibold text-red-600">− S/ {monto.toFixed(2)}</span>
           </p>
           <p className="mt-1 flex justify-between border-t border-[#e2e8f0] dark:border-slate-700 pt-1 font-bold text-[#1e293b] dark:text-slate-100">
             <span>Nuevo monto a pagar</span>
-            <span>S/ {Math.max(0, totalComprobante - monto).toFixed(2)}</span>
+            <span>S/ {Math.max(0, saldoDisponible - monto).toFixed(2)}</span>
           </p>
+          {excedeSaldo && (
+            <p role="alert" className="mt-2 rounded-lg bg-red-50 px-2.5 py-2 font-bold text-red-700">
+              El monto supera el saldo pendiente de S/ {saldoDisponible.toFixed(2)}.
+            </p>
+          )}
         </div>
       )}
 

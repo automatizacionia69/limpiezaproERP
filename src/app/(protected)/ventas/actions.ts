@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { tienePermiso } from '@/lib/permisos'
-import { IGV_TASA } from '@/lib/cotizaciones'
+import { calcularImportes } from '@/lib/cotizaciones'
 
 export type EstadoFormulario = { error: string | null }
 
@@ -46,7 +46,9 @@ export async function crearOrdenVenta(
     data: { user },
   } = await supabase.auth.getUser()
 
-  const total = lineas.reduce((acc, l) => acc + l.cantidad * l.precio_unitario, 0)
+  // ordenes_venta.total incluye IGV, igual que cotizaciones.total y
+  // comprobantes.total: una sola convencion en todo el flujo.
+  const { total } = calcularImportes(lineas)
 
   const { data: orden, error: errorOrden } = await supabase
     .from('ordenes_venta')
@@ -132,31 +134,61 @@ export async function emitirComprobante(
     data: { user },
   } = await supabase.auth.getUser()
 
+  // Se RESERVA la orden ANTES de tocar stock o emitir el comprobante. El update
+  // condicionado a estado='pendiente' es atomico en la base, asi que dos clicks
+  // en "Grabar venta" (el boton no se deshabilita) o dos vendedores con la
+  // pantalla abierta ya no pueden descontar el stock dos veces ni emitir dos
+  // correlativos. Antes el estado se validaba al principio y se escribia ~90
+  // lineas despues, con seis escrituras en el medio.
   const { data: orden, error: errorOrden } = await supabase
     .from('ordenes_venta')
-    .select('id, numero, estado')
+    .update({ estado: 'facturada' })
     .eq('id', ordenId)
-    .single()
+    .eq('estado', 'pendiente')
+    .select('id, numero, estado')
+    .maybeSingle()
 
-  if (errorOrden || !orden) {
-    return { error: 'Orden no encontrada.' }
+  if (errorOrden) {
+    return { error: errorOrden.message }
   }
-  if (orden.estado !== 'pendiente') {
+  if (!orden) {
     return { error: 'Esta orden ya fue facturada o anulada.' }
+  }
+
+  // Cualquier fallo posterior tiene que devolver la orden a 'pendiente', o
+  // quedaria marcada como facturada sin comprobante y sin poder reintentarse.
+  const liberarReserva = async () => {
+    await supabase.from('ordenes_venta').update({ estado: 'pendiente' }).eq('id', ordenId)
   }
 
   const { data: cliente } = await supabase.from('clientes').select('documento, direccion').eq('id', clienteId).single()
   if (tipo === 'factura' && (cliente?.documento ?? '').trim().length !== 11) {
+    await liberarReserva()
     return {
       error: 'Este cliente no tiene RUC (11 dígitos) — no se puede emitir Factura. Usa Boleta, Nota de venta o Ticket.',
     }
   }
 
+  // El vendedor se valida ANTES de tocar nada: llegaba crudo del formulario y
+  // solo se chequeaba que no estuviera vacio, asi que un valor invalido hacia
+  // reventar el insert del comprobante DESPUES de haber descontado el stock.
+  const { data: vendedor } = await supabase
+    .from('usuarios_perfil')
+    .select('id')
+    .eq('id', vendedorId)
+    .maybeSingle()
+
+  if (!vendedor) {
+    await liberarReserva()
+    return { error: 'El vendedor seleccionado no es válido.' }
+  }
+
   // Las líneas pudieron editarse en esta pantalla: reemplaza el detalle de la orden.
-  const total = lineas.reduce((acc, l) => acc + l.cantidad * l.precio_unitario, 0)
+  const { subtotal, igv, total } = calcularImportes(lineas)
 
   const { error: errorDeleteDetalle } = await supabase.from('detalle_venta').delete().eq('orden_id', ordenId)
   if (errorDeleteDetalle) {
+    await liberarReserva()
     return { error: errorDeleteDetalle.message }
   }
 
@@ -169,6 +201,7 @@ export async function emitirComprobante(
     }))
   )
   if (errorDetalle) {
+    await liberarReserva()
     return { error: errorDetalle.message }
   }
 
@@ -177,28 +210,13 @@ export async function emitirComprobante(
     .update({ cliente_id: Number(clienteId), total })
     .eq('id', ordenId)
   if (errorUpdateOrden) {
+    await liberarReserva()
     return { error: errorUpdateOrden.message }
   }
 
-  // El trigger valida stock suficiente por cada línea (lanza excepción si falta).
-  const { error: errorMovs } = await supabase.from('movimientos').insert(
-    lineas.map((l) => ({
-      producto_id: l.producto_id,
-      tipo: 'salida',
-      cantidad: l.cantidad,
-      usuario_id: user?.id ?? null,
-      motivo: `Venta ${orden.numero}`,
-      referencia: orden.numero,
-    }))
-  )
-
-  if (errorMovs) {
-    return { error: errorMovs.message }
-  }
-
-  const subtotal = Number((total / (1 + IGV_TASA)).toFixed(2))
-  const igv = Number((total - subtotal).toFixed(2))
-
+  // El comprobante se emite ANTES de descontar stock: si falla (RLS, dato
+  // invalido, timeout) todavia no se movio inventario, asi que liberando la
+  // reserva el reintento arranca de cero sin haber descontado nada.
   const { data: comprobante, error: errorComp } = await supabase
     .from('comprobantes')
     .insert({
@@ -218,9 +236,39 @@ export async function emitirComprobante(
     .single()
 
   if (errorComp || !comprobante) {
+    await liberarReserva()
     return { error: errorComp?.message ?? 'No se pudo emitir el comprobante.' }
   }
 
+  // Recien ahora se descuenta el stock. Ojo: la validacion de stock suficiente
+  // se quito en add-permitir-stock-negativo.sql, asi que el trigger ya NO frena
+  // por falta de stock (es una decision de negocio: no detener la venta).
+  const { error: errorMovs } = await supabase.from('movimientos').insert(
+    lineas.map((l) => ({
+      producto_id: l.producto_id,
+      tipo: 'salida',
+      cantidad: l.cantidad,
+      usuario_id: user?.id ?? null,
+      motivo: `Venta ${orden.numero}`,
+      referencia: orden.numero,
+    }))
+  )
+
+  if (errorMovs) {
+    // Se deshace el comprobante para no dejar una venta facturada sin salida de
+    // almacen. Se quema el correlativo, pero el estado queda consistente.
+    await supabase.from('comprobantes').delete().eq('id', comprobante.id)
+    await liberarReserva()
+    console.error(
+      `Comprobante ${comprobante.id} revertido: fallaron los movimientos de ${orden.numero}: ${errorMovs.message}`
+    )
+    return { error: errorMovs.message }
+  }
+
+  // La guia es accesoria: si falla, la venta ya es valida y no tiene sentido
+  // revertir el comprobante ni pedirle al vendedor que reintente todo (antes
+  // ese error dejaba la orden en 'pendiente' y el reintento duplicaba el
+  // comprobante y el stock). Se loggea para generarla a mano.
   const { error: errorGuia } = await supabase.from('guias_remision').insert({
     comprobante_id: comprobante.id,
     fecha,
@@ -229,19 +277,20 @@ export async function emitirComprobante(
   })
 
   if (errorGuia) {
-    return { error: errorGuia.message }
+    console.error(
+      `Venta ${orden.numero} facturada OK pero sin guia de remision (comprobante ${comprobante.id}): ${errorGuia.message}`
+    )
   }
 
-  const { error: errorUpdate } = await supabase
+  // La orden ya quedo en 'facturada' en la reserva del principio; solo falta la
+  // marca de tiempo.
+  await supabase
     .from('ordenes_venta')
-    .update({ estado: 'facturada', facturada_en: new Date().toISOString() })
+    .update({ facturada_en: new Date().toISOString() })
     .eq('id', ordenId)
 
-  if (errorUpdate) {
-    return { error: errorUpdate.message }
-  }
-
   revalidatePath('/ventas')
+  revalidatePath('/cotizaciones')
   revalidatePath('/productos')
   revalidatePath('/movimientos')
   revalidatePath('/dashboard')

@@ -105,17 +105,31 @@ export async function recibirOrdenCompra(id: number) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  // Se RESERVA la orden antes de insertar las entradas. Es un boton de un click
+  // en la lista: dos personas de almacen marcando "Recibida" casi a la vez, o un
+  // fallo en el update final, duplicaban las entradas — el stock subia el doble
+  // Y el trigger recalculaba el costo promedio dos veces con las mismas
+  // unidades, corrompiendo productos.costo de forma no reversible.
   const { data: orden, error: errorOrden } = await supabase
     .from('ordenes_compra')
-    .select('id, numero, estado')
+    .update({ estado: 'recibida', recibida_en: new Date().toISOString() })
     .eq('id', id)
-    .single()
+    .eq('estado', 'pendiente')
+    .select('id, numero')
+    .maybeSingle()
 
-  if (errorOrden || !orden) {
-    throw new Error('Orden no encontrada.')
+  if (errorOrden) {
+    throw new Error(errorOrden.message)
   }
-  if (orden.estado !== 'pendiente') {
+  if (!orden) {
     throw new Error('Esta orden ya fue recibida o anulada.')
+  }
+
+  const liberarReserva = async () => {
+    await supabase
+      .from('ordenes_compra')
+      .update({ estado: 'pendiente', recibida_en: null })
+      .eq('id', id)
   }
 
   const { data: detalles, error: errorDetalles } = await supabase
@@ -124,6 +138,7 @@ export async function recibirOrdenCompra(id: number) {
     .eq('orden_id', id)
 
   if (errorDetalles || !detalles || detalles.length === 0) {
+    await liberarReserva()
     throw new Error('La orden no tiene productos.')
   }
 
@@ -140,16 +155,8 @@ export async function recibirOrdenCompra(id: number) {
   )
 
   if (errorMovs) {
+    await liberarReserva()
     throw new Error(errorMovs.message)
-  }
-
-  const { error: errorUpdate } = await supabase
-    .from('ordenes_compra')
-    .update({ estado: 'recibida', recibida_en: new Date().toISOString() })
-    .eq('id', id)
-
-  if (errorUpdate) {
-    throw new Error(errorUpdate.message)
   }
 
   revalidatePath('/compras')

@@ -49,8 +49,22 @@ export default async function NotaCreditoPage({
     .eq('id', 1)
     .single()
 
+  // El saldo se calcula con TODAS las notas emitidas hasta esta (por fecha e
+  // id), no solo con la actual: antes, dos notas de S/ 200 sobre una factura de
+  // S/ 500 imprimian las dos "nuevo monto S/ 300", cuando el saldo real
+  // despues de la segunda es S/ 100.
+  const { data: notasHastaEsta } = await supabase
+    .from('notas_credito')
+    .select('monto')
+    .eq('comprobante_id', nota.comprobante_id)
+    .lte('id', nota.id)
+
   const totalOriginal = Number(comprobante?.total ?? 0)
-  const nuevoMonto = Math.max(0, totalOriginal - Number(nota.monto))
+  const acreditadoHastaEsta = (notasHastaEsta ?? []).reduce(
+    (acc, n) => acc + Number(n.monto),
+    0
+  )
+  const nuevoMonto = Math.max(0, totalOriginal - acreditadoHastaEsta)
   const tipoLabel = comprobante ? (TIPO_COMPROBANTE_LABELS[comprobante.tipo] ?? comprobante.tipo) : '—'
 
   return (

@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useState } from 'react'
 import { emitirComprobante, type EstadoFormulario } from '../../actions'
-import { IGV_TASA } from '@/lib/cotizaciones'
+import { IGV_TASA, calcularImportes } from '@/lib/cotizaciones'
 import { DIAS_CREDITO_OPCIONES, MEDIOS_PAGO, TIPO_COMPROBANTE_LABELS, calcularFechaVencimiento } from '@/lib/motivos'
 import { Buscador } from '@/components/buscador'
 
@@ -101,12 +101,19 @@ export function EmitirComprobanteForm({
   }
 
   const lineasValidas = useMemo(() => lineas.filter((l) => l.producto_id && l.cantidad), [lineas])
-  const subtotal = useMemo(
-    () => lineasValidas.reduce((acc, l) => acc + Number(l.cantidad) * (Number(l.precio_unitario) || 0), 0),
+
+  // Mismo calculo que usa el server action al grabar (calcularImportes), para
+  // que lo que ve el vendedor en pantalla sea exactamente lo que se guarda.
+  const { subtotal, igv, total } = useMemo(
+    () =>
+      calcularImportes(
+        lineasValidas.map((l) => ({
+          cantidad: Number(l.cantidad),
+          precio_unitario: Number(l.precio_unitario) || 0,
+        }))
+      ),
     [lineasValidas]
   )
-  const igv = subtotal * IGV_TASA
-  const total = subtotal + igv
 
   const lineasJson = JSON.stringify(
     lineasValidas.map((l) => ({

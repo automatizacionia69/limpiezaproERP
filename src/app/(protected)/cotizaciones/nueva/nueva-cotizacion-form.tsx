@@ -2,7 +2,7 @@
 
 import { useActionState, useMemo, useState } from 'react'
 import { crearCotizacion, type EstadoFormulario } from '../actions'
-import { IGV_TASA } from '@/lib/cotizaciones'
+import { IGV_TASA, calcularImportes } from '@/lib/cotizaciones'
 import { Buscador } from '@/components/buscador'
 
 type Cliente = { id: number; nombre: string; documento: string | null; vendedor_id: string | null }
@@ -92,12 +92,17 @@ export function NuevaCotizacionForm({
 
   const lineasValidas = useMemo(() => lineas.filter((l) => l.producto_id && l.cantidad), [lineas])
 
-  const subtotal = useMemo(
-    () => lineasValidas.reduce((acc, l) => acc + Number(l.cantidad) * (Number(l.precio_unitario) || 0), 0),
+  // Mismo calculo que usa el server action al grabar (calcularImportes).
+  const { subtotal, igv, total } = useMemo(
+    () =>
+      calcularImportes(
+        lineasValidas.map((l) => ({
+          cantidad: Number(l.cantidad),
+          precio_unitario: Number(l.precio_unitario) || 0,
+        }))
+      ),
     [lineasValidas]
   )
-  const igv = subtotal * IGV_TASA
-  const total = subtotal + igv
 
   const lineasJson = JSON.stringify(
     lineasValidas.map((l) => ({

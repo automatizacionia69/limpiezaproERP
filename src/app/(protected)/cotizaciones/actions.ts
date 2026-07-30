@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { tienePermiso } from '@/lib/permisos'
-import { IGV_TASA } from '@/lib/cotizaciones'
+import { calcularImportes } from '@/lib/cotizaciones'
 
 export type EstadoFormulario = { error: string | null }
 
@@ -51,9 +51,7 @@ export async function crearCotizacion(
     return { error: 'El precio unitario no puede ser negativo.' }
   }
 
-  const subtotal = lineas.reduce((acc, l) => acc + l.cantidad * l.precio_unitario, 0)
-  const igv = subtotal * IGV_TASA
-  const total = subtotal + igv
+  const { subtotal, igv, total } = calcularImportes(lineas)
 
   const supabase = await createClient()
   const {
@@ -123,14 +121,43 @@ export async function convertirCotizacionAVenta(cotizacionId: number) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  // Se RESERVA la cotizacion antes de crear nada: el update condicionado a
+  // estado='pendiente' lo resuelve la base de forma atomica, asi que dos clicks
+  // (o dos vendedores mirando la misma cotizacion) no pueden generar dos
+  // ordenes de venta duplicadas, ambas facturables y despachables.
   const { data: cotizacion, error: errorCotizacion } = await supabase
     .from('cotizaciones')
-    .select('id, numero, cliente_id')
+    .update({ estado: 'convertida' })
     .eq('id', cotizacionId)
-    .single()
+    .eq('estado', 'pendiente')
+    .select('id, numero, cliente_id, total')
+    .maybeSingle()
 
-  if (errorCotizacion || !cotizacion) {
-    throw new Error('Cotización no encontrada.')
+  if (errorCotizacion) {
+    throw new Error(errorCotizacion.message)
+  }
+  if (!cotizacion) {
+    // O no existe, o alguien la convirtio primero.
+    const { data: existente } = await supabase
+      .from('cotizaciones')
+      .select('numero, orden_venta_id')
+      .eq('id', cotizacionId)
+      .maybeSingle()
+
+    throw new Error(
+      existente
+        ? `La cotización ${existente.numero} ya fue convertida a venta.`
+        : 'Cotización no encontrada.'
+    )
+  }
+
+  // Si algo falla despues de la reserva hay que devolver la cotizacion a
+  // 'pendiente', o quedaria bloqueada para siempre sin haber generado la orden.
+  const liberarReserva = async () => {
+    await supabase
+      .from('cotizaciones')
+      .update({ estado: 'pendiente', orden_venta_id: null })
+      .eq('id', cotizacionId)
   }
 
   const { data: detalles, error: errorDetalles } = await supabase
@@ -139,23 +166,26 @@ export async function convertirCotizacionAVenta(cotizacionId: number) {
     .eq('cotizacion_id', cotizacionId)
 
   if (errorDetalles || !detalles || detalles.length === 0) {
+    await liberarReserva()
     throw new Error('La cotización no tiene productos.')
   }
 
-  const total = detalles.reduce((acc, d) => acc + d.cantidad * d.precio_unitario, 0)
-
+  // Se copia el total ya calculado de la cotizacion en vez de recalcularlo:
+  // asi la orden vale exactamente lo que el cliente aprobo por escrito. Antes
+  // se recalculaba sin IGV y la venta quedaba 18% por debajo de la cotizacion.
   const { data: orden, error: errorOrden } = await supabase
     .from('ordenes_venta')
     .insert({
       cliente_id: cotizacion.cliente_id,
       usuario_id: user?.id ?? null,
       observacion: `Generada desde cotización ${cotizacion.numero}`,
-      total,
+      total: cotizacion.total,
     })
     .select('id')
     .single()
 
   if (errorOrden || !orden) {
+    await liberarReserva()
     throw new Error(errorOrden?.message ?? 'No se pudo crear la orden de venta.')
   }
 
@@ -169,9 +199,22 @@ export async function convertirCotizacionAVenta(cotizacionId: number) {
   )
 
   if (errorDetalleVenta) {
+    // La cabecera queda huerfana (sin lineas) pero sin poder facturarse por
+    // error: se libera la cotizacion y se loggea para revision manual.
+    console.error(
+      `Orden ${orden.id} creada sin detalle desde ${cotizacion.numero}: ${errorDetalleVenta.message}`
+    )
+    await liberarReserva()
     throw new Error(errorDetalleVenta.message)
   }
 
+  // Queda el enlace para que la cotizacion sepa que orden genero.
+  await supabase
+    .from('cotizaciones')
+    .update({ orden_venta_id: orden.id })
+    .eq('id', cotizacionId)
+
   revalidatePath('/ventas')
+  revalidatePath('/cotizaciones')
   redirect('/ventas')
 }
