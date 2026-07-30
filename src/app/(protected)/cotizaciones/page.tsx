@@ -17,7 +17,7 @@ export default async function CotizacionesPage() {
   const { data: cotizaciones } = await supabase
     .from('cotizaciones')
     .select('id, numero, fecha, total, clientes(nombre)')
-    .order('fecha', { ascending: false })
+    .order('numero', { ascending: false })
     .returns<CotizacionRow[]>()
 
   return (
