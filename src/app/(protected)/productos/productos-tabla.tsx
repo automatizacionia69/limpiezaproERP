@@ -16,11 +16,41 @@ type ProductoRow = {
   unidades_medida: { nombre: string } | null
 }
 
+type CampoOrden = 'cantidad' | 'precio_venta'
+
+function IconoOrden({ activo, direccion }: { activo: boolean; direccion: 'asc' | 'desc' }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.5}
+      className={`h-3.5 w-3.5 transition-transform ${activo ? 'text-indigo-600' : 'text-[#94a3b8] dark:text-slate-500'} ${
+        activo && direccion === 'asc' ? 'rotate-180' : ''
+      }`}
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+    </svg>
+  )
+}
+
 export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
   const [filtro, setFiltro] = useState('')
   const [errorEliminar, setErrorEliminar] = useState<string | null>(null)
   const [pendienteId, setPendienteId] = useState<number | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [orden, setOrden] = useState<{ campo: CampoOrden | null; direccion: 'asc' | 'desc' }>({
+    campo: null,
+    direccion: 'desc',
+  })
+
+  function ordenarPor(campo: CampoOrden) {
+    setOrden((actual) =>
+      actual.campo === campo
+        ? { campo, direccion: actual.direccion === 'desc' ? 'asc' : 'desc' }
+        : { campo, direccion: 'desc' }
+    )
+  }
 
   function handleEliminar(id: number, nombre: string) {
     if (!confirm(`¿Eliminar "${nombre}"? Esta acción no se puede deshacer.`)) return
@@ -39,15 +69,26 @@ export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
 
   const filtrados = useMemo(() => {
     const q = filtro.trim().toLowerCase()
-    if (!q) return productos
-    return productos.filter((p) =>
-      [p.nombre, p.codigo, p.categorias?.nombre, p.unidades_medida?.nombre]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase()
-        .includes(q)
-    )
-  }, [productos, filtro])
+    const base = !q
+      ? productos
+      : productos.filter((p) =>
+          [p.nombre, p.codigo, p.categorias?.nombre, p.unidades_medida?.nombre]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase()
+            .includes(q)
+        )
+
+    if (!orden.campo) return base
+
+    const campo = orden.campo
+    const signo = orden.direccion === 'desc' ? -1 : 1
+    return [...base].sort((a, b) => {
+      const valorA = campo === 'precio_venta' ? (a.precio_venta ?? -1) : a[campo]
+      const valorB = campo === 'precio_venta' ? (b.precio_venta ?? -1) : b[campo]
+      return (valorA - valorB) * signo
+    })
+  }, [productos, filtro, orden])
 
   return (
     <div>
@@ -127,9 +168,29 @@ export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
                   <th className="px-6 py-4 font-bold">Código</th>
                   <th className="px-6 py-4 font-bold">Categoría</th>
                   <th className="px-6 py-4 font-bold">Unidad</th>
-                  <th className="px-6 py-4 font-bold">Cantidad</th>
+                  <th className="px-6 py-4 font-bold">
+                    <button
+                      type="button"
+                      onClick={() => ordenarPor('cantidad')}
+                      className="inline-flex items-center gap-1 hover:text-indigo-600"
+                      title="Ordenar por cantidad"
+                    >
+                      Cantidad
+                      <IconoOrden activo={orden.campo === 'cantidad'} direccion={orden.direccion} />
+                    </button>
+                  </th>
                   <th className="px-6 py-4 font-bold">Costo</th>
-                  <th className="px-6 py-4 font-bold">Precio venta</th>
+                  <th className="px-6 py-4 font-bold">
+                    <button
+                      type="button"
+                      onClick={() => ordenarPor('precio_venta')}
+                      className="inline-flex items-center gap-1 hover:text-indigo-600"
+                      title="Ordenar por precio de venta"
+                    >
+                      Precio venta
+                      <IconoOrden activo={orden.campo === 'precio_venta'} direccion={orden.direccion} />
+                    </button>
+                  </th>
                   <th className="px-6 py-4 text-right font-bold">Acciones</th>
                 </tr>
               </thead>
