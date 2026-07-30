@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { inicioDeMesPeru, inicioDeMesPeruFecha, inicioDeMesPeruInstante } from '@/lib/fecha'
 import { VentasComprasChart } from './ventas-compras-chart'
 
 const ROLE_LABELS: Record<string, string> = {
@@ -18,25 +19,6 @@ type StockBajoRow = {
 
 const MESES_LABEL = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 
-function inicioDeMesISO() {
-  const d = new Date()
-  d.setDate(1)
-  d.setHours(0, 0, 0, 0)
-  return d.toISOString()
-}
-
-function inicioMesesAtras(n: number) {
-  const d = new Date()
-  d.setDate(1)
-  d.setHours(0, 0, 0, 0)
-  d.setMonth(d.getMonth() - n)
-  return d
-}
-
-function aFechaISO(d: Date) {
-  return d.toISOString().slice(0, 10)
-}
-
 function clavesMes(fecha: Date) {
   return `${fecha.getFullYear()}-${fecha.getMonth()}`
 }
@@ -51,7 +33,7 @@ function construirSeisMeses(
   ventasNetas: { neto: number; fecha_emision: string }[],
   compras: { total: number; creado_en: string }[] | null
 ) {
-  const inicio = inicioMesesAtras(5)
+  const inicio = inicioDeMesPeru(5)
   const buckets = Array.from({ length: 6 }, (_, i) => {
     const fecha = new Date(inicio)
     fecha.setMonth(fecha.getMonth() + i)
@@ -87,10 +69,10 @@ export default async function DashboardPage() {
         .single()
     : { data: null }
 
-  const inicioMes = inicioDeMesISO()
-  const inicioMesFecha = aFechaISO(inicioMesesAtras(0))
-  const inicioSeisMeses = inicioMesesAtras(5).toISOString()
-  const inicioSeisMesesFecha = aFechaISO(inicioMesesAtras(5))
+  const inicioMes = inicioDeMesPeruInstante(0)
+  const inicioMesFecha = inicioDeMesPeruFecha(0)
+  const inicioSeisMeses = inicioDeMesPeruInstante(5)
+  const inicioSeisMesesFecha = inicioDeMesPeruFecha(5)
 
   const [
     { data: productos },

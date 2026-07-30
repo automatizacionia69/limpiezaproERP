@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { requierePermiso } from '@/lib/permisos'
+import { hoyPeruISO } from '@/lib/fecha'
 import { DescargarCsvBoton } from '@/components/descargar-csv-boton'
 import { ImprimirBoton } from '@/components/imprimir-boton'
 
@@ -52,7 +53,7 @@ export default async function ReporteInventarioPage() {
         </div>
         <div className="flex gap-3">
           <DescargarCsvBoton
-            nombreArchivo={`inventario-valorizado-${new Date().toISOString().slice(0, 10)}.csv`}
+            nombreArchivo={`inventario-valorizado-${hoyPeruISO()}.csv`}
             encabezados={['Código', 'Producto', 'Categoría', 'Unidad', 'Cantidad', 'Costo unitario', 'Valor total']}
             filas={filasCsv}
             className="flex items-center gap-2 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-5 py-3 text-sm font-bold text-[#1e293b] dark:text-slate-100 transition-all hover:border-indigo-300 hover:bg-indigo-50"

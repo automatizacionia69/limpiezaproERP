@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { requierePermiso } from '@/lib/permisos'
+import { hoyPeruISO, haceUnMesPeruISO } from '@/lib/fecha'
 import { IGV_TASA } from '@/lib/cotizaciones'
 import { TIPO_COMPROBANTE_LABELS } from '@/lib/motivos'
 import { DescargarExcelBoton } from '@/components/descargar-excel-boton'
@@ -55,23 +56,13 @@ function unoDe<T>(v: T | T[] | null): T | null {
   return Array.isArray(v) ? (v[0] ?? null) : v
 }
 
-function hoyISO() {
-  return new Date().toISOString().slice(0, 10)
-}
-
-function haceUnMesISO() {
-  const d = new Date()
-  d.setMonth(d.getMonth() - 1)
-  return d.toISOString().slice(0, 10)
-}
-
 export default async function ReporteVentasPorProductoPage({
   searchParams,
 }: {
   searchParams: Promise<{ desde?: string; hasta?: string }>
 }) {
   await requierePermiso('consulta_ventas')
-  const { desde = haceUnMesISO(), hasta = hoyISO() } = await searchParams
+  const { desde = haceUnMesPeruISO(), hasta = hoyPeruISO() } = await searchParams
   const supabase = await createClient()
 
   const { data: comprobantes } = await supabase

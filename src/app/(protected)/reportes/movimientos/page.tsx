@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { requierePermiso } from '@/lib/permisos'
+import { hoyPeruISO, haceUnMesPeruISO, inicioDiaPeru, finDiaPeru } from '@/lib/fecha'
 import { DescargarCsvBoton } from '@/components/descargar-csv-boton'
 import { ImprimirBoton } from '@/components/imprimir-boton'
 
@@ -22,23 +23,13 @@ type KardexRow = {
   creado_en: string
 }
 
-function hoyISO() {
-  return new Date().toISOString().slice(0, 10)
-}
-
-function haceUnMesISO() {
-  const d = new Date()
-  d.setMonth(d.getMonth() - 1)
-  return d.toISOString().slice(0, 10)
-}
-
 export default async function ReporteMovimientosPage({
   searchParams,
 }: {
   searchParams: Promise<{ desde?: string; hasta?: string }>
 }) {
   await requierePermiso('reportes')
-  const { desde = haceUnMesISO(), hasta = hoyISO() } = await searchParams
+  const { desde = haceUnMesPeruISO(), hasta = hoyPeruISO() } = await searchParams
 
   const supabase = await createClient()
   const { data: configuracion } = await supabase
@@ -49,8 +40,8 @@ export default async function ReporteMovimientosPage({
   const { data: movimientos } = await supabase
     .from('kardex_valorizado')
     .select('id, producto_nombre, tipo, cantidad, costo_unitario, valor_movimiento, usuario_nombre, motivo, creado_en')
-    .gte('creado_en', `${desde}T00:00:00`)
-    .lte('creado_en', `${hasta}T23:59:59`)
+    .gte('creado_en', inicioDiaPeru(desde))
+    .lte('creado_en', finDiaPeru(hasta))
     .order('creado_en', { ascending: false })
     .returns<KardexRow[]>()
 
