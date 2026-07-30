@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { esAdmin } from '@/lib/permisos'
 
 export type EstadoFormulario = { error: string | null; ok?: boolean }
 
@@ -9,6 +10,10 @@ export async function actualizarConfiguracion(
   _prevState: EstadoFormulario,
   formData: FormData
 ): Promise<EstadoFormulario> {
+  if (!(await esAdmin())) {
+    return { error: 'Solo un administrador puede editar la configuración.' }
+  }
+
   const empresa = (formData.get('empresa') as string)?.trim()
   const ruc = (formData.get('ruc') as string)?.trim()
   const direccion = (formData.get('direccion') as string)?.trim()

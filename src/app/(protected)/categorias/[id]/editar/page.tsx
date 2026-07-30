@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { requierePermiso } from '@/lib/permisos'
 import { EditarCategoriaForm } from './editar-categoria-form'
 
 export default async function EditarCategoriaPage({
@@ -7,6 +8,7 @@ export default async function EditarCategoriaPage({
 }: {
   params: Promise<{ id: string }>
 }) {
+  await requierePermiso('productos')
   const { id } = await params
   const supabase = await createClient()
   const { data: categoria } = await supabase.from('categorias').select('id, nombre').eq('id', id).single()

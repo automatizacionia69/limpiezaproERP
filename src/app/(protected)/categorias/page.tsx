@@ -1,7 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
+import { requierePermiso } from '@/lib/permisos'
 import { CategoriasTabla } from './categorias-tabla'
 
 export default async function CategoriasPage() {
+  await requierePermiso('productos')
   const supabase = await createClient()
   const [{ data: categorias }, { data: productos }] = await Promise.all([
     supabase.from('categorias').select('id, nombre').order('nombre'),

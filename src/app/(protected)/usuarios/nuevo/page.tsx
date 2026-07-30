@@ -1,6 +1,8 @@
+import { requiereAdmin } from '@/lib/permisos'
 import { UsuarioForm } from './usuario-form'
 
-export default function NuevoUsuarioPage() {
+export default async function NuevoUsuarioPage() {
+  await requiereAdmin()
   return (
     <div>
       <h1 className="text-2xl font-extrabold text-[#1e293b] dark:text-slate-100">👥 Nuevo usuario</h1>

@@ -1,6 +1,8 @@
+import { requierePermiso } from '@/lib/permisos'
 import { UnidadForm } from './unidad-form'
 
-export default function NuevaUnidadPage() {
+export default async function NuevaUnidadPage() {
+  await requierePermiso('productos')
   return (
     <div className="mx-auto max-w-2xl">
       <h1 className="text-2xl font-extrabold text-[#1e293b] dark:text-slate-100">📏 Nueva unidad de medida</h1>

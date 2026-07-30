@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { MODULOS } from '@/lib/modulos'
+import { esAdmin } from '@/lib/permisos'
 
 export type EstadoFormulario = { error: string | null }
 
@@ -27,27 +28,11 @@ async function guardarPermisos(
   await admin.from('usuarios_permisos').upsert(filas, { onConflict: 'usuario_id,modulo' })
 }
 
-async function verificarEsAdmin(): Promise<boolean> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return false
-
-  const { data: perfil } = await supabase
-    .from('usuarios_perfil')
-    .select('rol')
-    .eq('id', user.id)
-    .single()
-
-  return perfil?.rol === 'admin'
-}
-
 export async function crearUsuario(
   _prevState: EstadoFormulario,
   formData: FormData
 ): Promise<EstadoFormulario> {
-  if (!(await verificarEsAdmin())) {
+  if (!(await esAdmin())) {
     return { error: 'Solo un administrador puede crear usuarios.' }
   }
 
@@ -113,7 +98,7 @@ export async function editarUsuario(
   _prevState: EstadoFormulario,
   formData: FormData
 ): Promise<EstadoFormulario> {
-  if (!(await verificarEsAdmin())) {
+  if (!(await esAdmin())) {
     return { error: 'Solo un administrador puede editar usuarios.' }
   }
 
@@ -167,7 +152,7 @@ export async function editarUsuario(
 }
 
 export async function eliminarUsuario(id: string) {
-  if (!(await verificarEsAdmin())) {
+  if (!(await esAdmin())) {
     throw new Error('Solo un administrador puede eliminar usuarios.')
   }
 

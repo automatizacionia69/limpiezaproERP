@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { requierePermiso } from '@/lib/permisos'
 import { EditarUnidadForm } from './editar-unidad-form'
 
 export default async function EditarUnidadPage({
@@ -7,6 +8,7 @@ export default async function EditarUnidadPage({
 }: {
   params: Promise<{ id: string }>
 }) {
+  await requierePermiso('productos')
   const { id } = await params
   const supabase = await createClient()
   const { data: unidad } = await supabase.from('unidades_medida').select('id, nombre').eq('id', id).single()

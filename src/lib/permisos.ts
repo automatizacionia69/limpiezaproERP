@@ -39,3 +39,20 @@ export async function requierePermiso(modulo: ModuloClave) {
     redirect('/dashboard?sin-permiso=' + modulo)
   }
 }
+
+export async function esAdmin(): Promise<boolean> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return false
+
+  const { data: perfil } = await supabase.from('usuarios_perfil').select('rol').eq('id', user.id).single()
+  return perfil?.rol === 'admin'
+}
+
+export async function requiereAdmin() {
+  if (!(await esAdmin())) {
+    redirect('/dashboard?sin-permiso=admin')
+  }
+}

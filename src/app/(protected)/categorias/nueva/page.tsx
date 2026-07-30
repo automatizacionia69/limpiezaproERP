@@ -1,6 +1,8 @@
+import { requierePermiso } from '@/lib/permisos'
 import { CategoriaForm } from './categoria-form'
 
-export default function NuevaCategoriaPage() {
+export default async function NuevaCategoriaPage() {
+  await requierePermiso('productos')
   return (
     <div className="mx-auto max-w-2xl">
       <h1 className="text-2xl font-extrabold text-[#1e293b] dark:text-slate-100">🏷️ Nueva categoría</h1>

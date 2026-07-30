@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { requiereAdmin } from '@/lib/permisos'
 import { EditarUsuarioForm } from './editar-usuario-form'
 
 export default async function EditarUsuarioPage({
@@ -7,6 +8,7 @@ export default async function EditarUsuarioPage({
 }: {
   params: Promise<{ id: string }>
 }) {
+  await requiereAdmin()
   const { id } = await params
   const supabase = await createClient()
   const [{ data: usuario }, { data: permisos }] = await Promise.all([

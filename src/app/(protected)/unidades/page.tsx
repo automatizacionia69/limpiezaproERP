@@ -1,7 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
+import { requierePermiso } from '@/lib/permisos'
 import { UnidadesTabla } from './unidades-tabla'
 
 export default async function UnidadesPage() {
+  await requierePermiso('productos')
   const supabase = await createClient()
   const [{ data: unidades }, { data: productos }] = await Promise.all([
     supabase.from('unidades_medida').select('id, nombre').order('nombre'),

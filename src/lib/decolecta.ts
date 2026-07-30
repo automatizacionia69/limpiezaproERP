@@ -1,8 +1,22 @@
 'use server'
 
+import { createClient } from '@/lib/supabase/server'
+
+async function haySesion(): Promise<boolean> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  return user !== null
+}
+
 export type ResultadoBusquedaRuc = { nombre: string; direccion: string | null } | { error: string }
 
 export async function buscarRazonSocialPorRuc(ruc: string): Promise<ResultadoBusquedaRuc> {
+  if (!(await haySesion())) {
+    return { error: 'Debes iniciar sesión para consultar el RUC.' }
+  }
+
   const rucLimpio = ruc.trim()
 
   if (!/^\d{11}$/.test(rucLimpio)) {
@@ -48,6 +62,10 @@ export async function buscarRazonSocialPorRuc(ruc: string): Promise<ResultadoBus
 export type ResultadoBusquedaDni = { nombre: string } | { error: string }
 
 export async function buscarNombrePorDni(dni: string): Promise<ResultadoBusquedaDni> {
+  if (!(await haySesion())) {
+    return { error: 'Debes iniciar sesión para consultar el DNI.' }
+  }
+
   const dniLimpio = dni.trim()
 
   if (!/^\d{8}$/.test(dniLimpio)) {
