@@ -51,7 +51,7 @@ export default async function GuiaRemisionPage({ params }: { params: Promise<{ i
         <Link href="/guias-remision" className="text-sm font-bold text-[#64748b] dark:text-slate-400 hover:text-fuchsia-600">
           ← Volver a Guías de Remisión
         </Link>
-        <ImprimirBoton className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-purple-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-fuchsia-500/30 transition-all hover:-translate-y-0.5">
+        <ImprimirBoton className="flex items-center gap-2 rounded-md bg-gradient-to-r from-fuchsia-500 to-purple-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-fuchsia-500/30 transition-all">
           🖨️ Imprimir
         </ImprimirBoton>
       </div>

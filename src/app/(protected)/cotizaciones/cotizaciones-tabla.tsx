@@ -119,7 +119,7 @@ export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRo
         </div>
         <button
           type="submit"
-          className="rounded-xl bg-sky-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm shadow-sky-500/30 transition-all hover:bg-sky-700"
+          className="rounded-md bg-sky-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm shadow-sky-500/30 transition-all hover:bg-sky-700"
         >
           🔍 Buscar
         </button>
@@ -127,7 +127,7 @@ export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRo
           <button
             type="button"
             onClick={limpiar}
-            className="rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-5 py-2.5 text-sm font-bold text-[#64748b] dark:text-slate-400 transition-all hover:bg-[#f8fafc]"
+            className="rounded-md border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-5 py-2.5 text-sm font-bold text-[#64748b] dark:text-slate-400 transition-all hover:bg-[#f8fafc]"
           >
             Limpiar
           </button>

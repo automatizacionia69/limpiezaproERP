@@ -183,7 +183,7 @@ export function NuevaVentaForm({
 
       <button
         type="submit"
-        className="w-full rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 py-3.5 text-base font-bold text-white shadow-lg shadow-teal-500/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-teal-500/40"
+        className="w-full rounded-md bg-gradient-to-r from-teal-500 to-emerald-500 py-3.5 text-base font-bold text-white shadow-lg shadow-teal-500/30 transition-all"
       >
         Guardar orden (pendiente)
       </button>

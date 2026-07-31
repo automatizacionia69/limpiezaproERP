@@ -98,7 +98,7 @@ export function GuiasTabla({ guias }: { guias: GuiaRow[] }) {
         </div>
         <button
           type="submit"
-          className="rounded-xl bg-fuchsia-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm shadow-fuchsia-500/30 transition-all hover:bg-fuchsia-700"
+          className="rounded-md bg-fuchsia-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm shadow-fuchsia-500/30 transition-all hover:bg-fuchsia-700"
         >
           🔍 Buscar
         </button>
@@ -106,7 +106,7 @@ export function GuiasTabla({ guias }: { guias: GuiaRow[] }) {
           <button
             type="button"
             onClick={limpiar}
-            className="rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-5 py-2.5 text-sm font-bold text-[#64748b] dark:text-slate-400 transition-all hover:bg-[#f8fafc] dark:hover:bg-slate-800"
+            className="rounded-md border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-5 py-2.5 text-sm font-bold text-[#64748b] dark:text-slate-400 transition-all hover:bg-[#f8fafc] dark:hover:bg-slate-800"
           >
             Limpiar
           </button>

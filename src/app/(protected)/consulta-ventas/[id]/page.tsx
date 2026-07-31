@@ -129,7 +129,7 @@ export default async function ComprobantePage({
         <Link href="/consulta-ventas" className="text-sm font-bold text-[#64748b] dark:text-slate-400 hover:text-lime-600">
           ← Volver a Consulta de Ventas
         </Link>
-        <ImprimirBoton className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-lime-500 to-green-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-lime-500/30 transition-all hover:-translate-y-0.5">
+        <ImprimirBoton className="flex items-center gap-2 rounded-md bg-gradient-to-r from-lime-500 to-green-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-lime-500/30 transition-all">
           🖨️ Imprimir
         </ImprimirBoton>
       </div>

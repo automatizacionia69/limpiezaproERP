@@ -73,7 +73,7 @@ export default async function NotaCreditoPage({
         <Link href={`/consulta-ventas/${nota.comprobante_id}`} className="text-sm font-bold text-[#64748b] dark:text-slate-400 hover:text-red-600">
           ← Volver a {tipoLabel} {comprobante?.numero}
         </Link>
-        <ImprimirBoton className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-red-500/30 transition-all hover:-translate-y-0.5">
+        <ImprimirBoton className="flex items-center gap-2 rounded-md bg-gradient-to-r from-red-500 to-rose-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-red-500/30 transition-all">
           🖨️ Imprimir
         </ImprimirBoton>
       </div>
