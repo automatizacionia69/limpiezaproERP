@@ -16,8 +16,18 @@ type GuiaDetalle = {
     numero: string
     tipo: string
     total: number
+    orden_venta_id: number
     clientes: { nombre: string; documento: string | null } | null
   } | null
+}
+
+type DetalleRow = {
+  cantidad: number
+  productos: { nombre: string; codigo: string | null } | { nombre: string; codigo: string | null }[] | null
+}
+
+function unoDe<T>(v: T | T[] | null): T | null {
+  return Array.isArray(v) ? (v[0] ?? null) : v
 }
 
 export default async function GuiaRemisionPage({ params }: { params: Promise<{ id: string }> }) {
@@ -29,7 +39,7 @@ export default async function GuiaRemisionPage({ params }: { params: Promise<{ i
     supabase
       .from('guias_remision')
       .select(
-        'id, numero, fecha, direccion_despacho, observacion, comprobantes(numero, tipo, total, clientes(nombre, documento))'
+        'id, numero, fecha, direccion_despacho, observacion, comprobantes(numero, tipo, total, orden_venta_id, clientes(nombre, documento))'
       )
       .eq('id', id)
       .single()
@@ -45,13 +55,26 @@ export default async function GuiaRemisionPage({ params }: { params: Promise<{ i
   const cliente = comprobante && (Array.isArray(comprobante.clientes) ? comprobante.clientes[0] : comprobante.clientes)
   const tipoLabel = comprobante ? (TIPO_COMPROBANTE_LABELS[comprobante.tipo] ?? comprobante.tipo) : '—'
 
+  const { data: detalles } = comprobante
+    ? await supabase
+        .from('detalle_venta')
+        .select('cantidad, productos(nombre, codigo)')
+        .eq('orden_id', comprobante.orden_venta_id)
+        .returns<DetalleRow[]>()
+    : { data: null }
+
+  const productos = (detalles ?? []).map((d) => ({
+    cantidad: d.cantidad,
+    ...unoDe(d.productos),
+  }))
+
   return (
     <div>
       <div className="mb-6 flex items-center justify-between print:hidden">
         <Link href="/guias-remision" className="text-sm font-bold text-[#64748b] dark:text-slate-400 hover:text-fuchsia-600">
           ← Volver a Guías de Remisión
         </Link>
-        <ImprimirBoton className="flex items-center gap-2 rounded-md bg-gradient-to-r from-fuchsia-500 to-purple-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-fuchsia-500/30 transition-all">
+        <ImprimirBoton className="flex items-center gap-2 rounded-md bg-gradient-to-r from-fuchsia-500 to-purple-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-fuchsia-500/30 transition-all active:scale-95">
           🖨️ Imprimir
         </ImprimirBoton>
       </div>
@@ -100,6 +123,30 @@ export default async function GuiaRemisionPage({ params }: { params: Promise<{ i
             </div>
           </div>
         </div>
+
+        {productos.length > 0 && (
+          <div className="mt-5">
+            <p className="text-[10px] font-bold tracking-wide text-[#94a3b8] dark:text-slate-500 uppercase">Productos</p>
+            <table className="mt-1.5 w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-[#1e293b] dark:border-slate-600">
+                  <th className="py-1.5 font-bold text-[#1e293b] dark:text-slate-100">Código</th>
+                  <th className="py-1.5 font-bold text-[#1e293b] dark:text-slate-100">Producto</th>
+                  <th className="py-1.5 text-right font-bold text-[#1e293b] dark:text-slate-100">Cantidad</th>
+                </tr>
+              </thead>
+              <tbody>
+                {productos.map((p, i) => (
+                  <tr key={i} className="border-b border-[#f1f5f9] dark:border-slate-800">
+                    <td className="py-1.5 text-[#64748b] dark:text-slate-400">{p.codigo || '—'}</td>
+                    <td className="py-1.5 text-[#1e293b] dark:text-slate-100">{p.nombre ?? '—'}</td>
+                    <td className="py-1.5 text-right font-semibold text-[#1e293b] dark:text-slate-100">{p.cantidad}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         {guia.observacion && (
           <p className="mt-5 rounded-xl bg-[#f8fafc] dark:bg-slate-800/60 px-4 py-3 text-sm text-[#64748b] dark:text-slate-400">
