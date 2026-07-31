@@ -5,11 +5,12 @@ type ComprobanteRow = {
   id: number
   numero: string
   tipo: string
+  subtotal: number
   total: number
   fecha_emision: string
   dias_credito: string
   fecha_cobro: string | null
-  clientes: { nombre: string } | { nombre: string }[] | null
+  clientes: { nombre: string; documento: string | null } | { nombre: string; documento: string | null }[] | null
 }
 
 type NotaRow = { comprobante_id: number; monto: number }
@@ -21,7 +22,10 @@ export type FilaCobranza = {
   numero: string
   tipo: string
   cliente: string
+  clienteDocumento: string
   saldo: number
+  montoSinIgv: number
+  montoConIgv: number
   fechaEmisionLabel: string
   fechaVencimientoISO: string
   fechaVencimientoLabel: string
@@ -64,7 +68,7 @@ export async function obtenerCobranzas(): Promise<FilaCobranza[]> {
 
   const { data: comprobantes } = await supabase
     .from('comprobantes')
-    .select('id, numero, tipo, total, fecha_emision, dias_credito, fecha_cobro, clientes(nombre)')
+    .select('id, numero, tipo, subtotal, total, fecha_emision, dias_credito, fecha_cobro, clientes(nombre, documento)')
     .eq('estado', 'emitido')
     .returns<ComprobanteRow[]>()
 
@@ -104,7 +108,10 @@ export async function obtenerCobranzas(): Promise<FilaCobranza[]> {
       numero: c.numero,
       tipo: c.tipo,
       cliente: unoDe(c.clientes)?.nombre ?? '—',
+      clienteDocumento: unoDe(c.clientes)?.documento ?? '',
       saldo,
+      montoSinIgv: Number(c.subtotal),
+      montoConIgv: Number(c.total),
       fechaEmisionLabel: formatearFechaISO(c.fecha_emision),
       fechaVencimientoISO,
       fechaVencimientoLabel: formatearFechaISO(fechaVencimientoISO),

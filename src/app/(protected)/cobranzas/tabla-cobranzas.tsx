@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useMemo, useState, useTransition } from 'react'
 import { marcarCobrada } from './actions'
+import { DescargarExcelBoton } from '@/components/descargar-excel-boton'
 import type { FilaCobranza } from '@/lib/cobranzas'
 
 const TIPO_LABELS: Record<string, string> = {
@@ -70,16 +71,38 @@ export function TablaCobranzas({ filas }: { filas: FilaCobranza[] }) {
     setAplicado(FILTROS_VACIOS)
   }
 
-  const vencidas = filas.filter((f) => f.estado === 'vencida').length
+  const filasVencidas = filas.filter((f) => f.estado === 'vencida')
+  const vencidas = filasVencidas.length
   const pendientes = filas.filter((f) => f.estado === 'pendiente').length
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-extrabold text-[#1e293b] dark:text-slate-100">Cobranzas</h1>
-        <p className="mt-1 text-sm font-medium text-[#64748b] dark:text-slate-400">
-          {vencidas} vencida{vencidas === 1 ? '' : 's'} · {pendientes} pendiente{pendientes === 1 ? '' : 's'}
-        </p>
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-extrabold text-[#1e293b] dark:text-slate-100">Cobranzas</h1>
+          <p className="mt-1 text-sm font-medium text-[#64748b] dark:text-slate-400">
+            {vencidas} vencida{vencidas === 1 ? '' : 's'} · {pendientes} pendiente{pendientes === 1 ? '' : 's'}
+          </p>
+        </div>
+        {vencidas > 0 && (
+          <DescargarExcelBoton
+            nombreArchivo={`cobranzas-vencidas-${new Date().toISOString().slice(0, 10)}.xlsx`}
+            hoja="Facturas vencidas"
+            encabezados={['Fecha emisión', 'Vencimiento', 'RUC/DNI', 'Cliente', 'Monto sin IGV', 'Monto con IGV']}
+            filas={filasVencidas.map((f) => [
+              f.fechaEmisionLabel,
+              f.fechaVencimientoLabel,
+              f.clienteDocumento,
+              f.cliente,
+              f.montoSinIgv,
+              f.montoConIgv,
+            ])}
+            colorEncabezado="FFDC2626"
+            className="rounded-md bg-red-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-red-500/30 transition-all hover:bg-red-700 active:scale-95"
+          >
+            Descargar vencidas (Excel)
+          </DescargarExcelBoton>
+        )}
       </div>
 
       {error && (
