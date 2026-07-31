@@ -4,6 +4,7 @@ import { useActionState, useState, useTransition } from 'react'
 import { editarCliente, type EstadoFormulario } from '../../actions'
 import { buscarRazonSocialPorRuc, buscarNombrePorDni } from '@/lib/decolecta'
 import { Buscador } from '@/components/buscador'
+import { filtrarTelefono } from '@/lib/telefono'
 
 type Cliente = {
   id: number
@@ -98,7 +99,7 @@ export function EditarClienteForm({ cliente, vendedores }: { cliente: Cliente; v
         </div>
         <div>
           <label className={LABEL}>Teléfono</label>
-          <input type="text" name="telefono" defaultValue={cliente.telefono ?? ''} className={CAMPO} />
+          <input type="tel" name="telefono" defaultValue={cliente.telefono ?? ''} onInput={filtrarTelefono} className={CAMPO} />
         </div>
         <div>
           <label className={LABEL}>Correo</label>

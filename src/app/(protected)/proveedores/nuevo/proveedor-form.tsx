@@ -3,6 +3,7 @@
 import { useActionState, useState, useTransition } from 'react'
 import { crearProveedor, type EstadoFormulario } from '../actions'
 import { buscarRazonSocialPorRuc } from '@/lib/decolecta'
+import { filtrarTelefono } from '@/lib/telefono'
 
 const CAMPO =
   'mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-3 text-base text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100'
@@ -75,7 +76,7 @@ export function ProveedorForm() {
         </div>
         <div>
           <label className={LABEL}>Teléfono</label>
-          <input type="text" name="telefono" className={CAMPO} />
+          <input type="tel" name="telefono" onInput={filtrarTelefono} className={CAMPO} />
         </div>
         <div>
           <label className={LABEL}>Correo</label>

@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react'
 import { actualizarConfiguracion, type EstadoFormulario } from './actions'
+import { filtrarTelefono } from '@/lib/telefono'
 
 type Configuracion = {
   empresa: string
@@ -64,10 +65,11 @@ export function ConfiguracionForm({
         <div>
           <label className={LABEL}>Teléfono</label>
           <input
-            type="text"
+            type="tel"
             name="telefono"
             disabled={!puedeEditar}
             defaultValue={configuracion.telefono ?? ''}
+            onInput={filtrarTelefono}
             className={CAMPO}
           />
         </div>

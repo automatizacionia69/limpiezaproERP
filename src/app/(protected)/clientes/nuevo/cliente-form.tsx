@@ -4,6 +4,7 @@ import { useActionState, useState, useTransition } from 'react'
 import { crearCliente, type EstadoFormulario } from '../actions'
 import { buscarRazonSocialPorRuc, buscarNombrePorDni } from '@/lib/decolecta'
 import { Buscador } from '@/components/buscador'
+import { filtrarTelefono } from '@/lib/telefono'
 
 type Vendedor = { id: string; nombre: string }
 
@@ -87,7 +88,7 @@ export function ClienteForm({ vendedores }: { vendedores: Vendedor[] }) {
         </div>
         <div>
           <label className={LABEL}>Teléfono</label>
-          <input type="text" name="telefono" className={CAMPO} />
+          <input type="tel" name="telefono" onInput={filtrarTelefono} className={CAMPO} />
         </div>
         <div>
           <label className={LABEL}>Correo</label>

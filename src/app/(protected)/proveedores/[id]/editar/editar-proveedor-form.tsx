@@ -3,6 +3,7 @@
 import { useActionState, useState, useTransition } from 'react'
 import { editarProveedor, type EstadoFormulario } from '../../actions'
 import { buscarRazonSocialPorRuc } from '@/lib/decolecta'
+import { filtrarTelefono } from '@/lib/telefono'
 
 type Proveedor = {
   id: number
@@ -87,7 +88,7 @@ export function EditarProveedorForm({ proveedor }: { proveedor: Proveedor }) {
         </div>
         <div>
           <label className={LABEL}>Teléfono</label>
-          <input type="text" name="telefono" defaultValue={proveedor.telefono ?? ''} className={CAMPO} />
+          <input type="tel" name="telefono" defaultValue={proveedor.telefono ?? ''} onInput={filtrarTelefono} className={CAMPO} />
         </div>
         <div>
           <label className={LABEL}>Correo</label>
