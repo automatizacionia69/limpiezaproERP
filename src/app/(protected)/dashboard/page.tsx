@@ -33,11 +33,18 @@ function construirSeisMeses(
   ventasNetas: { neto: number; fecha_emision: string }[],
   compras: { total: number; creado_en: string }[] | null
 ) {
+  // Aritmetica pura de anio/mes (sin mutar un Date con setMonth): mezclar un
+  // Date construido en UTC (inicioDeMesPeru) con getMonth()/setMonth() en hora
+  // local desbordaba el dia (ej. "31 de abril" -> 1 de mayo) y producia dos
+  // buckets con el mismo mes cuando el servidor corre en hora de Peru.
   const inicio = inicioDeMesPeru(5)
+  const anioBase = inicio.getUTCFullYear()
+  const mesBase = inicio.getUTCMonth()
   const buckets = Array.from({ length: 6 }, (_, i) => {
-    const fecha = new Date(inicio)
-    fecha.setMonth(fecha.getMonth() + i)
-    return { clave: clavesMes(fecha), mes: MESES_LABEL[fecha.getMonth()], ventas: 0, compras: 0 }
+    const totalMes = mesBase + i
+    const anio = anioBase + Math.floor(totalMes / 12)
+    const mes = ((totalMes % 12) + 12) % 12
+    return { clave: `${anio}-${mes}`, mes: MESES_LABEL[mes], ventas: 0, compras: 0 }
   })
 
   const indice = new Map(buckets.map((b) => [b.clave, b]))

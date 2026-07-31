@@ -4,6 +4,7 @@ import { useActionState, useState, useTransition } from 'react'
 import { crearCliente, type EstadoFormulario } from '../actions'
 import { buscarRazonSocialPorRuc, buscarNombrePorDni } from '@/lib/decolecta'
 import { Buscador } from '@/components/buscador'
+import { filtrarTelefono } from '@/lib/telefono'
 
 type Vendedor = { id: string; nombre: string }
 
@@ -87,7 +88,7 @@ export function ClienteForm({ vendedores }: { vendedores: Vendedor[] }) {
         </div>
         <div>
           <label className={LABEL}>Teléfono</label>
-          <input type="text" name="telefono" className={CAMPO} />
+          <input type="tel" name="telefono" onInput={filtrarTelefono} className={CAMPO} />
         </div>
         <div>
           <label className={LABEL}>Correo</label>
@@ -128,7 +129,7 @@ export function ClienteForm({ vendedores }: { vendedores: Vendedor[] }) {
 
       <button
         type="submit"
-        className="w-full rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 py-3.5 text-base font-bold text-white shadow-lg shadow-orange-500/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-orange-500/40"
+        className="w-full rounded-md bg-gradient-to-r from-orange-500 to-amber-500 py-3.5 text-base font-bold text-white shadow-lg shadow-orange-500/30 transition-all active:scale-95"
       >
         Guardar cliente
       </button>

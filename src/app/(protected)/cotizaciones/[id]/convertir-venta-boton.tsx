@@ -27,7 +27,7 @@ export function ConvertirVentaBoton({ id, numero }: { id: number; numero: string
         type="button"
         onClick={handleClick}
         disabled={isPending}
-        className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-teal-500/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-teal-500/40 disabled:opacity-50"
+        className="flex items-center gap-2 rounded-md bg-gradient-to-r from-teal-500 to-emerald-500 px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-teal-500/30 transition-all disabled:opacity-50 active:scale-95"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5">
           <path

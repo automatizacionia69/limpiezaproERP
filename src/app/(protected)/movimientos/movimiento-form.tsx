@@ -101,7 +101,7 @@ export function MovimientoForm({ productos }: { productos: Producto[] }) {
 
       <button
         type="submit"
-        className="w-full rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 py-3.5 text-base font-bold text-white shadow-lg shadow-amber-500/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-amber-500/40"
+        className="w-full rounded-md bg-gradient-to-r from-amber-500 to-orange-500 py-3.5 text-base font-bold text-white shadow-lg shadow-amber-500/30 transition-all active:scale-95"
       >
         Registrar movimiento
       </button>

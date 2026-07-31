@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react'
 import { Sidebar } from './sidebar'
 import { NotificacionesStock } from './notificaciones-stock'
+import { NotificacionesCobranzas } from './notificaciones-cobranzas'
 import { AlertaStockBajo } from './alerta-stock-bajo'
 import { ThemeToggle } from './theme-toggle'
+import type { FilaCobranza } from '@/lib/cobranzas'
 
 type ProductoStockBajo = { id: number; nombre: string; cantidad: number; punto_reorden: number | null }
 
@@ -29,6 +31,7 @@ export function AppShell({
   rol,
   modulosPermitidos,
   stockBajo,
+  cobranzas,
   signOutAction,
 }: {
   children: React.ReactNode
@@ -36,6 +39,7 @@ export function AppShell({
   rol: string
   modulosPermitidos: string[]
   stockBajo: ProductoStockBajo[]
+  cobranzas: FilaCobranza[]
   signOutAction: () => Promise<void>
 }) {
   const [collapsed, setCollapsed] = useState(false)
@@ -64,7 +68,7 @@ export function AppShell({
             type="button"
             onClick={() => setCollapsed((c) => !c)}
             title={collapsed ? 'Expandir menú' : 'Contraer menú'}
-            className="flex h-11 w-11 items-center justify-center rounded-2xl text-[#64748b] dark:text-slate-400 transition-all hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-slate-800 dark:hover:text-indigo-400"
+            className="flex h-11 w-11 items-center justify-center rounded-md text-[#64748b] dark:text-slate-400 transition-all hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-slate-800 dark:hover:text-indigo-400 active:scale-95"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" />
@@ -74,6 +78,7 @@ export function AppShell({
           <div className="flex items-center gap-4">
             <ThemeToggle />
             <NotificacionesStock stockBajo={stockBajo} />
+            <NotificacionesCobranzas filas={cobranzas} />
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-sm font-bold text-white shadow-md shadow-indigo-500/30">
               {iniciales(nombre)}
             </div>
@@ -87,7 +92,7 @@ export function AppShell({
               <button
                 type="submit"
                 title="Cerrar sesión"
-                className="flex h-11 w-11 items-center justify-center rounded-2xl text-[#64748b] dark:text-slate-400 transition-all hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50 dark:hover:text-red-400"
+                className="flex h-11 w-11 items-center justify-center rounded-md text-[#64748b] dark:text-slate-400 transition-all hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50 dark:hover:text-red-400 active:scale-95"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5">
                   <path

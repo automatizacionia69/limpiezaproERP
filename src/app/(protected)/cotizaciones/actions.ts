@@ -130,7 +130,7 @@ export async function convertirCotizacionAVenta(cotizacionId: number) {
     .update({ estado: 'convertida' })
     .eq('id', cotizacionId)
     .eq('estado', 'pendiente')
-    .select('id, numero, cliente_id, total')
+    .select('id, numero, cliente_id, total, dias_credito')
     .maybeSingle()
 
   if (errorCotizacion) {
@@ -180,6 +180,7 @@ export async function convertirCotizacionAVenta(cotizacionId: number) {
       usuario_id: user?.id ?? null,
       observacion: `Generada desde cotización ${cotizacion.numero}`,
       total: cotizacion.total,
+      dias_credito: cotizacion.dias_credito,
     })
     .select('id')
     .single()

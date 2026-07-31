@@ -54,7 +54,7 @@ export function EditarGuiaForm({ guia }: { guia: Guia }) {
 
       <button
         type="submit"
-        className="rounded-xl bg-gradient-to-r from-fuchsia-500 to-purple-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-fuchsia-500/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-fuchsia-500/40"
+        className="rounded-md bg-gradient-to-r from-fuchsia-500 to-purple-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-fuchsia-500/30 transition-all active:scale-95"
       >
         Guardar cambios
       </button>

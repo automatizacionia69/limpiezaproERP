@@ -75,7 +75,7 @@ export default async function ReporteMovimientosPage({
             >
               ⬇️ Descargar CSV
             </DescargarCsvBoton>
-            <ImprimirBoton className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-amber-500/30 transition-all hover:-translate-y-0.5">
+            <ImprimirBoton className="flex items-center gap-2 rounded-md bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-amber-500/30 transition-all active:scale-95">
               🖨️ Imprimir
             </ImprimirBoton>
           </div>
@@ -102,7 +102,7 @@ export default async function ReporteMovimientosPage({
           </div>
           <button
             type="submit"
-            className="rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-amber-500/30 transition-all hover:bg-amber-600"
+            className="rounded-md bg-amber-500 px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-amber-500/30 transition-all hover:bg-amber-600 active:scale-95"
           >
             Filtrar
           </button>

@@ -3,6 +3,7 @@
 import { useActionState, useState, useTransition } from 'react'
 import { editarProveedor, type EstadoFormulario } from '../../actions'
 import { buscarRazonSocialPorRuc } from '@/lib/decolecta'
+import { filtrarTelefono } from '@/lib/telefono'
 
 type Proveedor = {
   id: number
@@ -62,7 +63,7 @@ export function EditarProveedorForm({ proveedor }: { proveedor: Proveedor }) {
               type="button"
               onClick={buscarRuc}
               disabled={buscando || ruc.length !== 11}
-              className="shrink-0 rounded-xl bg-gradient-to-r from-cyan-500 to-sky-500 px-5 py-3 text-sm font-bold text-white shadow-md shadow-cyan-500/30 transition-all hover:shadow-lg hover:shadow-cyan-500/40 disabled:opacity-40 disabled:shadow-none"
+              className="shrink-0 rounded-md bg-gradient-to-r from-cyan-500 to-sky-500 px-5 py-3 text-sm font-bold text-white shadow-md shadow-cyan-500/30 transition-all hover:shadow-lg hover:shadow-cyan-500/40 disabled:opacity-40 disabled:shadow-none active:scale-95"
             >
               {buscando ? 'Buscando…' : '🔍 Buscar'}
             </button>
@@ -87,7 +88,7 @@ export function EditarProveedorForm({ proveedor }: { proveedor: Proveedor }) {
         </div>
         <div>
           <label className={LABEL}>Teléfono</label>
-          <input type="text" name="telefono" defaultValue={proveedor.telefono ?? ''} className={CAMPO} />
+          <input type="tel" name="telefono" defaultValue={proveedor.telefono ?? ''} onInput={filtrarTelefono} className={CAMPO} />
         </div>
         <div>
           <label className={LABEL}>Correo</label>
@@ -113,7 +114,7 @@ export function EditarProveedorForm({ proveedor }: { proveedor: Proveedor }) {
 
       <button
         type="submit"
-        className="w-full rounded-xl bg-gradient-to-r from-cyan-500 to-sky-500 py-3.5 text-base font-bold text-white shadow-lg shadow-cyan-500/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-cyan-500/40"
+        className="w-full rounded-md bg-gradient-to-r from-cyan-500 to-sky-500 py-3.5 text-base font-bold text-white shadow-lg shadow-cyan-500/30 transition-all active:scale-95"
       >
         Guardar cambios
       </button>

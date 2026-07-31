@@ -94,7 +94,7 @@ export function UsuarioForm() {
 
       <button
         type="submit"
-        className="w-full rounded-xl bg-gradient-to-r from-rose-500 to-red-500 py-3.5 text-base font-bold text-white shadow-lg shadow-rose-500/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-rose-500/40"
+        className="w-full rounded-md bg-gradient-to-r from-rose-500 to-red-500 py-3.5 text-base font-bold text-white shadow-lg shadow-rose-500/30 transition-all active:scale-95"
       >
         Crear usuario
       </button>

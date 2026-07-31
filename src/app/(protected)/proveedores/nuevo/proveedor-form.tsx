@@ -3,6 +3,7 @@
 import { useActionState, useState, useTransition } from 'react'
 import { crearProveedor, type EstadoFormulario } from '../actions'
 import { buscarRazonSocialPorRuc } from '@/lib/decolecta'
+import { filtrarTelefono } from '@/lib/telefono'
 
 const CAMPO =
   'mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-3 text-base text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100'
@@ -50,7 +51,7 @@ export function ProveedorForm() {
               type="button"
               onClick={buscarRuc}
               disabled={buscando || ruc.length !== 11}
-              className="shrink-0 rounded-xl bg-gradient-to-r from-cyan-500 to-sky-500 px-5 py-3 text-sm font-bold text-white shadow-md shadow-cyan-500/30 transition-all hover:shadow-lg hover:shadow-cyan-500/40 disabled:opacity-40 disabled:shadow-none"
+              className="shrink-0 rounded-md bg-gradient-to-r from-cyan-500 to-sky-500 px-5 py-3 text-sm font-bold text-white shadow-md shadow-cyan-500/30 transition-all hover:shadow-lg hover:shadow-cyan-500/40 disabled:opacity-40 disabled:shadow-none active:scale-95"
             >
               {buscando ? 'Buscando…' : '🔍 Buscar'}
             </button>
@@ -75,7 +76,7 @@ export function ProveedorForm() {
         </div>
         <div>
           <label className={LABEL}>Teléfono</label>
-          <input type="text" name="telefono" className={CAMPO} />
+          <input type="tel" name="telefono" onInput={filtrarTelefono} className={CAMPO} />
         </div>
         <div>
           <label className={LABEL}>Correo</label>
@@ -101,7 +102,7 @@ export function ProveedorForm() {
 
       <button
         type="submit"
-        className="w-full rounded-xl bg-gradient-to-r from-cyan-500 to-sky-500 py-3.5 text-base font-bold text-white shadow-lg shadow-cyan-500/30 transition-all hover:-translate-y-0.5 hover:shadow-xl hover:shadow-cyan-500/40"
+        className="w-full rounded-md bg-gradient-to-r from-cyan-500 to-sky-500 py-3.5 text-base font-bold text-white shadow-lg shadow-cyan-500/30 transition-all active:scale-95"
       >
         Guardar proveedor
       </button>
