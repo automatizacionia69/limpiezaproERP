@@ -25,13 +25,13 @@ export function NotificacionesCobranzas({ filas }: { filas: FilaCobranza[] }) {
         type="button"
         onClick={() => setAbierto((v) => !v)}
         title="Cobranzas pendientes"
-        className="relative flex h-11 w-11 items-center justify-center rounded-2xl text-[#64748b] dark:text-slate-400 transition-all hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-slate-800 dark:hover:text-indigo-400"
+        className="relative flex h-11 w-11 items-center justify-center rounded-md text-[#64748b] dark:text-slate-400 transition-all hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-slate-800 dark:hover:text-indigo-400"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
-            d="M12 6v12m-4.5-2.818.879.659c1.171.879 3.07.879 4.242 0m0 0c1.172-.879 1.172-2.303 0-3.182C11.75 12.219 10.982 12 10.214 12m4.786 3.182c1.172-.879 1.172-2.303 0-3.182C14.25 11.219 13.482 11 12.714 11c-.768 0-1.536-.219-2.121-.659-1.172-.879-1.172-2.303 0-3.182 1.171-.879 3.07-.879 4.242 0l.879.659"
+            d="M12 6v12m-3-2.818.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.768 0-1.536-.219-2.121-.659-1.172-.879-1.172-2.303 0-3.182 1.171-.879 3.07-.879 4.242 0l.879.659M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
           />
         </svg>
         {total > 0 && (

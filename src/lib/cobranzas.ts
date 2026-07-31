@@ -22,6 +22,7 @@ export type FilaCobranza = {
   tipo: string
   cliente: string
   saldo: number
+  fechaEmisionLabel: string
   fechaVencimientoISO: string
   fechaVencimientoLabel: string
   diasLabel: string
@@ -52,7 +53,10 @@ function diasLabelPorEstado(estado: EstadoCobranza, dias: number, fechaCobro: st
   return `Vence en ${dias} día${dias === 1 ? '' : 's'}`
 }
 
-/** Lista completa: todo comprobante a crédito emitido, con su estado (pendiente/vencida/cobrado).
+/** Lista completa: todo comprobante emitido (a crédito o Contado), con su estado
+ * (pendiente/vencida/cobrado). Contado también entra — un cliente "al contado" puede
+ * demorar en pagar de un día para otro, así que también se hace seguimiento: su
+ * vencimiento es el mismo día de emisión (0 días de plazo).
  * Un comprobante ya cubierto por completo con Notas de Crédito (saldo <= 0) pero nunca marcado
  * "cobrada" se excluye — no hay nada que cobrar, fue un ajuste, no un pago recibido. */
 export async function obtenerCobranzas(): Promise<FilaCobranza[]> {
@@ -62,7 +66,6 @@ export async function obtenerCobranzas(): Promise<FilaCobranza[]> {
     .from('comprobantes')
     .select('id, numero, tipo, total, fecha_emision, dias_credito, fecha_cobro, clientes(nombre)')
     .eq('estado', 'emitido')
-    .neq('dias_credito', 'Contado')
     .returns<ComprobanteRow[]>()
 
   if (!comprobantes || comprobantes.length === 0) {
@@ -102,6 +105,7 @@ export async function obtenerCobranzas(): Promise<FilaCobranza[]> {
       tipo: c.tipo,
       cliente: unoDe(c.clientes)?.nombre ?? '—',
       saldo,
+      fechaEmisionLabel: formatearFechaISO(c.fecha_emision),
       fechaVencimientoISO,
       fechaVencimientoLabel: formatearFechaISO(fechaVencimientoISO),
       diasLabel: diasLabelPorEstado(estado, dias, c.fecha_cobro),

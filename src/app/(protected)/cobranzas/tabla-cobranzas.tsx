@@ -122,7 +122,7 @@ export function TablaCobranzas({ filas }: { filas: FilaCobranza[] }) {
         </div>
         <button
           type="submit"
-          className="rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm shadow-indigo-500/30 transition-all hover:bg-indigo-700"
+          className="rounded-md bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm shadow-indigo-500/30 transition-all hover:bg-indigo-700"
         >
           Buscar
         </button>
@@ -130,7 +130,7 @@ export function TablaCobranzas({ filas }: { filas: FilaCobranza[] }) {
           <button
             type="button"
             onClick={limpiar}
-            className="rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-5 py-2.5 text-sm font-bold text-[#64748b] dark:text-slate-400 transition-all hover:bg-[#f8fafc]"
+            className="rounded-md border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-5 py-2.5 text-sm font-bold text-[#64748b] dark:text-slate-400 transition-all hover:bg-[#f8fafc]"
           >
             Limpiar
           </button>
@@ -154,6 +154,7 @@ export function TablaCobranzas({ filas }: { filas: FilaCobranza[] }) {
                   <th className="px-6 py-4 font-bold">Cliente</th>
                   <th className="px-6 py-4 font-bold">Comprobante</th>
                   <th className="px-6 py-4 font-bold">Saldo</th>
+                  <th className="px-6 py-4 font-bold">Emisión</th>
                   <th className="px-6 py-4 font-bold">Vencimiento</th>
                   <th className="px-6 py-4 font-bold">Estado</th>
                   <th className="px-6 py-4 text-right font-bold">Acciones</th>
@@ -188,6 +189,7 @@ export function TablaCobranzas({ filas }: { filas: FilaCobranza[] }) {
                       </div>
                     </td>
                     <td className="px-6 py-4 font-semibold">S/ {f.saldo.toFixed(2)}</td>
+                    <td className="px-6 py-4 text-[#64748b] dark:text-slate-400">{f.fechaEmisionLabel}</td>
                     <td className="px-6 py-4">
                       <div className="font-semibold">{f.fechaVencimientoLabel}</div>
                       <div className="text-xs text-[#64748b] dark:text-slate-400">{f.diasLabel}</div>
@@ -203,7 +205,7 @@ export function TablaCobranzas({ filas }: { filas: FilaCobranza[] }) {
                           type="button"
                           onClick={() => handleMarcar(f.id, f.numero)}
                           disabled={isPending && pendienteId === f.id}
-                          className="rounded-xl bg-emerald-500 px-4 py-2 text-[12px] font-bold text-white shadow-sm shadow-emerald-500/30 transition-all hover:bg-emerald-600 disabled:opacity-50"
+                          className="rounded-md bg-emerald-500 px-4 py-2 text-[12px] font-bold text-white shadow-sm shadow-emerald-500/30 transition-all hover:bg-emerald-600 disabled:opacity-50"
                         >
                           Marcar cobrada
                         </button>
