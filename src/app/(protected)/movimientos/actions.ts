@@ -29,6 +29,9 @@ export async function registrarMovimiento(
   if (cantidad === '' || Number(cantidad) < 0) {
     return { error: 'Ingresa una cantidad válida.' }
   }
+  if (tipo !== 'ajuste' && Number(cantidad) === 0) {
+    return { error: 'La cantidad debe ser mayor a cero para una entrada o salida.' }
+  }
   if (tipo === 'entrada' && (costoUnitario === '' || Number(costoUnitario) < 0)) {
     return { error: 'El costo unitario es obligatorio para una entrada.' }
   }

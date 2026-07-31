@@ -2,6 +2,7 @@
 
 import { useActionState, useMemo, useState } from 'react'
 import { crearOrdenVenta, type EstadoFormulario } from '../actions'
+import { IGV_TASA, calcularImportes } from '@/lib/cotizaciones'
 import { Buscador } from '@/components/buscador'
 
 type Cliente = { id: number; nombre: string }
@@ -62,9 +63,17 @@ export function NuevaVentaForm({
     setLineas((prev) => (prev.length === 1 ? prev : prev.filter((_, idx) => idx !== i)))
   }
 
-  const total = useMemo(
+  // Mismo calculo que usa el server action al grabar (calcularImportes).
+  const { subtotal, igv, total } = useMemo(
     () =>
-      lineas.reduce((acc, l) => acc + (Number(l.cantidad) || 0) * (Number(l.precio_unitario) || 0), 0),
+      calcularImportes(
+        lineas
+          .filter((l) => l.producto_id && l.cantidad)
+          .map((l) => ({
+            cantidad: Number(l.cantidad),
+            precio_unitario: Number(l.precio_unitario) || 0,
+          }))
+      ),
     [lineas]
   )
 
@@ -169,9 +178,14 @@ export function NuevaVentaForm({
           })}
         </div>
 
-        <div className="mt-4 flex items-center justify-end gap-2 border-t-2 border-teal-100 pt-3">
-          <span className="text-sm font-medium text-[#64748b] dark:text-slate-400">Total:</span>
-          <span className="text-xl font-extrabold text-teal-600">S/ {total.toFixed(2)}</span>
+        <div className="mt-4 space-y-1 border-t-2 border-teal-100 pt-3 text-right">
+          <p className="text-sm text-[#64748b] dark:text-slate-400">
+            Subtotal (sin IGV): <span className="font-bold text-[#1e293b] dark:text-slate-100">S/ {subtotal.toFixed(2)}</span>
+          </p>
+          <p className="text-sm text-[#64748b] dark:text-slate-400">
+            IGV ({(IGV_TASA * 100).toFixed(0)}%): <span className="font-bold text-[#1e293b] dark:text-slate-100">S/ {igv.toFixed(2)}</span>
+          </p>
+          <p className="text-xl font-extrabold text-teal-600">Total: S/ {total.toFixed(2)}</p>
         </div>
       </div>
 
@@ -188,8 +202,8 @@ export function NuevaVentaForm({
         Guardar orden (pendiente)
       </button>
       <p className="text-center text-xs font-medium text-[#94a3b8] dark:text-slate-500">
-        La orden se guarda como "pendiente" — el stock recién se descuenta cuando la marques como
-        "Facturada" desde la lista.
+        La orden se guarda como &quot;pendiente&quot; — el stock recién se descuenta cuando la marques como
+        &quot;Facturada&quot; desde la lista.
       </p>
     </form>
   )
