@@ -22,77 +22,106 @@ El inventario real (~140 SKUs) está transcrito en `data/Inventario_Distribuidor
 6. Sin control FIFO — riesgo de vencimiento de stock antiguo.
 
 ## Stack técnico (decidido)
-- **Frontend/Backend**: Next.js (App Router), TypeScript, Tailwind CSS.
-- **Base de datos + Auth + API**: Supabase (PostgreSQL). El esquema base está en `schema.sql` — correrlo en el SQL Editor de Supabase antes de empezar a codear.
-- **Deploy**: Vercel (free tier), para poder mandar el link de demo a clientes fácilmente.
+- **Frontend/Backend**: Next.js 16 (App Router), TypeScript, Tailwind CSS v4.
+- **Base de datos + Auth + API**: Supabase (PostgreSQL).
+- **Deploy**: Vercel — **ya en producción**, ver "Estado actual" más abajo.
 
 ## Modelo de datos
-**⚠️ En transición.** El `schema.sql` que corre hoy en Supabase todavía es el
-modelo original y simple (ver abajo). Ya existe un **spec aprobado** para
-reemplazarlo por uno más completo (ver "Roadmap por fases" y "Estado actual"
-más abajo) — el `schema.sql` en el repo y en Supabase se actualizará cuando
-se implemente ese plan, no antes. No asumas que las tablas nuevas
-(`almacenes`, `categorias`, `unidades_medida`, columnas de costo) ya existen
-sin antes confirmar el estado real corriendo `\d` en el SQL Editor de
-Supabase o revisando el `schema.sql` del repo.
+El esquema base vive en `schema.sql`, pero **ya no es el esquema completo**:
+desde que se implementó, el modelo creció mucho vía migraciones aditivas
+(`add-*.sql` en la raíz del repo). `schema.sql` **no es seguro de re-correr**
+sobre la base real (hay datos reales/de prueba encima) — para saber el
+esquema vigente hay que leer `schema.sql` + todos los `add-*.sql`, o revisar
+directamente en el SQL Editor de Supabase. No asumas el modelo de memoria;
+confirma antes de diseñar algo que dependa de una tabla/columna específica.
 
-**Modelo actual (vigente hoy):**
-- `zonas` — las 4 zonas del almacén (editable a futuro si se reorganiza la logística).
-- `productos` — SKU maestro. **`cantidad` no se edita a mano nunca**: se recalcula automáticamente vía trigger cada vez que se inserta un registro en `movimientos`.
-- `movimientos` — ledger de entradas/salidas/ajustes. Es la fuente de verdad para trazabilidad. Incluye `referencia`, pensado para más adelante enlazar pedidos que vengan del chatbot.
-- `usuarios_perfil` — extiende `auth.users` de Supabase con un rol: `admin`, `almacen`, `ventas`.
-- Vista `productos_stock_bajo` — productos con `cantidad <= punto_reorden`, para el módulo de alertas.
+**Patrón de migraciones de este proyecto:** cada cambio de esquema es un
+archivo nuevo `add-<algo-descriptivo>.sql` en la raíz, con `alter table ...
+add column if not exists` / `create table` — nunca se edita `schema.sql` ni
+un `add-*.sql` ya existente. El usuario corre cada archivo manualmente en el
+SQL Editor de Supabase (Claude no tiene acceso de escritura DDL directo);
+para verificar que una migración ya corrió, usar un script `node -e` puntual
+con `@supabase/supabase-js` y la `SUPABASE_SERVICE_ROLE_KEY` de `.env.local`
+para hacer un `select` de prueba contra la tabla/columna en cuestión.
 
-**Modelo especificado (pendiente de implementar)** — ver
-`docs/superpowers/specs/2026-07-26-inventario-schema-design.md` para el SQL
-completo y el razonamiento de cada decisión:
-- `almacenes` (sede/ciudad, ej. "Piura") → `zonas` (sub-espacio físico dentro
-  de un almacén) — jerarquía de dos niveles, reemplaza el `zonas` plano actual.
-- `categorias` y `unidades_medida` — pasan de ser texto libre en `productos` a
-  tablas propias con FK (`categoria_id`, `unidad_id`).
-- `productos.costo` (costo unitario, promedio ponderado) y
-  `productos.precio_venta` — nuevos campos para soportar valorización.
-- `movimientos.costo_unitario` (obligatorio en `entrada`, autocompletado en
-  `salida`/`ajuste`) y `movimientos.efecto_cantidad` (delta interno con signo,
-  usado por el kardex — `ajuste` sigue guardando el valor absoluto de cara al
-  usuario, sin cambios de UX).
-- Trigger `aplicar_movimiento` pasa de `AFTER INSERT` a `BEFORE INSERT` (para
-  poder autocompletar columnas de la misma fila antes de escribirla).
-- Vista nueva `kardex_valorizado` — ledger con saldo corriente de cantidad y
-  valor monetario por producto.
-- Fix del bug de RLS en `usuarios_perfil` (ver nota más abajo) incluido en
-  este mismo rediseño.
-- Migración: **drop and recreate** completo (no hay datos reales de cliente
-  todavía, solo de prueba) — correrlo borra los usuarios de prueba del login
-  (`auth.users` de Supabase Auth no se toca, solo `usuarios_perfil`; hay que
-  volver a insertar esa fila después).
+**Migraciones aplicadas, en orden** (todas ya corridas en Supabase a esta
+fecha): `add-usuarios-dni.sql`, `add-ventas.sql`, `add-compras.sql`,
+`add-configuracion.sql`, `add-cotizaciones.sql`, `add-permisos.sql`,
+`add-facturacion.sql`, `add-facturacion-mejoras.sql`,
+`add-serie-boleta-b006.sql`, `add-permitir-stock-negativo.sql`,
+`add-cliente-vendedor.sql`, `add-compras-documento.sql`,
+`add-guias-remision.sql`, `add-cobranzas.sql` (columna
+`comprobantes.fecha_cobro`), `add-ordenes-venta-dias-credito.sql` (columna
+`ordenes_venta.dias_credito`, para que "Facturar" no pierda el plazo de
+crédito que ya se había elegido en la cotización). `import-inventario.sql` /
+`import-inventario-sin-comentarios.sql` fueron una carga de datos puntual
+(las ~140 SKUs reales), no schema.
 
-## Funcionalidad del MVP (redefinido — ver "Roadmap por fases")
-El alcance original (6 ítems simples) se **redefinió** para apuntar a un ERP
-más completo, después de comparar con una referencia ("AlmacénPro") que el
-usuario tenía en mente. Ver la sección "Roadmap por fases" para el detalle
-actualizado por fases. Los ítems originales (CRUD de productos, movimientos,
-dashboard, alertas, historial) siguen siendo el mismo trabajo de fondo, pero
-ahora se construyen sobre el modelo de datos con costeo/valorización en vez
-del modelo simple original.
+**Tablas/conceptos clave para orientarse rápido** (no exhaustivo — confirmar
+detalle en el SQL antes de asumir columnas):
+- `productos` — SKU maestro; `cantidad` nunca se edita a mano, se recalcula
+  vía el trigger `aplicar_movimiento()` sobre `movimientos`. Permite stock
+  negativo a propósito (ver `add-permitir-stock-negativo.sql`).
+- `movimientos` — ledger inmutable de entradas/salidas/ajustes (costeo
+  promedio ponderado). Nunca se borra ni edita un movimiento ya insertado.
+- `usuarios_perfil` (rol: `admin`/`almacen`/`ventas`) + `usuarios_permisos`
+  — permisos por módulo por usuario, capa adicional sobre RLS por rol.
+- `ordenes_compra`/`detalle_compra` y `ordenes_venta`/`detalle_venta` —
+  flujo pendiente→recibida/facturada.
+- `comprobantes` (factura/boleta/nota de venta/ticket, series F006/B006) +
+  `notas_credito`/`notas_debito` (+ `detalle_nota_credito` para devoluciones
+  parciales por ítem) — facturación, vive dentro del flujo de Ventas
+  ("Facturar"), se consulta en el módulo **Consulta de Ventas**.
+- `guias_remision` (serie T006) — se genera automático al emitir un
+  comprobante de venta, editable después (dirección de despacho/fecha/número);
+  su página de detalle también lista los productos (código + cantidad, sin
+  precios) del comprobante anexado, vía `comprobantes.orden_venta_id` →
+  `detalle_venta` → `productos`.
+- `cotizaciones`/`detalle_cotizacion` — documento previo a la venta, con
+  vendedor autocompletado desde `clientes.vendedor_id`.
+- `clientes`, `proveedores`, `configuracion` (datos de la empresa para
+  PDFs/reportes).
+- **Cobranzas** (`src/lib/cobranzas.ts`) — no es una tabla nueva, es una vista
+  calculada sobre `comprobantes` (a crédito o Contado, `estado = 'emitido'`).
+  Saldo pendiente = `total + Σ notas_debito.monto − Σ notas_credito.monto`; se
+  excluye si ese saldo es `<= 0` y nunca se marcó cobrado (fue cubierto por
+  NC, no un pago real). Vencimiento = `fecha_emision + dias_credito`
+  (Contado = 0 días — un cliente al contado también puede demorar en pagar).
+  Estados: `vencida` (venció y sigue sin `fecha_cobro`), `pendiente` (no
+  venció aún), `cobrado` (`fecha_cobro` no nulo — **no desaparece de la
+  lista**, queda como historial). La campana del header solo muestra el
+  subconjunto accionable (vencidas + pendientes que vencen en ≤7 días,
+  `filtrarParaCampana`); la página `/cobranzas` muestra todo. Tiene botón
+  para descargar Excel solo de las vencidas.
 
-## Roadmap por fases
-- **Fase 1 — Login** ✅ completo (Supabase Auth, roles, protección de rutas). Mergeado a `main`.
-- **Fase 2 — Inventario valorizado** (en curso, rama `feature/inventario-schema`):
-  rediseño del modelo de datos (spec aprobado, implementación pendiente) +
-  CRUD de productos + movimientos (entrada/salida/ajuste) + dashboard con
-  stock consolidado + alertas de stock bajo + kardex valorizado. Ver
-  `docs/superpowers/specs/2026-07-26-inventario-schema-design.md`.
-- **Fase 3 — Compras y Ventas** (sin diseñar todavía, deliberadamente fuera de
-  la Fase 2): flujos de documentos (orden de compra → recepción; pedido →
-  despacho), con proveedores/clientes. Se diseñará como su propio ciclo
-  spec → plan → implementación cuando le toque.
-- **Fase 4 — Facturación electrónica** (idea discutida, no diseñada):
-  integrar con un OSE peruano (ej. Nubefact) para emitir boletas/facturas
-  válidas ante SUNAT automáticamente al completar una venta. Depende de que
-  exista la Fase 3 (Ventas) primero — no tiene sentido facturar sin un
-  registro de venta. La app nunca se certifica como OSE ella misma; se
-  integra como cliente de la API de un OSE ya certificado.
+## Funcionalidad — módulos implementados
+El alcance creció mucho más allá del MVP original de 6 ítems (ver historial
+de fases abajo, ya completado). Módulos activos hoy, agrupados en el menú
+lateral en Inventario / Ventas / Administración:
+**Dashboard, Productos, Movimientos, Compras, Proveedores, Ventas, Consulta
+de Ventas (con Notas de Crédito/Débito y reportes Excel por
+cliente/producto), Guías de Remisión, Clientes, Cotizaciones (crear +
+consulta, descarga PDF vía impresión del navegador), Cobranzas (comprobantes
+por vencer/vencidos/cobrados, campana de alerta, Excel de vencidas),
+Reportes, Usuarios (roles + permisos por módulo, CRUD completo incluyendo
+eliminar), y Configuración.** Incluye modo oscuro (toggle persistente,
+fuerza modo claro automáticamente al imprimir/descargar PDF).
+
+## Roadmap por fases (histórico — todas completadas)
+- **Fase 1 — Login** ✅ (Supabase Auth, roles, protección de rutas).
+- **Fase 2 — Inventario valorizado** ✅ (productos, movimientos, kardex,
+  costeo promedio ponderado, alertas de stock bajo).
+- **Fase 3 — Compras y Ventas** ✅ (proveedores/clientes, flujo
+  pendiente→recibida/facturada).
+- **Fase 4 — Facturación** ✅ implementada **dentro de la propia app** (no
+  integrada a un OSE real como Nubefact — los comprobantes son
+  representaciones sin validez tributaria/SUNAT, aclarado en cada PDF). Si
+  en algún momento se retoma la idea de una integración real con un OSE
+  peruano, es trabajo nuevo, no asumir que ya existe.
+- Después de estas 4 fases se agregaron, fuera del roadmap original:
+  sistema de permisos por usuario/módulo, Guías de Remisión, modo oscuro,
+  reorganización del menú lateral en grupos plegables, y despliegue a
+  Vercel.
 
 ## Prioridades de diseño
 - Simplicidad de uso para personal no técnico (almaceneros, no desarrolladores).
@@ -110,11 +139,51 @@ del modelo simple original.
   esta versión.
 - `@supabase/ssr` requiere cookies `getAll`/`setAll` (los métodos `get`/`set`/`remove`
   están deprecados y no se usan aquí).
-- Tailwind v4: usar `bg-linear-to-*`, no `bg-gradient-to-*` (nombre viejo de v3).
+- Tailwind v4 vía `@import "tailwindcss"` en `src/app/globals.css` (sin
+  `tailwind.config.js`). El proyecto usa `bg-gradient-to-*` normalmente (no
+  `bg-linear-to-*`) — ambos funcionan en v4, no hace falta migrar nada.
+- Modo oscuro: **por clase, no por `prefers-color-scheme`** — ver
+  `@custom-variant dark` en `globals.css`, toggle en
+  `src/app/(protected)/theme-toggle.tsx`, persistido en `localStorage`
+  (`tema`). Al agregar UI nueva, siempre pensar el par `dark:` para
+  texto/fondo/bordes — un elemento sin su contraparte `dark:` puede quedar
+  invisible en modo oscuro (ya pasó varias veces). Imprimir/descargar PDF
+  fuerza modo claro automáticamente (`src/lib/imprimir.ts`) — no lo repitas
+  a mano, usa `imprimirEnModoClaro` en vez de `window.print()` directo.
+- Identidad de git en esta máquina: `alvarosantti4-prog
+  <alvarosantti4@gmail.com>` — es distinta de la cuenta `automatizacionia69`
+  (dueña del repo en GitHub y de la cuenta de Vercel). Es normal, no es un
+  error ni indica que el push falló.
 - **Sin tests automatizados en este proyecto** (decisión explícita, dado el tamaño
   del equipo y el alcance de portafolio). Verificación: `npx tsc --noEmit`,
   `npm run build`, y prueba manual en el navegador.
 - Comandos: `npm run dev` (servidor local), `npx tsc --noEmit`, `npm run build`.
+- **Botones: `rounded-md`, sin animación de hover, con `active:scale-95`.**
+  Decisión explícita del usuario — antes usaban `rounded-xl`/`2xl`/`3xl` con
+  un efecto de "levantarse" al pasar el cursor (`hover:-translate-y-0.5` +
+  crecer la sombra); ahora quedan cuadrados y quietos en hover, con un
+  pequeño "press" solo al hacer click. Aplica a botones reales y a
+  `<Link>`/componentes (`ImprimirBoton`, `DescargarExcelBoton`, etc.)
+  estilizados como botón — **no** a tarjetas ni contenedores (esos SÍ pueden
+  seguir con `rounded-2xl`/`3xl` y su propio hover, como las tarjetas del
+  Dashboard o de Reportes).
+- **Cuidado al mezclar fechas UTC y hora local en el servidor.** El servidor
+  corre en hora de Perú (UTC-5) en local y en UTC en Vercel — nunca
+  construyas un `Date` con `Date.UTC(...)` y después lo mutes con
+  `getMonth()`/`setMonth()` (métodos en hora LOCAL): el desfase de zona
+  desborda el día (ej. "31 de abril" → 1 de mayo) y corrompe el cálculo. Ya
+  pasó una vez en el gráfico de 6 meses del Dashboard (`dashboard/page.tsx`,
+  función `construirSeisMeses`) — se arregló con aritmética pura de
+  año/mes, sin mutar objetos `Date`. Para "hoy" siempre usar `hoyPeruISO()`
+  de `src/lib/fecha.ts`, nunca `new Date()` a secas.
+- **Windows: `npm run dev` en segundo plano puede dejar procesos `node.exe`
+  huérfanos** que siguen escuchando el puerto 3000 aunque el proceso padre
+  ya se haya detenido — el siguiente `npm run dev` entonces arranca en el
+  puerto 3003 (o el que esté libre) sin avisar claramente, o el puerto 3000
+  queda sirviendo una versión vieja/rota (500). Si `localhost:3000` no
+  responde o tira 500 después de reiniciar el server, revisar procesos
+  huérfanos (`Get-Process node`) y matarlos (`Stop-Process -Force`) antes de
+  volver a levantar el servidor.
 - **Gotcha de desarrollo en Windows**: si el login (o cualquier llamada del
   servidor de Next.js a Supabase) falla con `fetch failed` a pesar de que las
   credenciales son correctas, revisa si el antivirus (ej. Avast) tiene activado
@@ -124,28 +193,48 @@ del modelo simple original.
   una excepción) resuelve el problema; no es un bug del código.
 
 ## Estado actual y próximos pasos
-- **Login con Supabase Auth**: completo, probado end-to-end, **mergeado a `main`**
-  (la rama `feature/login-auth` ya se borró). Documentación: spec en
-  `docs/superpowers/specs/2026-07-26-login-auth-design.md`, plan en
-  `docs/superpowers/plans/2026-07-26-login-auth-plan.md`.
-- **Rediseño del modelo de datos (Fase 2)**: spec completo y **aprobado por el
-  usuario**, vive en `docs/superpowers/specs/2026-07-26-inventario-schema-design.md`
-  (SQL completo listo para copiar). Rama actual: **`feature/inventario-schema`**.
-  **Todavía no implementado** — el `schema.sql` del repo y el de Supabase siguen
-  siendo el modelo viejo. El fix del bug de RLS en `usuarios_perfil`
-  (`auth.role() = 'authenticated'` → `auth.uid() = id`) quedó incluido en este
-  mismo spec, no como algo aparte.
-- **Siguiente paso concreto**: invocar `superpowers:writing-plans` sobre ese
-  spec para armar el plan de implementación (probablemente: reemplazar
-  `schema.sql`, correrlo en Supabase, recrear el usuario de prueba, y luego
-  seguir con el CRUD de productos sobre el nuevo modelo).
-- Nota: correr el nuevo `schema.sql` es "drop and recreate" — borra
-  `usuarios_perfil` (no `auth.users`), hay que recrear la fila de perfil del
-  usuario de prueba después.
+- **El ERP está funcionalmente completo y en producción.** Todos los módulos
+  listados arriba funcionan de punta a punta contra datos reales/de prueba
+  en Supabase. No es un prototipo — trátalo como una app viva: cambios de
+  esquema son aditivos (ver "Modelo de datos"), y hay datos que no se deben
+  perder o corromper.
+- **Desplegado en Vercel**, proyecto `limpiezapro-erp` bajo el equipo
+  `Ponseti`, conectado al repo de GitHub `automatizacionia69/limpiezaproERP`
+  (rama `main`), con auto-deploy en cada push confirmado funcionando. URL:
+  `https://limpiezapro-erp.vercel.app`.
+- Flujo de trabajo normal para un cambio: editar código → `npx tsc --noEmit`
+  → probar en el navegador (`npm run dev`, puerto 3000 normalmente ya
+  corriendo) → si el usuario pide subirlo, `git add`/`commit`/`push` a
+  `main` (siempre confirmar antes de hacer push — no asumir autorización de
+  una sesión anterior).
+- **No reiniciar `npm run dev` después de cada cambio** (pedido explícito del
+  usuario) — Next.js recompila solo vía hot-reload al guardar. Solo
+  reiniciar si el servidor realmente se cae o queda en un estado roto (ver
+  gotcha de procesos huérfanos de Windows arriba), no como paso reflejo de
+  verificación.
+- Pendientes sueltos conocidos a esta fecha (no bloqueantes): decidir qué
+  hacer con una nota de crédito de prueba con cantidad mal cargada (2.98 en
+  vez de 3, ver movimiento histórico si hace falta) — dejar como dato de
+  prueba o corregir con una Nota de Débito; pulido cosmético de los badges
+  de colores (estados/roles) en modo oscuro, se ven un poco muy brillantes
+  sobre fondo oscuro.
+- Documentación histórica de diseño (specs/planes de las fases 1 y 2,
+  cuando el modelo aún era simple) sigue en `docs/superpowers/` por
+  contexto histórico, pero **está desactualizada** respecto al esquema
+  real — no la uses como fuente de verdad del modelo de datos actual.
 
 ## Variables de entorno necesarias (.env.local — no versionar)
 ```
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+DECOLECTA_API_TOKEN=
 ```
-Estas se obtienen del panel de Supabase (Project Settings → API) después de crear el proyecto.
+Las dos primeras se obtienen del panel de Supabase (Project Settings → API).
+`SUPABASE_SERVICE_ROLE_KEY` es necesaria para crear/editar/eliminar usuarios
+desde el módulo Usuarios (usa el Admin API de Supabase Auth) — **nunca
+exponerla client-side**, solo se usa en Server Actions
+(`src/lib/supabase/admin.ts`). `DECOLECTA_API_TOKEN` es para el autocompletado
+de RUC/DNI al crear clientes/proveedores (`src/lib/decolecta.ts`). Estas
+mismas 4 variables deben estar cargadas también en Vercel → Settings →
+Environment Variables para que el deploy en producción funcione.
