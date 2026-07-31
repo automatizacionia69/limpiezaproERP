@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react'
 import { Sidebar } from './sidebar'
 import { NotificacionesStock } from './notificaciones-stock'
+import { NotificacionesCobranzas } from './notificaciones-cobranzas'
 import { AlertaStockBajo } from './alerta-stock-bajo'
 import { ThemeToggle } from './theme-toggle'
+import type { FilaCobranza } from '@/lib/cobranzas'
 
 type ProductoStockBajo = { id: number; nombre: string; cantidad: number; punto_reorden: number | null }
 
@@ -29,6 +31,7 @@ export function AppShell({
   rol,
   modulosPermitidos,
   stockBajo,
+  cobranzas,
   signOutAction,
 }: {
   children: React.ReactNode
@@ -36,6 +39,7 @@ export function AppShell({
   rol: string
   modulosPermitidos: string[]
   stockBajo: ProductoStockBajo[]
+  cobranzas: { vencidas: FilaCobranza[]; porVencer: FilaCobranza[] }
   signOutAction: () => Promise<void>
 }) {
   const [collapsed, setCollapsed] = useState(false)
@@ -74,6 +78,7 @@ export function AppShell({
           <div className="flex items-center gap-4">
             <ThemeToggle />
             <NotificacionesStock stockBajo={stockBajo} />
+            <NotificacionesCobranzas vencidas={cobranzas.vencidas} porVencer={cobranzas.porVencer} />
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-sm font-bold text-white shadow-md shadow-indigo-500/30">
               {iniciales(nombre)}
             </div>

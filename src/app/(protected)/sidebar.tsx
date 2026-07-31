@@ -109,6 +109,21 @@ const NAV_ITEMS = [
     ),
   },
   {
+    href: '/cobranzas',
+    label: 'Cobranzas',
+    modulo: 'cobranzas',
+    grupo: 'ventas',
+    gradient: 'from-indigo-500 to-blue-600',
+    glow: 'shadow-indigo-500/40',
+    icon: (
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 6v12m-4.5-2.818.879.659c1.171.879 3.07.879 4.242 0m0 0c1.172-.879 1.172-2.303 0-3.182C11.75 12.219 10.982 12 10.214 12m4.786 3.182c1.172-.879 1.172-2.303 0-3.182C14.25 11.219 13.482 11 12.714 11c-.768 0-1.536-.219-2.121-.659-1.172-.879-1.172-2.303 0-3.182 1.171-.879 3.07-.879 4.242 0l.879.659"
+      />
+    ),
+  },
+  {
     href: '/guias-remision',
     label: 'Guías de Remisión',
     modulo: 'guias_remision',

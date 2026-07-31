@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { obtenerModulosPermitidos } from '@/lib/permisos'
+import { obtenerCobranzasPendientes } from '@/lib/cobranzas'
 import { signOut } from './actions'
 import { AppShell } from './app-shell'
 
@@ -46,12 +47,15 @@ export default async function ProtectedLayout({
     .select('id, nombre, cantidad, punto_reorden')
     .order('nombre')
 
+  const cobranzas = await obtenerCobranzasPendientes()
+
   return (
     <AppShell
       nombre={perfil.nombre}
       rol={perfil.rol}
       modulosPermitidos={[...modulosPermitidos]}
       stockBajo={stockBajo ?? []}
+      cobranzas={cobranzas}
       signOutAction={signOut}
     >
       {children}

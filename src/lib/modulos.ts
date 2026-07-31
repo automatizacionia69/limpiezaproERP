@@ -9,6 +9,7 @@ export const MODULOS = [
   { clave: 'clientes', label: 'Clientes' },
   { clave: 'cotizaciones', label: 'Cotizaciones' },
   { clave: 'reportes', label: 'Reportes' },
+  { clave: 'cobranzas', label: 'Cobranzas' },
 ] as const
 
 export type ModuloClave = (typeof MODULOS)[number]['clave']
