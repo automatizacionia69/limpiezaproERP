@@ -21,7 +21,7 @@ export default async function FacturarOrdenPage({
 
   const [{ data: orden }, { data: detalles }, { data: clientes }, { data: productos }, { data: vendedores }, { data: configuracion }] =
     await Promise.all([
-      supabase.from('ordenes_venta').select('id, numero, estado, cliente_id').eq('id', id).single(),
+      supabase.from('ordenes_venta').select('id, numero, estado, cliente_id, dias_credito').eq('id', id).single(),
       supabase.from('detalle_venta').select('producto_id, cantidad, precio_unitario').eq('orden_id', id).returns<DetalleRow[]>(),
       supabase.from('clientes').select('id, nombre, documento').eq('activo', true).order('nombre'),
       supabase.from('productos').select('id, nombre, cantidad, precio_venta').order('nombre'),
@@ -58,6 +58,7 @@ export default async function FacturarOrdenPage({
       <EmitirComprobanteForm
         ordenId={orden.id}
         clienteIdInicial={orden.cliente_id}
+        diasCreditoInicial={orden.dias_credito}
         lineasIniciales={detalles ?? []}
         clientes={clientes ?? []}
         productos={productos ?? []}

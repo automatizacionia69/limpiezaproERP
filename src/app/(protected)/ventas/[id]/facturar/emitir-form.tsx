@@ -29,6 +29,7 @@ const LABEL = 'block text-sm font-bold text-[#1e293b] dark:text-slate-100'
 export function EmitirComprobanteForm({
   ordenId,
   clienteIdInicial,
+  diasCreditoInicial,
   lineasIniciales,
   clientes,
   productos,
@@ -38,6 +39,7 @@ export function EmitirComprobanteForm({
 }: {
   ordenId: number
   clienteIdInicial: number
+  diasCreditoInicial: string | null
   lineasIniciales: { producto_id: number; cantidad: number; precio_unitario: number }[]
   clientes: Cliente[]
   productos: Producto[]
@@ -51,7 +53,7 @@ export function EmitirComprobanteForm({
   const [tipo, setTipo] = useState<TipoComprobante>('boleta')
   const [clienteId, setClienteId] = useState<number | ''>(clienteIdInicial)
   const [fecha, setFecha] = useState(hoyISO())
-  const [diasCredito, setDiasCredito] = useState('Contado')
+  const [diasCredito, setDiasCredito] = useState(diasCreditoInicial ?? 'Contado')
   const [medioPago, setMedioPago] = useState('Transferencia')
   const [vendedorId, setVendedorId] = useState(usuarioActualId)
   const [lineas, setLineas] = useState<Linea[]>(
