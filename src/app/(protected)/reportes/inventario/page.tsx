@@ -60,7 +60,7 @@ export default async function ReporteInventarioPage() {
           >
             ⬇️ Descargar CSV
           </DescargarCsvBoton>
-          <ImprimirBoton className="flex items-center gap-2 rounded-md bg-gradient-to-r from-indigo-500 to-violet-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-500/30 transition-all">
+          <ImprimirBoton className="flex items-center gap-2 rounded-md bg-gradient-to-r from-indigo-500 to-violet-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-500/30 transition-all active:scale-95">
             🖨️ Imprimir
           </ImprimirBoton>
         </div>

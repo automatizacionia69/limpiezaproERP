@@ -102,13 +102,13 @@ export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
         <div className="flex items-center gap-3">
           <Link
             href="/categorias"
-            className="rounded-md border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-3 text-sm font-bold text-[#1e293b] dark:text-slate-100 transition-all hover:border-violet-300 hover:bg-violet-50"
+            className="rounded-md border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-3 text-sm font-bold text-[#1e293b] dark:text-slate-100 transition-all hover:border-violet-300 hover:bg-violet-50 active:scale-95"
           >
             🏷️ Categorías
           </Link>
           <Link
             href="/unidades"
-            className="rounded-md border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-3 text-sm font-bold text-[#1e293b] dark:text-slate-100 transition-all hover:border-fuchsia-300 hover:bg-fuchsia-50"
+            className="rounded-md border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-3 text-sm font-bold text-[#1e293b] dark:text-slate-100 transition-all hover:border-fuchsia-300 hover:bg-fuchsia-50 active:scale-95"
           >
             📏 Unidades
           </Link>
@@ -132,7 +132,7 @@ export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
           </div>
           <Link
             href="/productos/nuevo"
-            className="flex items-center gap-2 rounded-md bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/30 transition-all"
+            className="flex items-center gap-2 rounded-md bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/30 transition-all active:scale-95"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="h-4 w-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />

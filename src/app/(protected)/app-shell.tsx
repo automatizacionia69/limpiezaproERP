@@ -68,7 +68,7 @@ export function AppShell({
             type="button"
             onClick={() => setCollapsed((c) => !c)}
             title={collapsed ? 'Expandir menú' : 'Contraer menú'}
-            className="flex h-11 w-11 items-center justify-center rounded-md text-[#64748b] dark:text-slate-400 transition-all hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-slate-800 dark:hover:text-indigo-400"
+            className="flex h-11 w-11 items-center justify-center rounded-md text-[#64748b] dark:text-slate-400 transition-all hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-slate-800 dark:hover:text-indigo-400 active:scale-95"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" />
@@ -92,7 +92,7 @@ export function AppShell({
               <button
                 type="submit"
                 title="Cerrar sesión"
-                className="flex h-11 w-11 items-center justify-center rounded-md text-[#64748b] dark:text-slate-400 transition-all hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50 dark:hover:text-red-400"
+                className="flex h-11 w-11 items-center justify-center rounded-md text-[#64748b] dark:text-slate-400 transition-all hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50 dark:hover:text-red-400 active:scale-95"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5">
                   <path

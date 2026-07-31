@@ -192,7 +192,7 @@ export function AnularComprobanteForm({
       <button
         type="submit"
         disabled={!codigoMotivo || (requiereMontoManual && monto <= 0)}
-        className="w-full rounded-md bg-red-500 py-2.5 text-sm font-bold text-white shadow-sm shadow-red-500/30 transition-all hover:bg-red-600 disabled:opacity-40"
+        className="w-full rounded-md bg-red-500 py-2.5 text-sm font-bold text-white shadow-sm shadow-red-500/30 transition-all hover:bg-red-600 disabled:opacity-40 active:scale-95"
       >
         Emitir nota de crédito
       </button>

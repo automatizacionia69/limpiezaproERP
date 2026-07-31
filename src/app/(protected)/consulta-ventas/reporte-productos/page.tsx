@@ -288,7 +288,7 @@ export default async function ReporteVentasPorProductoPage({
             'Estado',
           ]}
           filas={filasExcel}
-          className="flex items-center gap-2 rounded-md bg-gradient-to-r from-lime-500 to-green-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-lime-500/30 transition-all"
+          className="flex items-center gap-2 rounded-md bg-gradient-to-r from-lime-500 to-green-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-lime-500/30 transition-all active:scale-95"
         >
           ⬇️ Descargar Excel
         </DescargarExcelBoton>
@@ -315,7 +315,7 @@ export default async function ReporteVentasPorProductoPage({
         </div>
         <button
           type="submit"
-          className="rounded-md bg-lime-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-lime-500/30 transition-all hover:bg-lime-700"
+          className="rounded-md bg-lime-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-lime-500/30 transition-all hover:bg-lime-700 active:scale-95"
         >
           Filtrar
         </button>

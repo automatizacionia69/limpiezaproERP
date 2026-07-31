@@ -30,7 +30,7 @@ export function UnidadForm() {
 
       <button
         type="submit"
-        className="w-full rounded-md bg-gradient-to-r from-fuchsia-500 to-pink-500 py-3.5 text-base font-bold text-white shadow-lg shadow-fuchsia-500/30 transition-all"
+        className="w-full rounded-md bg-gradient-to-r from-fuchsia-500 to-pink-500 py-3.5 text-base font-bold text-white shadow-lg shadow-fuchsia-500/30 transition-all active:scale-95"
       >
         Guardar unidad
       </button>

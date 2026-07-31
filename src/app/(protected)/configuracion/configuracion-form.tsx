@@ -109,7 +109,7 @@ export function ConfiguracionForm({
       {puedeEditar ? (
         <button
           type="submit"
-          className="w-full rounded-md bg-gradient-to-r from-slate-600 to-gray-700 py-3.5 text-base font-bold text-white shadow-lg shadow-slate-500/30 transition-all"
+          className="w-full rounded-md bg-gradient-to-r from-slate-600 to-gray-700 py-3.5 text-base font-bold text-white shadow-lg shadow-slate-500/30 transition-all active:scale-95"
         >
           Guardar configuración
         </button>

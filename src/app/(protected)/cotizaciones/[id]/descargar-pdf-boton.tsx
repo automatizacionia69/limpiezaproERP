@@ -7,7 +7,7 @@ export function DescargarPdfBoton() {
     <button
       type="button"
       onClick={imprimirEnModoClaro}
-      className="flex items-center gap-2 rounded-md bg-gradient-to-r from-sky-500 to-blue-500 px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-sky-500/30 transition-all print:hidden"
+      className="flex items-center gap-2 rounded-md bg-gradient-to-r from-sky-500 to-blue-500 px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-sky-500/30 transition-all print:hidden active:scale-95"
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5">
         <path

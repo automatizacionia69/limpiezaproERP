@@ -108,7 +108,7 @@ export function EditarUsuarioForm({
 
       <button
         type="submit"
-        className="w-full rounded-md bg-gradient-to-r from-rose-500 to-red-500 py-3.5 text-base font-bold text-white shadow-lg shadow-rose-500/30 transition-all"
+        className="w-full rounded-md bg-gradient-to-r from-rose-500 to-red-500 py-3.5 text-base font-bold text-white shadow-lg shadow-rose-500/30 transition-all active:scale-95"
       >
         Guardar cambios
       </button>

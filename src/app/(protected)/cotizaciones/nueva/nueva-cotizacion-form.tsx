@@ -296,7 +296,7 @@ export function NuevaCotizacionForm({
 
         <button
           type="submit"
-          className="mt-6 w-full rounded-md bg-gradient-to-r from-sky-500 to-blue-500 py-3.5 text-base font-bold text-white shadow-lg shadow-sky-500/30 transition-all"
+          className="mt-6 w-full rounded-md bg-gradient-to-r from-sky-500 to-blue-500 py-3.5 text-base font-bold text-white shadow-lg shadow-sky-500/30 transition-all active:scale-95"
         >
           💾 Guardar cotización
         </button>

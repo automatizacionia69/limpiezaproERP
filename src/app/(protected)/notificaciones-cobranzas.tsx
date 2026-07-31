@@ -25,7 +25,7 @@ export function NotificacionesCobranzas({ filas }: { filas: FilaCobranza[] }) {
         type="button"
         onClick={() => setAbierto((v) => !v)}
         title="Cobranzas pendientes"
-        className="relative flex h-11 w-11 items-center justify-center rounded-md text-[#64748b] dark:text-slate-400 transition-all hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-slate-800 dark:hover:text-indigo-400"
+        className="relative flex h-11 w-11 items-center justify-center rounded-md text-[#64748b] dark:text-slate-400 transition-all hover:bg-indigo-50 hover:text-indigo-600 dark:hover:bg-slate-800 dark:hover:text-indigo-400 active:scale-95"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5">
           <path

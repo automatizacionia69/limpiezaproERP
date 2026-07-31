@@ -47,7 +47,7 @@ export function NotaDebitoForm({ comprobanteId }: { comprobanteId: number }) {
 
       <button
         type="submit"
-        className="w-full rounded-md bg-amber-500 py-2.5 text-sm font-bold text-white shadow-sm shadow-amber-500/30 transition-all hover:bg-amber-600"
+        className="w-full rounded-md bg-amber-500 py-2.5 text-sm font-bold text-white shadow-sm shadow-amber-500/30 transition-all hover:bg-amber-600 active:scale-95"
       >
         Emitir nota de débito
       </button>

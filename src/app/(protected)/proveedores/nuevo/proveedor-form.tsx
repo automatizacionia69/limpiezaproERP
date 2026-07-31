@@ -51,7 +51,7 @@ export function ProveedorForm() {
               type="button"
               onClick={buscarRuc}
               disabled={buscando || ruc.length !== 11}
-              className="shrink-0 rounded-md bg-gradient-to-r from-cyan-500 to-sky-500 px-5 py-3 text-sm font-bold text-white shadow-md shadow-cyan-500/30 transition-all hover:shadow-lg hover:shadow-cyan-500/40 disabled:opacity-40 disabled:shadow-none"
+              className="shrink-0 rounded-md bg-gradient-to-r from-cyan-500 to-sky-500 px-5 py-3 text-sm font-bold text-white shadow-md shadow-cyan-500/30 transition-all hover:shadow-lg hover:shadow-cyan-500/40 disabled:opacity-40 disabled:shadow-none active:scale-95"
             >
               {buscando ? 'Buscando…' : '🔍 Buscar'}
             </button>
@@ -102,7 +102,7 @@ export function ProveedorForm() {
 
       <button
         type="submit"
-        className="w-full rounded-md bg-gradient-to-r from-cyan-500 to-sky-500 py-3.5 text-base font-bold text-white shadow-lg shadow-cyan-500/30 transition-all"
+        className="w-full rounded-md bg-gradient-to-r from-cyan-500 to-sky-500 py-3.5 text-base font-bold text-white shadow-lg shadow-cyan-500/30 transition-all active:scale-95"
       >
         Guardar proveedor
       </button>

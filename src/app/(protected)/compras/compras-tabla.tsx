@@ -154,7 +154,7 @@ export function ComprasTabla({ ordenes }: { ordenes: OrdenRow[] }) {
         </div>
         <button
           type="submit"
-          className="rounded-md bg-pink-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm shadow-pink-500/30 transition-all hover:bg-pink-700"
+          className="rounded-md bg-pink-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm shadow-pink-500/30 transition-all hover:bg-pink-700 active:scale-95"
         >
           🔍 Buscar
         </button>
@@ -162,7 +162,7 @@ export function ComprasTabla({ ordenes }: { ordenes: OrdenRow[] }) {
           <button
             type="button"
             onClick={limpiar}
-            className="rounded-md border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-5 py-2.5 text-sm font-bold text-[#64748b] dark:text-slate-400 transition-all hover:bg-[#f8fafc]"
+            className="rounded-md border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-5 py-2.5 text-sm font-bold text-[#64748b] dark:text-slate-400 transition-all hover:bg-[#f8fafc] active:scale-95"
           >
             Limpiar
           </button>
@@ -219,7 +219,7 @@ export function ComprasTabla({ ordenes }: { ordenes: OrdenRow[] }) {
                             type="button"
                             onClick={() => handleRecibir(o.id, o.numero)}
                             disabled={isPending && pendienteId === o.id}
-                            className="rounded-md bg-emerald-500 px-4 py-2 text-[12px] font-bold text-white shadow-sm shadow-emerald-500/30 transition-all hover:bg-emerald-600 disabled:opacity-50"
+                            className="rounded-md bg-emerald-500 px-4 py-2 text-[12px] font-bold text-white shadow-sm shadow-emerald-500/30 transition-all hover:bg-emerald-600 disabled:opacity-50 active:scale-95"
                           >
                             Recibir
                           </button>
