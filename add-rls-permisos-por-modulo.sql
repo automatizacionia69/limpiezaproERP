@@ -147,14 +147,19 @@ drop policy if exists "escritura ventas detalle_venta delete" on detalle_venta;
 create policy "escritura ventas detalle_venta delete" on detalle_venta for delete
   using (public.tiene_permiso_modulo('ventas'));
 
--- comprobantes: insert -> ventas (emitirComprobante), update -> consulta_ventas (anularComprobante)
+-- comprobantes: insert -> ventas (emitirComprobante), update -> consulta_ventas
+-- (anularComprobante) O cobranzas (marcarCobrada, modulo agregado en paralelo
+-- a esta migracion — ver cobranzas/actions.ts)
 drop policy if exists "escritura ventas comprobantes insert" on comprobantes;
 create policy "escritura ventas comprobantes insert" on comprobantes for insert
   with check (public.tiene_permiso_modulo('ventas'));
 
 drop policy if exists "escritura ventas comprobantes update" on comprobantes;
 create policy "escritura ventas comprobantes update" on comprobantes for update
-  using (public.tiene_permiso_modulo('consulta_ventas'));
+  using (
+    public.tiene_permiso_modulo('consulta_ventas')
+    or public.tiene_permiso_modulo('cobranzas')
+  );
 
 -- guias_remision: insert -> ventas (se genera sola al facturar), update -> guias_remision (edicion manual)
 drop policy if exists "escritura ventas guias_remision insert" on guias_remision;
