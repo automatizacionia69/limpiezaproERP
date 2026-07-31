@@ -8,10 +8,13 @@ type ComprobanteRow = {
   total: number
   fecha_emision: string
   dias_credito: string
+  fecha_cobro: string | null
   clientes: { nombre: string } | { nombre: string }[] | null
 }
 
 type NotaRow = { comprobante_id: number; monto: number }
+
+export type EstadoCobranza = 'vencida' | 'pendiente' | 'cobrado'
 
 export type FilaCobranza = {
   id: number
@@ -19,13 +22,10 @@ export type FilaCobranza = {
   tipo: string
   cliente: string
   saldo: number
-  fechaVencimiento: string
-  etiqueta: string
-}
-
-export type CobranzasPendientes = {
-  vencidas: FilaCobranza[]
-  porVencer: FilaCobranza[]
+  fechaVencimientoISO: string
+  fechaVencimientoLabel: string
+  diasLabel: string
+  estado: EstadoCobranza
 }
 
 function unoDe<T>(v: T | T[] | null): T | null {
@@ -39,25 +39,34 @@ function calcularVencimientoISO(fechaEmisionISO: string, diasCredito: string): s
   return fecha.toISOString().slice(0, 10)
 }
 
-function etiquetaPorDias(dias: number): string {
+function formatearFechaISO(fechaISO: string): string {
+  return new Date(`${fechaISO}T00:00:00Z`).toLocaleDateString('es-PE', { timeZone: 'UTC' })
+}
+
+function diasLabelPorEstado(estado: EstadoCobranza, dias: number, fechaCobro: string | null): string {
+  if (estado === 'cobrado') {
+    return fechaCobro ? `Cobrada el ${formatearFechaISO(fechaCobro.slice(0, 10))}` : 'Cobrada'
+  }
   if (dias < 0) return `Vencida hace ${Math.abs(dias)} día${Math.abs(dias) === 1 ? '' : 's'}`
   if (dias === 0) return 'Vence hoy'
   return `Vence en ${dias} día${dias === 1 ? '' : 's'}`
 }
 
-export async function obtenerCobranzasPendientes(): Promise<CobranzasPendientes> {
+/** Lista completa: todo comprobante a crédito emitido, con su estado (pendiente/vencida/cobrado).
+ * Un comprobante ya cubierto por completo con Notas de Crédito (saldo <= 0) pero nunca marcado
+ * "cobrada" se excluye — no hay nada que cobrar, fue un ajuste, no un pago recibido. */
+export async function obtenerCobranzas(): Promise<FilaCobranza[]> {
   const supabase = await createClient()
 
   const { data: comprobantes } = await supabase
     .from('comprobantes')
-    .select('id, numero, tipo, total, fecha_emision, dias_credito, clientes(nombre)')
+    .select('id, numero, tipo, total, fecha_emision, dias_credito, fecha_cobro, clientes(nombre)')
     .eq('estado', 'emitido')
     .neq('dias_credito', 'Contado')
-    .is('fecha_cobro', null)
     .returns<ComprobanteRow[]>()
 
   if (!comprobantes || comprobantes.length === 0) {
-    return { vencidas: [], porVencer: [] }
+    return []
   }
 
   const ids = comprobantes.map((c) => c.id)
@@ -77,33 +86,47 @@ export async function obtenerCobranzasPendientes(): Promise<CobranzasPendientes>
 
   const hoy = hoyPeruISO()
   const hoyMs = new Date(`${hoy}T00:00:00Z`).getTime()
-  const vencidas: FilaCobranza[] = []
-  const porVencer: FilaCobranza[] = []
+  const filas: FilaCobranza[] = []
 
   for (const c of comprobantes) {
     const saldo = Number(c.total) + (netoPorComprobante.get(c.id) ?? 0)
-    if (saldo <= 0) continue
+    if (!c.fecha_cobro && saldo <= 0) continue
 
-    const fechaVencimiento = calcularVencimientoISO(c.fecha_emision, c.dias_credito)
-    const dias = Math.round((new Date(`${fechaVencimiento}T00:00:00Z`).getTime() - hoyMs) / 86400000)
-    if (dias > 7) continue
+    const fechaVencimientoISO = calcularVencimientoISO(c.fecha_emision, c.dias_credito)
+    const dias = Math.round((new Date(`${fechaVencimientoISO}T00:00:00Z`).getTime() - hoyMs) / 86400000)
+    const estado: EstadoCobranza = c.fecha_cobro ? 'cobrado' : dias < 0 ? 'vencida' : 'pendiente'
 
-    const fila: FilaCobranza = {
+    filas.push({
       id: c.id,
       numero: c.numero,
       tipo: c.tipo,
       cliente: unoDe(c.clientes)?.nombre ?? '—',
       saldo,
-      fechaVencimiento,
-      etiqueta: etiquetaPorDias(dias),
-    }
-
-    if (dias < 0) vencidas.push(fila)
-    else porVencer.push(fila)
+      fechaVencimientoISO,
+      fechaVencimientoLabel: formatearFechaISO(fechaVencimientoISO),
+      diasLabel: diasLabelPorEstado(estado, dias, c.fecha_cobro),
+      estado,
+    })
   }
 
-  vencidas.sort((a, b) => a.fechaVencimiento.localeCompare(b.fechaVencimiento))
-  porVencer.sort((a, b) => a.fechaVencimiento.localeCompare(b.fechaVencimiento))
+  const prioridad: Record<EstadoCobranza, number> = { vencida: 0, pendiente: 1, cobrado: 2 }
+  filas.sort((a, b) => prioridad[a.estado] - prioridad[b.estado] || a.fechaVencimientoISO.localeCompare(b.fechaVencimientoISO))
 
-  return { vencidas, porVencer }
+  return filas
+}
+
+/** Subconjunto accionable para la campana del header: vencidas, y pendientes que vencen
+ * dentro de los próximos 7 días. Las ya cobradas o muy lejanas no generan alerta. */
+export function filtrarParaCampana(filas: FilaCobranza[]): FilaCobranza[] {
+  const hoy = hoyPeruISO()
+  const hoyMs = new Date(`${hoy}T00:00:00Z`).getTime()
+
+  return filas.filter((f) => {
+    if (f.estado === 'vencida') return true
+    if (f.estado === 'pendiente') {
+      const dias = Math.round((new Date(`${f.fechaVencimientoISO}T00:00:00Z`).getTime() - hoyMs) / 86400000)
+      return dias <= 7
+    }
+    return false
+  })
 }

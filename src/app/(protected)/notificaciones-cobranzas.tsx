@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import type { FilaCobranza } from '@/lib/cobranzas'
 
-export function NotificacionesCobranzas({ vencidas, porVencer }: { vencidas: FilaCobranza[]; porVencer: FilaCobranza[] }) {
+export function NotificacionesCobranzas({ filas }: { filas: FilaCobranza[] }) {
   const [abierto, setAbierto] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -16,8 +16,8 @@ export function NotificacionesCobranzas({ vencidas, porVencer }: { vencidas: Fil
     return () => document.removeEventListener('mousedown', alClickFuera)
   }, [])
 
-  const total = vencidas.length + porVencer.length
-  const filas = [...vencidas, ...porVencer].slice(0, 5)
+  const total = filas.length
+  const visibles = filas.slice(0, 5)
 
   return (
     <div ref={ref} className="relative">
@@ -56,7 +56,7 @@ export function NotificacionesCobranzas({ vencidas, porVencer }: { vencidas: Fil
                 No hay cobros pendientes.
               </p>
             ) : (
-              filas.map((f) => (
+              visibles.map((f) => (
                 <Link
                   key={f.id}
                   href="/cobranzas"
@@ -71,10 +71,10 @@ export function NotificacionesCobranzas({ vencidas, porVencer }: { vencidas: Fil
                   </div>
                   <span
                     className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ${
-                      f.etiqueta.startsWith('Vencida') ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                      f.estado === 'vencida' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
                     }`}
                   >
-                    {f.etiqueta}
+                    {f.diasLabel}
                   </span>
                 </Link>
               ))

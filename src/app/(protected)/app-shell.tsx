@@ -39,7 +39,7 @@ export function AppShell({
   rol: string
   modulosPermitidos: string[]
   stockBajo: ProductoStockBajo[]
-  cobranzas: { vencidas: FilaCobranza[]; porVencer: FilaCobranza[] }
+  cobranzas: FilaCobranza[]
   signOutAction: () => Promise<void>
 }) {
   const [collapsed, setCollapsed] = useState(false)
@@ -78,7 +78,7 @@ export function AppShell({
           <div className="flex items-center gap-4">
             <ThemeToggle />
             <NotificacionesStock stockBajo={stockBajo} />
-            <NotificacionesCobranzas vencidas={cobranzas.vencidas} porVencer={cobranzas.porVencer} />
+            <NotificacionesCobranzas filas={cobranzas} />
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-sm font-bold text-white shadow-md shadow-indigo-500/30">
               {iniciales(nombre)}
             </div>
