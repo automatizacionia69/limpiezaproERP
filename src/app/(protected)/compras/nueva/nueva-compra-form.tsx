@@ -3,6 +3,7 @@
 import { useActionState, useMemo, useState } from 'react'
 import { crearOrdenCompra, type EstadoFormulario } from '../actions'
 import { Buscador } from '@/components/buscador'
+import { SubirDocumentoCompra } from './subir-documento-compra'
 
 type Proveedor = { id: number; nombre: string }
 type Producto = { id: number; nombre: string }
@@ -83,6 +84,8 @@ export function NuevaCompraForm({
   return (
     <form action={formAction} className="mt-6 space-y-6">
       <input type="hidden" name="lineas" value={lineasJson} />
+
+      <SubirDocumentoCompra />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
