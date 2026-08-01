@@ -89,7 +89,11 @@ declare
 begin
   insert into clientes (nombre, telefono)
   values (p_nombre, p_telefono)
-  on conflict (telefono_normalizado)
+  -- El indice es PARCIAL (where telefono_normalizado is not null): sin
+  -- repetir esa misma condicion aca, Postgres no lo reconoce como destino
+  -- valido para el ON CONFLICT y tira 42P10 ("no unique or exclusion
+  -- constraint matching the ON CONFLICT specification").
+  on conflict (telefono_normalizado) where telefono_normalizado is not null
   do update set telefono = clientes.telefono -- no-op: solo para que RETURNING traiga el id existente sin tocar el nombre
   returning id into v_id;
 
