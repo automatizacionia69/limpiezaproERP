@@ -4,10 +4,16 @@ import { useActionState, useMemo, useState } from 'react'
 import { crearOrdenCompra, type EstadoFormulario } from '../actions'
 import { Buscador } from '@/components/buscador'
 import { SubirDocumentoCompra } from './subir-documento-compra'
+import type { DatosExtraidos } from './analizar-documento'
 
 type Proveedor = { id: number; nombre: string }
 type Producto = { id: number; nombre: string }
-type Linea = { producto_id: number | ''; cantidad: number | ''; costo_unitario: number | '' }
+type Linea = {
+  producto_id: number | ''
+  cantidad: number | ''
+  costo_unitario: number | ''
+  nombreSugerido?: string
+}
 
 function lineaVacia(): Linea {
   return { producto_id: '', cantidad: '', costo_unitario: '' }
@@ -15,6 +21,28 @@ function lineaVacia(): Linea {
 
 function hoyISO() {
   return new Date().toISOString().slice(0, 10)
+}
+
+function normalizar(texto: string) {
+  return texto
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+}
+
+function buscarProductoCoincidente(nombre: string, productos: Producto[]): Producto | null {
+  const buscado = normalizar(nombre)
+  if (!buscado) return null
+
+  const exacto = productos.find((p) => normalizar(p.nombre) === buscado)
+  if (exacto) return exacto
+
+  const parcial = productos.find((p) => {
+    const n = normalizar(p.nombre)
+    return n.includes(buscado) || buscado.includes(n)
+  })
+  return parcial ?? null
 }
 
 const TIPOS_DOCUMENTO = [
@@ -40,7 +68,32 @@ export function NuevaCompraForm({
   const [proveedorId, setProveedorId] = useState<number | ''>('')
   const [fechaRegistro, setFechaRegistro] = useState(hoyISO())
   const [tipoDocumento, setTipoDocumento] = useState<(typeof TIPOS_DOCUMENTO)[number]['valor']>('factura')
+  const [documentoSerie, setDocumentoSerie] = useState('')
+  const [documentoNumero, setDocumentoNumero] = useState('')
   const [lineas, setLineas] = useState<Linea[]>([lineaVacia()])
+  const [totalDetectadoIA, setTotalDetectadoIA] = useState<number | null>(null)
+
+  function aplicarExtraccion(datos: DatosExtraidos) {
+    if (datos.tipo_documento) setTipoDocumento(datos.tipo_documento)
+    if (datos.serie) setDocumentoSerie(datos.serie)
+    if (datos.numero) setDocumentoNumero(datos.numero)
+    if (datos.fecha) setFechaRegistro(datos.fecha)
+    setTotalDetectadoIA(datos.total)
+
+    if (datos.productos.length > 0) {
+      setLineas(
+        datos.productos.map((p) => {
+          const coincidencia = buscarProductoCoincidente(p.nombre, productos)
+          return {
+            producto_id: coincidencia?.id ?? '',
+            cantidad: p.cantidad,
+            costo_unitario: p.precio_unitario,
+            nombreSugerido: coincidencia ? undefined : p.nombre,
+          }
+        })
+      )
+    }
+  }
 
   function actualizarLinea(i: number, campo: keyof Linea, valor: string) {
     setLineas((prev) =>
@@ -50,7 +103,9 @@ export function NuevaCompraForm({
 
   function actualizarProductoLinea(i: number, productoId: number | string | '') {
     setLineas((prev) =>
-      prev.map((l, idx) => (idx === i ? { ...l, producto_id: Number(productoId) || '' } : l))
+      prev.map((l, idx) =>
+        idx === i ? { ...l, producto_id: Number(productoId) || '', nombreSugerido: undefined } : l
+      )
     )
   }
 
@@ -85,7 +140,7 @@ export function NuevaCompraForm({
     <form action={formAction} className="mt-6 space-y-6">
       <input type="hidden" name="lineas" value={lineasJson} />
 
-      <SubirDocumentoCompra />
+      <SubirDocumentoCompra onExtraido={aplicarExtraccion} />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
@@ -138,11 +193,27 @@ export function NuevaCompraForm({
           </div>
           <div>
             <label className="block text-xs font-bold text-[#64748b] dark:text-slate-400">Serie *</label>
-            <input type="text" name="documento_serie" required placeholder="F001" className={CAMPO} />
+            <input
+              type="text"
+              name="documento_serie"
+              required
+              placeholder="F001"
+              value={documentoSerie}
+              onChange={(e) => setDocumentoSerie(e.target.value)}
+              className={CAMPO}
+            />
           </div>
           <div>
             <label className="block text-xs font-bold text-[#64748b] dark:text-slate-400">Número *</label>
-            <input type="text" name="documento_numero" required placeholder="000123" className={CAMPO} />
+            <input
+              type="text"
+              name="documento_numero"
+              required
+              placeholder="000123"
+              value={documentoNumero}
+              onChange={(e) => setDocumentoNumero(e.target.value)}
+              className={CAMPO}
+            />
           </div>
         </div>
       </div>
@@ -172,7 +243,11 @@ export function NuevaCompraForm({
                   opciones={productos}
                   valor={l.producto_id}
                   onChange={(id) => actualizarProductoLinea(i, id)}
-                  placeholder="Buscar producto..."
+                  placeholder={
+                    l.nombreSugerido
+                      ? `IA leyó: "${l.nombreSugerido}" — selecciona el producto`
+                      : 'Buscar producto...'
+                  }
                 />
               </div>
               <input
@@ -212,6 +287,12 @@ export function NuevaCompraForm({
           <span className="text-sm font-medium text-[#64748b] dark:text-slate-400">Total:</span>
           <span className="text-xl font-extrabold text-pink-600">S/ {total.toFixed(2)}</span>
         </div>
+        {totalDetectadoIA !== null && Math.abs(totalDetectadoIA - total) > 0.01 && (
+          <p className="mt-1 text-right text-xs font-bold text-amber-600">
+            ⚠️ La IA leyó un total de S/ {totalDetectadoIA.toFixed(2)} — no coincide con la suma de las líneas,
+            revisa cantidades y precios.
+          </p>
+        )}
       </div>
 
       {estado.error && (

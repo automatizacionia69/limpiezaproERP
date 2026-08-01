@@ -1,6 +1,7 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useRef, useState, useTransition } from 'react'
+import { analizarDocumentoCompra, type DatosExtraidos } from './analizar-documento'
 
 const TAMANO_MAXIMO_BYTES = 10 * 1024 * 1024
 
@@ -8,11 +9,29 @@ function formatearTamano(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-export function SubirDocumentoCompra() {
+export function SubirDocumentoCompra({ onExtraido }: { onExtraido: (datos: DatosExtraidos) => void }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [archivo, setArchivo] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [exito, setExito] = useState(false)
+  const [analizando, iniciarAnalisis] = useTransition()
+
+  function analizar(file: File) {
+    setError(null)
+    setExito(false)
+    iniciarAnalisis(async () => {
+      const formData = new FormData()
+      formData.append('archivo', file)
+      const resultado = await analizarDocumentoCompra(formData)
+      if ('error' in resultado) {
+        setError(resultado.error)
+        return
+      }
+      setExito(true)
+      onExtraido(resultado.datos)
+    })
+  }
 
   function manejarSeleccion(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -32,8 +51,10 @@ export function SubirDocumentoCompra() {
 
     if (previewUrl) URL.revokeObjectURL(previewUrl)
     setError(null)
+    setExito(false)
     setArchivo(file)
     setPreviewUrl(esImagen ? URL.createObjectURL(file) : null)
+    analizar(file)
   }
 
   function quitarArchivo() {
@@ -41,6 +62,7 @@ export function SubirDocumentoCompra() {
     setArchivo(null)
     setPreviewUrl(null)
     setError(null)
+    setExito(false)
   }
 
   return (
@@ -49,7 +71,7 @@ export function SubirDocumentoCompra() {
         Subir imagen o PDF de la factura/boleta
       </label>
       <p className="mt-1 text-xs font-medium text-[#94a3b8] dark:text-slate-500">
-        Próximamente la IA leerá el documento y completará los campos por ti.
+        La IA lee el documento y completa el formulario por ti.
       </p>
 
       <input
@@ -91,7 +113,8 @@ export function SubirDocumentoCompra() {
           <button
             type="button"
             onClick={quitarArchivo}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[#64748b] dark:text-slate-400 transition-all hover:bg-red-100 hover:text-red-600"
+            disabled={analizando}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[#64748b] dark:text-slate-400 transition-all hover:bg-red-100 hover:text-red-600 disabled:opacity-30"
             title="Quitar archivo"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
@@ -101,10 +124,37 @@ export function SubirDocumentoCompra() {
         </div>
       )}
 
-      {error && (
-        <p role="alert" className="mt-2 text-xs font-bold text-red-600">
-          {error}
+      {analizando && (
+        <p className="mt-2 flex items-center gap-2 text-xs font-bold text-pink-600">
+          <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 animate-spin">
+            <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth={3} className="opacity-25" />
+            <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth={3} strokeLinecap="round" />
+          </svg>
+          Leyendo el documento con IA...
         </p>
+      )}
+
+      {!analizando && exito && (
+        <p className="mt-2 text-xs font-bold text-emerald-600">
+          ✓ Datos leídos — revisa que los campos del formulario estén correctos.
+        </p>
+      )}
+
+      {!analizando && error && (
+        <div className="mt-2 flex items-center gap-2">
+          <p role="alert" className="text-xs font-bold text-red-600">
+            {error}
+          </p>
+          {archivo && (
+            <button
+              type="button"
+              onClick={() => analizar(archivo)}
+              className="shrink-0 text-xs font-bold text-pink-600 underline hover:text-pink-700"
+            >
+              Reintentar
+            </button>
+          )}
+        </div>
       )}
 
       <p className="mt-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 px-3 py-2 text-xs font-medium text-amber-700 dark:text-amber-500">
