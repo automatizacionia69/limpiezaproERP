@@ -5,6 +5,7 @@ import { crearOrdenCompra, type EstadoFormulario } from '../actions'
 import { Buscador } from '@/components/buscador'
 import { SubirDocumentoCompra } from './subir-documento-compra'
 import type { DatosExtraidos } from './analizar-documento'
+import { crearProductoRapido } from './crear-producto-rapido'
 
 type Proveedor = { id: number; nombre: string }
 type Producto = { id: number; nombre: string }
@@ -72,27 +73,49 @@ export function NuevaCompraForm({
   const [documentoNumero, setDocumentoNumero] = useState('')
   const [lineas, setLineas] = useState<Linea[]>([lineaVacia()])
   const [totalDetectadoIA, setTotalDetectadoIA] = useState<number | null>(null)
+  const [catalogo, setCatalogo] = useState<Producto[]>(productos)
+  const [productosCreados, setProductosCreados] = useState<string[]>([])
 
-  function aplicarExtraccion(datos: DatosExtraidos) {
+  async function aplicarExtraccion(datos: DatosExtraidos) {
     if (datos.tipo_documento) setTipoDocumento(datos.tipo_documento)
     if (datos.serie) setDocumentoSerie(datos.serie)
     if (datos.numero) setDocumentoNumero(datos.numero)
     if (datos.fecha) setFechaRegistro(datos.fecha)
     setTotalDetectadoIA(datos.total)
 
-    if (datos.productos.length > 0) {
-      setLineas(
-        datos.productos.map((p) => {
-          const coincidencia = buscarProductoCoincidente(p.nombre, productos)
-          return {
-            producto_id: coincidencia?.id ?? '',
-            cantidad: p.cantidad,
-            costo_unitario: p.precio_unitario,
-            nombreSugerido: coincidencia ? undefined : p.nombre,
-          }
-        })
-      )
-    }
+    if (datos.productos.length === 0) return
+
+    setProductosCreados([])
+    const nuevosCreados: string[] = []
+
+    const nuevasLineas = await Promise.all(
+      datos.productos.map(async (p): Promise<Linea> => {
+        const coincidencia = buscarProductoCoincidente(p.nombre, catalogo)
+        if (coincidencia) {
+          return { producto_id: coincidencia.id, cantidad: p.cantidad, costo_unitario: p.precio_unitario }
+        }
+
+        // No hay match en el catalogo: se crea el producto tal cual lo leyo
+        // la IA (nombre y costo de compra) para no frenar el flujo — por eso
+        // el aviso fijo de "revisa manualmente" sigue visible en todo momento.
+        const resultado = await crearProductoRapido(p.nombre, p.precio_unitario)
+        if ('producto' in resultado) {
+          setCatalogo((prev) => [...prev, resultado.producto])
+          nuevosCreados.push(resultado.producto.nombre)
+          return { producto_id: resultado.producto.id, cantidad: p.cantidad, costo_unitario: p.precio_unitario }
+        }
+
+        return {
+          producto_id: '',
+          cantidad: p.cantidad,
+          costo_unitario: p.precio_unitario,
+          nombreSugerido: p.nombre,
+        }
+      })
+    )
+
+    setLineas(nuevasLineas)
+    setProductosCreados(nuevosCreados)
   }
 
   function actualizarLinea(i: number, campo: keyof Linea, valor: string) {
@@ -242,7 +265,7 @@ export function NuevaCompraForm({
             <div key={i} className="flex items-center gap-2">
               <div className="flex-1">
                 <Buscador
-                  opciones={productos}
+                  opciones={catalogo}
                   valor={l.producto_id}
                   onChange={(id) => actualizarProductoLinea(i, id)}
                   placeholder={
@@ -270,6 +293,9 @@ export function NuevaCompraForm({
                 onChange={(e) => actualizarLinea(i, 'costo_unitario', e.target.value)}
                 className="w-24 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2.5 text-sm text-[#1e293b] dark:text-slate-100 outline-none focus:border-pink-500"
               />
+              <span className="w-24 shrink-0 text-right text-sm font-bold text-[#1e293b] dark:text-slate-100">
+                S/ {((Number(l.cantidad) || 0) * (Number(l.costo_unitario) || 0)).toFixed(2)}
+              </span>
               <button
                 type="button"
                 onClick={() => quitarLinea(i)}
@@ -296,6 +322,13 @@ export function NuevaCompraForm({
           </p>
         )}
       </div>
+
+      {productosCreados.length > 0 && (
+        <p className="rounded-xl bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm font-medium text-amber-700 dark:text-amber-500">
+          ⚠️ La IA creó automáticamente estos productos nuevos en el catálogo (revisa nombre, unidad y precio de
+          venta): {productosCreados.join(', ')}.
+        </p>
+      )}
 
       {hayLineasSinResolver && (
         <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">

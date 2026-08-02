@@ -9,7 +9,11 @@ function formatearTamano(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-export function SubirDocumentoCompra({ onExtraido }: { onExtraido: (datos: DatosExtraidos) => void }) {
+export function SubirDocumentoCompra({
+  onExtraido,
+}: {
+  onExtraido: (datos: DatosExtraidos) => void | Promise<void>
+}) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [archivo, setArchivo] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -28,8 +32,8 @@ export function SubirDocumentoCompra({ onExtraido }: { onExtraido: (datos: Datos
         setError(resultado.error)
         return
       }
+      await onExtraido(resultado.datos)
       setExito(true)
-      onExtraido(resultado.datos)
     })
   }
 
