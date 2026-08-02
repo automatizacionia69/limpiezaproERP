@@ -170,7 +170,8 @@ export async function analizarDocumentoCompra(formData: FormData): Promise<Resul
     }
 
     return { datos }
-  } catch {
+  } catch (err) {
+    console.error('analizarDocumentoCompra:', err)
     return { error: 'No se pudo leer el documento con la IA. Intenta de nuevo o completa el formulario manualmente.' }
   }
 }
