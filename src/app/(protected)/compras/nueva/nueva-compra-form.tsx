@@ -126,6 +126,8 @@ export function NuevaCompraForm({
     [lineas]
   )
 
+  const hayLineasSinResolver = lineas.some((l) => l.nombreSugerido && !l.producto_id)
+
   const lineasJson = JSON.stringify(
     lineas
       .filter((l) => l.producto_id && l.cantidad)
@@ -295,6 +297,13 @@ export function NuevaCompraForm({
         )}
       </div>
 
+      {hayLineasSinResolver && (
+        <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          Hay productos leídos por la IA sin seleccionar en el catálogo — elige el producto correcto o
+          quita esa línea antes de guardar.
+        </p>
+      )}
+
       {estado.error && (
         <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
           {estado.error}
@@ -303,7 +312,8 @@ export function NuevaCompraForm({
 
       <button
         type="submit"
-        className="w-full rounded-md bg-gradient-to-r from-pink-500 to-rose-500 py-3.5 text-base font-bold text-white shadow-lg shadow-pink-500/30 transition-all active:scale-95"
+        disabled={hayLineasSinResolver}
+        className="w-full rounded-md bg-gradient-to-r from-pink-500 to-rose-500 py-3.5 text-base font-bold text-white shadow-lg shadow-pink-500/30 transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
       >
         Guardar orden (pendiente)
       </button>
