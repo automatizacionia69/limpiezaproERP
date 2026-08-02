@@ -118,9 +118,12 @@ export async function analizarDocumentoCompra(formData: FormData): Promise<Resul
     return { error: 'El archivo supera el tamaño máximo de 10 MB.' }
   }
 
-  const apiKey = process.env.GEMINI_API_KEY
+  // Nombre con prefijo a proposito: GEMINI_API_KEY choca con una variable de
+  // entorno global de Windows en la maquina de desarrollo (de otro proyecto),
+  // que gana sobre .env.local y hace fallar la IA con "API key not valid".
+  const apiKey = process.env.LIMPIEZAPRO_GEMINI_API_KEY
   if (!apiKey) {
-    return { error: 'Falta configurar GEMINI_API_KEY en el servidor.' }
+    return { error: 'Falta configurar LIMPIEZAPRO_GEMINI_API_KEY en el servidor.' }
   }
 
   const bytes = Buffer.from(await archivo.arrayBuffer())
