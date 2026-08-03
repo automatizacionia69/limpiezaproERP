@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { obtenerModulosPermitidos } from '@/lib/permisos'
 import { obtenerCobranzas, filtrarParaCampana } from '@/lib/cobranzas'
+import { obtenerNotificaciones } from '@/lib/notificaciones'
 import { signOut } from './actions'
 import { AppShell } from './app-shell'
 
@@ -49,6 +50,12 @@ export default async function ProtectedLayout({
 
   const cobranzas = filtrarParaCampana(await obtenerCobranzas())
 
+  // Campana de pedidos del chatbot: solo admin/ventas (decisión del dueño —
+  // almacén no gestiona pedidos/cotizaciones). La RLS de "notificaciones" ya
+  // lo exige igual, esto solo evita la consulta y el render para quien no la ve.
+  const puedeVerPedidos = perfil.rol === 'admin' || perfil.rol === 'ventas'
+  const notificacionesPedidos = puedeVerPedidos ? await obtenerNotificaciones() : []
+
   return (
     <AppShell
       nombre={perfil.nombre}
@@ -56,6 +63,8 @@ export default async function ProtectedLayout({
       modulosPermitidos={[...modulosPermitidos]}
       stockBajo={stockBajo ?? []}
       cobranzas={cobranzas}
+      notificacionesPedidos={notificacionesPedidos}
+      puedeVerPedidos={puedeVerPedidos}
       signOutAction={signOut}
     >
       {children}

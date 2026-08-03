@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react'
 import { Sidebar } from './sidebar'
 import { NotificacionesStock } from './notificaciones-stock'
 import { NotificacionesCobranzas } from './notificaciones-cobranzas'
+import { NotificacionesPedidos } from './notificaciones-pedidos'
 import { AlertaStockBajo } from './alerta-stock-bajo'
 import { ThemeToggle } from './theme-toggle'
 import type { FilaCobranza } from '@/lib/cobranzas'
+import type { FilaNotificacion } from '@/lib/notificaciones'
 
 type ProductoStockBajo = { id: number; nombre: string; cantidad: number; punto_reorden: number | null }
 
@@ -32,6 +34,8 @@ export function AppShell({
   modulosPermitidos,
   stockBajo,
   cobranzas,
+  notificacionesPedidos,
+  puedeVerPedidos,
   signOutAction,
 }: {
   children: React.ReactNode
@@ -40,6 +44,8 @@ export function AppShell({
   modulosPermitidos: string[]
   stockBajo: ProductoStockBajo[]
   cobranzas: FilaCobranza[]
+  notificacionesPedidos: FilaNotificacion[]
+  puedeVerPedidos: boolean
   signOutAction: () => Promise<void>
 }) {
   const [collapsed, setCollapsed] = useState(false)
@@ -77,6 +83,7 @@ export function AppShell({
 
           <div className="flex items-center gap-4">
             <ThemeToggle />
+            {puedeVerPedidos && <NotificacionesPedidos iniciales={notificacionesPedidos} />}
             <NotificacionesStock stockBajo={stockBajo} />
             <NotificacionesCobranzas filas={cobranzas} />
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-sm font-bold text-white shadow-md shadow-indigo-500/30">

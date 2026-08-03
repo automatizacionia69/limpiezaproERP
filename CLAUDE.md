@@ -53,7 +53,9 @@ fecha): `add-usuarios-dni.sql`, `add-ventas.sql`, `add-compras.sql`,
 `add-guias-remision.sql`, `add-cobranzas.sql` (columna
 `comprobantes.fecha_cobro`), `add-ordenes-venta-dias-credito.sql` (columna
 `ordenes_venta.dias_credito`, para que "Facturar" no pierda el plazo de
-crédito que ya se había elegido en la cotización). `import-inventario.sql` /
+crédito que ya se había elegido en la cotización), `add-notificaciones.sql`
+(tabla `notificaciones`, 2026-08-01 — campana de pedidos creados por el
+chatbot, ver más abajo). `import-inventario.sql` /
 `import-inventario-sin-comentarios.sql` fueron una carga de datos puntual
 (las ~140 SKUs reales), no schema.
 
@@ -81,6 +83,15 @@ detalle en el SQL antes de asumir columnas):
   vendedor autocompletado desde `clientes.vendedor_id`.
 - `clientes`, `proveedores`, `configuracion` (datos de la empresa para
   PDFs/reportes).
+- `notificaciones` (`add-notificaciones.sql`) — una fila por cada cotización
+  que crea el chatbot de WhatsApp (repo separado "proyecto",
+  `lib/whatsapp/proforma.ts`, insert vía `service_role`). `leida_en` null =
+  no leída; se marca compartida para todo el equipo (no por usuario), mismo
+  criterio que `comprobantes.fecha_cobro`. RLS solo permite lectura/marcar
+  leída a `admin`/`ventas` — `almacen` no ve esta campana. Tabla agregada a
+  la publicación `supabase_realtime`: la campana `notificaciones-pedidos.tsx`
+  se suscribe a `postgres_changes` (INSERT) para avisar al instante con un
+  beep sintetizado (Web Audio API), sin esperar a que alguien navegue.
 - **Cobranzas** (`src/lib/cobranzas.ts`) — no es una tabla nueva, es una vista
   calculada sobre `comprobantes` (a crédito o Contado, `estado = 'emitido'`).
   Saldo pendiente = `total + Σ notas_debito.monto − Σ notas_credito.monto`; se
