@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { tienePermiso } from '@/lib/permisos'
 import { calcularImportes } from '@/lib/cotizaciones'
-import { generarComprobanteNubefact } from '@/lib/nubefact'
+import { enviarComprobanteANubefact } from '@/lib/nubefact-envio'
 
 export type EstadoFormulario = { error: string | null }
 
@@ -164,7 +164,7 @@ export async function emitirComprobante(
 
   const { data: cliente } = await supabase
     .from('clientes')
-    .select('nombre, documento, direccion, email')
+    .select('documento, direccion')
     .eq('id', clienteId)
     .single()
   if (tipo === 'factura' && (cliente?.documento ?? '').trim().length !== 11) {
@@ -237,7 +237,7 @@ export async function emitirComprobante(
       igv,
       total,
     })
-    .select('id, serie, numero')
+    .select('id')
     .single()
 
   if (errorComp || !comprobante) {
@@ -294,64 +294,13 @@ export async function emitirComprobante(
   // revierte (decision de negocio — no bloquear una venta real por un
   // problema externo de SUNAT/NUBEFACT); el comprobante queda con
   // nubefact_estado='error' y el mensaje en nubefact_error, para reenviarlo
-  // despues en vez de perder la venta.
+  // despues desde Consulta de Ventas (mismo helper que usa ese boton).
   if (tipo === 'factura' || tipo === 'boleta') {
-    const productoIds = [...new Set(lineas.map((l) => l.producto_id))]
-    const { data: productosLineas } = await supabase
-      .from('productos')
-      .select('id, nombre, codigo, unidades_medida(nombre)')
-      .in('id', productoIds)
-      .returns<
-        { id: number; nombre: string; codigo: string | null; unidades_medida: { nombre: string } | null }[]
-      >()
-
-    const productosPorId = new Map((productosLineas ?? []).map((p) => [p.id, p]))
-    const numeroNubefact = Number(comprobante.numero.split('-').pop())
-    const [anio, mes, dia] = fecha.split('-')
-
-    const resultadoNubefact = await generarComprobanteNubefact({
-      tipo,
-      serie: comprobante.serie,
-      numero: numeroNubefact,
-      cliente: {
-        documento: cliente?.documento ?? '',
-        denominacion: cliente?.nombre ?? '',
-        direccion: cliente?.direccion ?? undefined,
-        email: cliente?.email ?? undefined,
-      },
-      fechaEmision: `${dia}-${mes}-${anio}`,
-      lineas: lineas.map((l) => {
-        const p = productosPorId.get(l.producto_id)
-        return {
-          descripcion: p?.nombre ?? 'PRODUCTO',
-          codigo: p?.codigo ?? undefined,
-          unidadErp: p?.unidades_medida?.nombre ?? 'und',
-          cantidad: l.cantidad,
-          precioUnitario: l.precio_unitario,
-        }
-      }),
-    })
-
-    if (resultadoNubefact.ok) {
-      await supabase
-        .from('comprobantes')
-        .update({
-          nubefact_estado: 'enviado',
-          nubefact_enlace: resultadoNubefact.data.enlace,
-          nubefact_enlace_pdf: resultadoNubefact.data.enlace_del_pdf,
-          nubefact_enlace_xml: resultadoNubefact.data.enlace_del_xml,
-          nubefact_codigo_hash: resultadoNubefact.data.codigo_hash,
-          nubefact_enviado_en: new Date().toISOString(),
-        })
-        .eq('id', comprobante.id)
-    } else {
+    const resultadoNubefact = await enviarComprobanteANubefact(supabase, comprobante.id)
+    if (!resultadoNubefact.ok) {
       console.error(
         `Comprobante ${comprobante.id} (${orden.numero}) no se pudo enviar a NUBEFACT: ${resultadoNubefact.error}`
       )
-      await supabase
-        .from('comprobantes')
-        .update({ nubefact_estado: 'error', nubefact_error: resultadoNubefact.error })
-        .eq('id', comprobante.id)
     }
   } else {
     await supabase.from('comprobantes').update({ nubefact_estado: 'no_aplica' }).eq('id', comprobante.id)

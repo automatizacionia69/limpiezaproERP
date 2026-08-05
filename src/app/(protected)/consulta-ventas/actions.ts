@@ -5,8 +5,24 @@ import { createClient } from '@/lib/supabase/server'
 import { tienePermiso } from '@/lib/permisos'
 import { MOTIVOS_NOTA_CREDITO } from '@/lib/motivos'
 import { calcularImportes } from '@/lib/cotizaciones'
+import { enviarComprobanteANubefact } from '@/lib/nubefact-envio'
 
 export type EstadoFormulario = { error: string | null }
+
+export async function reintentarEnvioNubefact(comprobanteId: number) {
+  if (!(await tienePermiso('consulta_ventas'))) {
+    throw new Error('No tienes permiso para esta acción.')
+  }
+
+  const supabase = await createClient()
+  const resultado = await enviarComprobanteANubefact(supabase, comprobanteId)
+
+  revalidatePath(`/consulta-ventas/${comprobanteId}`)
+
+  if (!resultado.ok) {
+    throw new Error(resultado.error)
+  }
+}
 
 type LineaDevolucion = { producto_id: number; cantidad: number; precio_unitario: number }
 

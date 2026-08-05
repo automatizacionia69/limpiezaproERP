@@ -95,7 +95,8 @@ export type RespuestaNubefactComprobante = {
   enlace: string
   enlace_del_pdf: string
   enlace_del_xml: string
-  enlace_del_cdr: string
+  /** Puede venir null si SUNAT todavía no confirmó la recepción (normal en cuentas demo). */
+  enlace_del_cdr: string | null
   aceptada_por_sunat: boolean
   sunat_description: string | null
   sunat_note: string | null
