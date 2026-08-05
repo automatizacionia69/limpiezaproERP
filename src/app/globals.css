@@ -34,3 +34,17 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Campos numéricos en todo el ERP (cantidad, precio, etc.): sin flechitas de
+   subir/bajar (se prestaban a cambiar el valor por un clic accidental) y
+   alineados a la derecha, como en cualquier planilla. */
+input[type='number'] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+  text-align: right;
+}
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}

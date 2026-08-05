@@ -23,7 +23,7 @@ export default async function NuevaCotizacionPage() {
     await Promise.all([
       supabase
         .from('clientes')
-        .select('id, nombre, documento, direccion, vendedor_id')
+        .select('id, nombre, documento, direccion, vendedor_id, telefono, email')
         .eq('activo', true)
         .order('nombre'),
       supabase

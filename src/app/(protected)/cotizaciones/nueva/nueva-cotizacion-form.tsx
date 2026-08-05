@@ -1,6 +1,7 @@
 'use client'
 
-import { useMemo, useRef, useState, useActionState } from 'react'
+import { useMemo, useState, useActionState } from 'react'
+import { useRouter } from 'next/navigation'
 import { crearCotizacion, type EstadoFormulario } from '../actions'
 import {
   IGV_TASA,
@@ -21,6 +22,8 @@ type Cliente = {
   documento: string | null
   direccion: string | null
   vendedor_id: string | null
+  telefono: string | null
+  email: string | null
 }
 type Producto = {
   id: number
@@ -54,10 +57,6 @@ type Linea = {
   unidad_nombre: string
 }
 
-function lineaVacia(): Linea {
-  return { producto_id: '', cantidad: '', precio_unitario: '', caracteristicas: '', fecha_entrega: '', unidad_nombre: '' }
-}
-
 const DIAS_CREDITO = ['Contado', '7 días', '15 días', '30 días', '45 días', '60 días']
 const MEDIOS_PAGO = ['Transferencia', 'Efectivo', 'Yape', 'Plin']
 const MONEDAS: { value: 'PEN' | 'USD'; label: string; simbolo: string }[] = [
@@ -68,8 +67,6 @@ const MONEDAS: { value: 'PEN' | 'USD'; label: string; simbolo: string }[] = [
 const CAMPO =
   'mt-1.5 w-full rounded-lg border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2 text-sm text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-100'
 const LABEL = 'block text-xs font-bold text-[#1e293b] dark:text-slate-100'
-const BOTON_CALENDARIO =
-  'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-500 text-sm text-white shadow-sm shadow-sky-500/30 transition-all hover:bg-sky-600 active:scale-95'
 const CAMPO_LINEA =
   'w-full rounded-lg border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-2 py-2 text-xs text-[#1e293b] dark:text-slate-100 outline-none focus:border-sky-500'
 
@@ -88,13 +85,14 @@ export function NuevaCotizacionForm({
   usuarioActualId: string
   configuracion: Configuracion
 }) {
+  const router = useRouter()
   const [estado, formAction] = useActionState<EstadoFormulario, FormData>(crearCotizacion, {
     error: null,
   })
 
   const [clienteId, setClienteId] = useState<number | ''>('')
   const [fecha, setFecha] = useState(hoyPeruISO())
-  const [fechaEntrega, setFechaEntrega] = useState('')
+  const [fechaEntrega, setFechaEntrega] = useState(hoyPeruISO())
   const [diasCredito, setDiasCredito] = useState('Contado')
   const [medioPago, setMedioPago] = useState('Transferencia')
   const [vendedorId, setVendedorId] = useState(usuarioActualId)
@@ -102,15 +100,13 @@ export function NuevaCotizacionForm({
   const [moneda, setMoneda] = useState<'PEN' | 'USD'>('PEN')
   const [documentoReferencia, setDocumentoReferencia] = useState('')
   const [vigenciaDias, setVigenciaDias] = useState(15)
+  const [vigenciaActiva, setVigenciaActiva] = useState(true)
   const [descuentoTipo, setDescuentoTipo] = useState<DescuentoTipo>('porcentaje')
   const [descuentoValor, setDescuentoValor] = useState<number | ''>('')
-  const [lineas, setLineas] = useState<Linea[]>([lineaVacia()])
+  const [lineas, setLineas] = useState<Linea[]>([])
+  const [productoParaAgregar, setProductoParaAgregar] = useState<number | ''>('')
   const [vistaPreviaAbierta, setVistaPreviaAbierta] = useState(false)
   const [lineaCaracteristicas, setLineaCaracteristicas] = useState<number | null>(null)
-
-  const fechaRef = useRef<HTMLInputElement>(null)
-  const fechaEntregaRef = useRef<HTMLInputElement>(null)
-  const fechaEntregaLineaRefs = useRef<(HTMLInputElement | null)[]>([])
 
   function seleccionarCliente(id: number | string | '') {
     const nuevoId = Number(id) || ''
@@ -152,20 +148,26 @@ export function NuevaCotizacionForm({
     setLineas((prev) => prev.map((l, idx) => (idx === i ? { ...l, unidad_nombre: valor } : l)))
   }
 
-  function agregarLinea() {
-    setLineas((prev) => [...prev, lineaVacia()])
+  function agregarProductoDesdeBuscador(productoId: number | string | '') {
+    const id = Number(productoId)
+    if (!id) return
+    const producto = productos.find((p) => p.id === id)
+    setLineas((prev) => [
+      ...prev,
+      {
+        producto_id: id,
+        cantidad: 1,
+        precio_unitario: producto?.precio_venta ?? '',
+        caracteristicas: '',
+        fecha_entrega: hoyPeruISO(),
+        unidad_nombre: producto?.unidades_medida?.nombre ?? '',
+      },
+    ])
+    setProductoParaAgregar('')
   }
 
   function quitarLinea(i: number) {
-    setLineas((prev) => (prev.length === 1 ? prev : prev.filter((_, idx) => idx !== i)))
-  }
-
-  function abrirCalendario(ref: React.RefObject<HTMLInputElement | null>) {
-    try {
-      ref.current?.showPicker?.()
-    } catch {
-      // Navegadores sin showPicker (ej. Firefox) — el input sigue siendo clickeable normalmente.
-    }
+    setLineas((prev) => prev.filter((_, idx) => idx !== i))
   }
 
   const opcionesProductos = useMemo(
@@ -212,6 +214,15 @@ export function NuevaCotizacionForm({
   const vendedorSeleccionado = vendedores.find((v) => v.id === vendedorId)
   const simbolo = MONEDAS.find((m) => m.value === moneda)?.simbolo ?? 'S/'
   const fechaVencimientoOferta = fecha ? sumarDiasISO(fecha, Number(vigenciaDias) || 15) : ''
+
+  // Solo dígitos, para el link de WhatsApp Web (web.whatsapp.com/send?phone=...
+  // no acepta espacios/guiones/+).
+  const telefonoClienteDigitos = clienteSeleccionado?.telefono?.replace(/\D/g, '') ?? ''
+  const mensajeCompartirCotizacion = estado.exito
+    ? `Hola${clienteSeleccionado ? ' ' + clienteSeleccionado.nombre : ''}, te comparto la cotización ${estado.exito.numero} por un total de ${
+        estado.exito.moneda === 'USD' ? '$' : 'S/'
+      } ${estado.exito.total.toFixed(2)}.`
+    : ''
 
   const lineasDocumento = useMemo(
     () =>
@@ -286,39 +297,27 @@ export function NuevaCotizacionForm({
 
             <div>
               <label className={LABEL}>Fecha de emisión *</label>
-              <div className="mt-1.5 flex items-center gap-2">
-                <input
-                  ref={fechaRef}
-                  type="date"
-                  name="fecha"
-                  required
-                  min={haceNDiasPeruISO(3)}
-                  max={hoyPeruISO()}
-                  value={fecha}
-                  onChange={(e) => setFecha(e.target.value)}
-                  className={`${CAMPO} mt-0 flex-1`}
-                />
-                <button type="button" onClick={() => abrirCalendario(fechaRef)} title="Abrir calendario" className={BOTON_CALENDARIO}>
-                  📅
-                </button>
-              </div>
+              <input
+                type="date"
+                name="fecha"
+                required
+                min={haceNDiasPeruISO(3)}
+                max={hoyPeruISO()}
+                value={fecha}
+                onChange={(e) => setFecha(e.target.value)}
+                className={CAMPO}
+              />
             </div>
             <div>
               <label className={LABEL}>Fecha de entrega (general)</label>
-              <div className="mt-1.5 flex items-center gap-2">
-                <input
-                  ref={fechaEntregaRef}
-                  type="date"
-                  name="fecha_entrega"
-                  min={hoyPeruISO()}
-                  value={fechaEntrega}
-                  onChange={(e) => setFechaEntrega(e.target.value)}
-                  className={`${CAMPO} mt-0 flex-1`}
-                />
-                <button type="button" onClick={() => abrirCalendario(fechaEntregaRef)} title="Abrir calendario" className={BOTON_CALENDARIO}>
-                  📅
-                </button>
-              </div>
+              <input
+                type="date"
+                name="fecha_entrega"
+                min={hoyPeruISO()}
+                value={fechaEntrega}
+                onChange={(e) => setFechaEntrega(e.target.value)}
+                className={CAMPO}
+              />
               <p className="mt-1.5 text-[11px] font-medium text-[#94a3b8] dark:text-slate-500">
                 Puedes además poner una fecha distinta por producto abajo, si algún ítem llega en otra fecha.
               </p>
@@ -382,37 +381,80 @@ export function NuevaCotizacionForm({
             </div>
 
             <div>
-              <label className={LABEL}>Vigencia de la oferta (días)</label>
+              <div className="flex items-center justify-between">
+                <label className={LABEL}>Vigencia de la oferta (días)</label>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={vigenciaActiva}
+                  title={vigenciaActiva ? 'Desactivar vigencia de la oferta' : 'Activar vigencia de la oferta'}
+                  onClick={() => setVigenciaActiva((v) => !v)}
+                  className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+                    vigenciaActiva ? 'bg-sky-500' : 'bg-[#e2e8f0] dark:bg-slate-700'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+                      vigenciaActiva ? 'translate-x-[18px]' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
               <input
                 type="number"
                 name="vigencia_dias"
                 min={1}
+                disabled={!vigenciaActiva}
                 value={vigenciaDias}
                 onChange={(e) => setVigenciaDias(Number(e.target.value) || 15)}
-                className={CAMPO}
+                className={`${CAMPO} disabled:cursor-not-allowed disabled:opacity-50`}
               />
-              {fecha && (
+              {vigenciaActiva && fecha ? (
                 <p className="mt-1.5 text-xs font-medium text-[#94a3b8] dark:text-slate-500">
                   Válida hasta el {new Date(`${fechaVencimientoOferta}T00:00:00`).toLocaleDateString('es-PE')}.
                 </p>
+              ) : (
+                !vigenciaActiva && (
+                  <p className="mt-1.5 text-xs font-medium text-[#94a3b8] dark:text-slate-500">
+                    Esta cotización no tendrá fecha de vencimiento.
+                  </p>
+                )
               )}
             </div>
           </div>
 
           <div className="mt-5 rounded-2xl bg-sky-50 dark:bg-slate-800/40 p-5">
-            <div className="flex items-center justify-between">
-              <label className={LABEL}>Productos *</label>
-              <button
-                type="button"
-                onClick={agregarLinea}
-                className="rounded-full bg-sky-500 px-3 py-1.5 text-xs font-bold text-white shadow-sm shadow-sky-500/30 transition-all hover:bg-sky-600"
-              >
-                + Agregar línea
-              </button>
+            <label className={LABEL}>Productos *</label>
+            <div className="mt-1.5">
+              <Buscador
+                opciones={opcionesProductos}
+                valor={productoParaAgregar}
+                onChange={agregarProductoDesdeBuscador}
+                placeholder="Buscar producto para agregarlo a la cotización..."
+              />
             </div>
 
+            {lineas.length === 0 && (
+              <p className="mt-3 text-xs font-medium text-[#94a3b8] dark:text-slate-500">
+                Todavía no agregaste ningún producto — búscalo arriba para agregarlo.
+              </p>
+            )}
+
+            {lineas.length > 0 && (
             <div className="mt-3 overflow-x-auto">
-              <table className="w-full min-w-[980px] text-left text-xs">
+              <table className="w-full min-w-[760px] table-fixed text-left text-xs">
+                <colgroup>
+                  <col className="w-[7%]" />
+                  <col className="w-[31%]" />
+                  <col className="w-[9%]" />
+                  <col className="w-[13%]" />
+                  <col className="w-[6%]" />
+                  <col className="w-[8%]" />
+                  <col className="w-[7%]" />
+                  <col className="w-[7%]" />
+                  <col className="w-[7%]" />
+                  <col className="w-[5%]" />
+                </colgroup>
                 <thead>
                   <tr className="text-[10px] font-bold tracking-wide text-[#64748b] uppercase dark:text-slate-400">
                     <th className="px-1.5 pb-1.5 font-bold">Código</th>
@@ -435,16 +477,17 @@ export function NuevaCotizacionForm({
                     return (
                       <tr key={i} className="align-top">
                         <td className="px-1.5 py-1.5">
-                          <div className="flex h-9 w-20 items-center rounded-lg border-2 border-[#e2e8f0] bg-[#f8fafc] px-2 text-[11px] text-[#64748b] dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-400">
+                          <div className="flex h-9 w-full items-center overflow-hidden rounded-lg border-2 border-[#e2e8f0] bg-[#f8fafc] px-2 text-[11px] text-[#64748b] dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-400">
                             {producto?.codigo || '—'}
                           </div>
                         </td>
-                        <td className="min-w-[220px] px-1.5 py-1.5">
+                        <td className="px-1.5 py-1.5">
                           <Buscador
                             opciones={opcionesProductos}
                             valor={l.producto_id}
                             onChange={(id) => actualizarProductoLinea(i, id)}
                             placeholder="Buscar producto..."
+                            compacto
                           />
                           {producto && (
                             <span
@@ -466,26 +509,13 @@ export function NuevaCotizacionForm({
                           </button>
                         </td>
                         <td className="px-1.5 py-1.5">
-                          <div className="flex items-center gap-1">
-                            <input
-                              ref={(el) => {
-                                fechaEntregaLineaRefs.current[i] = el
-                              }}
-                              type="date"
-                              min={hoyPeruISO()}
-                              value={l.fecha_entrega}
-                              onChange={(e) => actualizarFechaEntregaLinea(i, e.target.value)}
-                              className={`${CAMPO_LINEA} w-32`}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => abrirCalendario({ current: fechaEntregaLineaRefs.current[i] })}
-                              title="Abrir calendario"
-                              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-500 text-xs text-white transition-all hover:bg-sky-600 active:scale-95"
-                            >
-                              📅
-                            </button>
-                          </div>
+                          <input
+                            type="date"
+                            min={hoyPeruISO()}
+                            value={l.fecha_entrega}
+                            onChange={(e) => actualizarFechaEntregaLinea(i, e.target.value)}
+                            className={CAMPO_LINEA}
+                          />
                         </td>
                         <td className="px-1.5 py-1.5">
                           <input
@@ -495,14 +525,14 @@ export function NuevaCotizacionForm({
                             placeholder="Cant."
                             value={l.cantidad}
                             onChange={(e) => actualizarLinea(i, 'cantidad', e.target.value)}
-                            className={`${CAMPO_LINEA} w-16`}
+                            className={CAMPO_LINEA}
                           />
                         </td>
                         <td className="px-1.5 py-1.5">
                           <select
                             value={l.unidad_nombre}
                             onChange={(e) => actualizarUnidadLinea(i, e.target.value)}
-                            className={`${CAMPO_LINEA} w-24`}
+                            className={CAMPO_LINEA}
                           >
                             <option value="">—</option>
                             {unidadesMedida.map((u) => (
@@ -520,16 +550,16 @@ export function NuevaCotizacionForm({
                             placeholder="0.00"
                             value={l.precio_unitario}
                             onChange={(e) => actualizarLinea(i, 'precio_unitario', e.target.value)}
-                            className={`${CAMPO_LINEA} w-20`}
+                            className={CAMPO_LINEA}
                           />
                         </td>
                         <td className="px-1.5 py-1.5">
-                          <div className="flex h-9 w-20 items-center rounded-lg bg-[#f8fafc] px-2 text-[11px] font-medium text-[#64748b] dark:bg-slate-800/60 dark:text-slate-400">
+                          <div className="flex h-9 w-full items-center overflow-hidden rounded-lg bg-[#f8fafc] px-2 text-[11px] font-medium text-[#64748b] dark:bg-slate-800/60 dark:text-slate-400">
                             {simbolo} {vuv.toFixed(2)}
                           </div>
                         </td>
                         <td className="px-1.5 py-1.5">
-                          <div className="flex h-9 w-20 items-center rounded-lg bg-sky-100 px-2 text-[11px] font-bold text-sky-700 dark:bg-sky-950/40 dark:text-sky-400">
+                          <div className="flex h-9 w-full items-center overflow-hidden rounded-lg bg-sky-100 px-2 text-[11px] font-bold text-sky-700 dark:bg-sky-950/40 dark:text-sky-400">
                             {simbolo} {totalLinea.toFixed(2)}
                           </div>
                         </td>
@@ -537,8 +567,7 @@ export function NuevaCotizacionForm({
                           <button
                             type="button"
                             onClick={() => quitarLinea(i)}
-                            disabled={lineas.length === 1}
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[#64748b] transition-all hover:bg-red-100 hover:text-red-600 disabled:opacity-30 dark:bg-[#141a2e] dark:text-slate-400"
+                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-[#64748b] transition-all hover:bg-red-100 hover:text-red-600 dark:bg-[#141a2e] dark:text-slate-400"
                             title="Quitar línea"
                           >
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-3.5 w-3.5">
@@ -552,6 +581,7 @@ export function NuevaCotizacionForm({
                 </tbody>
               </table>
             </div>
+            )}
 
             <div className="mt-4 flex flex-col items-end gap-3 border-t-2 border-sky-100 pt-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
@@ -622,11 +652,69 @@ export function NuevaCotizacionForm({
               {estado.error}
             </p>
           )}
-          <p className="mt-2 text-center text-xs font-medium text-[#94a3b8] dark:text-slate-500">
-            Al guardar se abre la cotización lista para descargar en PDF.
-          </p>
         </form>
       </div>
+
+      <Modal abierto={!!estado.exito} onClose={() => router.push('/cotizaciones')} className="max-w-sm">
+        {estado.exito && (
+          <div className="flex flex-col items-center text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/40">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-8 w-8 text-emerald-500">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+              </svg>
+            </div>
+            <p className="mt-4 text-lg font-extrabold text-emerald-600">Cotización registrada con éxito</p>
+            <p className="mt-1 text-sm font-bold text-[#1e293b] dark:text-slate-100">
+              Documento generado: {estado.exito.numero}
+            </p>
+            <p className="text-sm text-[#64748b] dark:text-slate-400">
+              Monto total: {estado.exito.moneda === 'USD' ? '$' : 'S/'} {estado.exito.total.toFixed(2)}
+            </p>
+
+            <div className="mt-5 flex w-full flex-col gap-2.5">
+              <a
+                href={`/cotizaciones/${estado.exito.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-md bg-gradient-to-r from-sky-500 to-blue-500 px-4 py-2.5 text-center text-sm font-bold text-white shadow-sm shadow-sky-500/30 transition-all active:scale-95"
+              >
+                📄 Ver / descargar PDF
+              </a>
+              <a
+                href={`mailto:${clienteSeleccionado?.email ?? ''}?subject=${encodeURIComponent(
+                  `Cotización ${estado.exito.numero}`
+                )}&body=${encodeURIComponent(mensajeCompartirCotizacion)}`}
+                className="rounded-md border-2 border-[#e2e8f0] px-4 py-2.5 text-center text-sm font-bold text-[#1e293b] transition-all hover:bg-[#f8fafc] active:scale-95 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800"
+              >
+                ✉️ Enviar por correo
+              </a>
+              <a
+                href={`https://web.whatsapp.com/send?${
+                  telefonoClienteDigitos ? `phone=${telefonoClienteDigitos}&` : ''
+                }text=${encodeURIComponent(mensajeCompartirCotizacion)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-md bg-emerald-500 px-4 py-2.5 text-center text-sm font-bold text-white shadow-sm transition-all hover:bg-emerald-600 active:scale-95"
+              >
+                🟢 Enviar por WhatsApp Web
+              </a>
+              <button
+                type="button"
+                onClick={() => router.push('/cotizaciones')}
+                className="rounded-md bg-red-50 px-4 py-2.5 text-sm font-bold text-red-600 transition-all hover:bg-red-100 active:scale-95 dark:bg-red-950/30 dark:hover:bg-red-950/50"
+              >
+                Cerrar
+              </button>
+            </div>
+            {!telefonoClienteDigitos && (
+              <p className="mt-2.5 text-[11px] font-medium text-[#94a3b8] dark:text-slate-500">
+                Este cliente no tiene teléfono guardado — en WhatsApp Web vas a tener que elegir el contacto a mano
+                (recuerda tener WhatsApp Web abierto y con la sesión iniciada).
+              </p>
+            )}
+          </div>
+        )}
+      </Modal>
 
       <Modal abierto={lineaCaracteristicas !== null} onClose={() => setLineaCaracteristicas(null)} className="max-w-lg">
         <div className="flex items-center justify-between gap-4">

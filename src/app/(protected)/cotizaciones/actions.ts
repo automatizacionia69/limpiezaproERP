@@ -7,7 +7,10 @@ import { tienePermiso } from '@/lib/permisos'
 import { calcularImportes, calcularDescuento, aplicarDescuento, type DescuentoTipo } from '@/lib/cotizaciones'
 import { fechaDocumentoFueraDeRango } from '@/lib/fecha'
 
-export type EstadoFormulario = { error: string | null }
+export type EstadoFormulario = {
+  error: string | null
+  exito?: { id: number; numero: string; total: number; moneda: 'PEN' | 'USD' } | null
+}
 
 type Linea = {
   producto_id: number
@@ -36,7 +39,8 @@ export async function crearCotizacion(
   const moneda = (formData.get('moneda') as string) || 'PEN'
   const fechaEntrega = (formData.get('fecha_entrega') as string) || null
   const documentoReferencia = (formData.get('documento_referencia') as string)?.trim() || null
-  const vigenciaDias = Number(formData.get('vigencia_dias')) || 15
+  const vigenciaDiasRaw = formData.get('vigencia_dias') as string
+  const vigenciaDias = vigenciaDiasRaw ? Number(vigenciaDiasRaw) : null
   const descuentoTipoRaw = formData.get('descuento_tipo') as string
   const descuentoTipo: DescuentoTipo | null =
     descuentoTipoRaw === 'porcentaje' || descuentoTipoRaw === 'monto' ? descuentoTipoRaw : null
@@ -57,7 +61,7 @@ export async function crearCotizacion(
   if (moneda !== 'PEN' && moneda !== 'USD') {
     return { error: 'Moneda inválida.' }
   }
-  if (vigenciaDias <= 0) {
+  if (vigenciaDias !== null && vigenciaDias <= 0) {
     return { error: 'La vigencia de la oferta debe ser mayor a 0 días.' }
   }
   if (descuentoValor < 0) {
@@ -109,7 +113,7 @@ export async function crearCotizacion(
       igv,
       total,
     })
-    .select('id')
+    .select('id, numero')
     .single()
 
   if (errorCotizacion || !cotizacion) {
@@ -133,7 +137,10 @@ export async function crearCotizacion(
   }
 
   revalidatePath('/cotizaciones')
-  redirect(`/cotizaciones/${cotizacion.id}`)
+  return {
+    error: null,
+    exito: { id: cotizacion.id, numero: cotizacion.numero, total, moneda: moneda as 'PEN' | 'USD' },
+  }
 }
 
 export async function eliminarCotizacion(id: number) {

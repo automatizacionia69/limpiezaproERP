@@ -85,7 +85,7 @@ export function CotizacionDocumento({
   simbolo: string
   moneda: 'PEN' | 'USD'
   observaciones: string | null
-  vigenciaDias: number
+  vigenciaDias: number | null
 }) {
   const fechaFormateada = fecha ? new Date(`${fecha}T00:00:00`).toLocaleDateString('es-PE') : '—'
 
@@ -193,7 +193,7 @@ export function CotizacionDocumento({
       <div className="mt-5">
         <p className="text-center text-xs font-bold text-[#1e293b] uppercase dark:text-slate-100">Condiciones comerciales</p>
         <ol className="mt-2 list-decimal space-y-0.5 pl-5 text-xs text-[#64748b] dark:text-slate-400">
-          <li>Validez de la oferta: {vigenciaDias} días.</li>
+          {vigenciaDias !== null && <li>Validez de la oferta: {vigenciaDias} días.</li>}
           <li>Los precios indicados son aproximados.</li>
           <li>La cotización está sujeta a variación sin previo aviso.</li>
           <li>No se aceptan devoluciones pasados los días de entrega al cliente.</li>
