@@ -6,6 +6,7 @@ import { IGV_TASA, calcularImportes } from '@/lib/cotizaciones'
 import { DIAS_CREDITO_OPCIONES, MEDIOS_PAGO, TIPO_COMPROBANTE_LABELS, calcularFechaVencimiento } from '@/lib/motivos'
 import { Buscador } from '@/components/buscador'
 import { LogoEmpresa } from '@/components/logo-empresa'
+import { hoyPeruISO, haceNDiasPeruISO } from '@/lib/fecha'
 
 type Cliente = { id: number; nombre: string; documento: string | null }
 type Producto = { id: number; nombre: string; cantidad: number; precio_venta: number | null }
@@ -17,10 +18,6 @@ const TIPOS: TipoComprobante[] = ['factura', 'boleta', 'nota_venta', 'ticket']
 
 function lineaVacia(): Linea {
   return { producto_id: '', cantidad: '', precio_unitario: '' }
-}
-
-function hoyISO() {
-  return new Date().toISOString().slice(0, 10)
 }
 
 const CAMPO =
@@ -53,7 +50,7 @@ export function EmitirComprobanteForm({
   const [tab, setTab] = useState<'venta' | 'vendedor'>('venta')
   const [tipo, setTipo] = useState<TipoComprobante>('boleta')
   const [clienteId, setClienteId] = useState<number | ''>(clienteIdInicial)
-  const [fecha, setFecha] = useState(hoyISO())
+  const [fecha, setFecha] = useState(hoyPeruISO())
   const [diasCredito, setDiasCredito] = useState(diasCreditoInicial ?? 'Contado')
   const [medioPago, setMedioPago] = useState('Transferencia')
   const [vendedorId, setVendedorId] = useState(usuarioActualId)
@@ -186,6 +183,8 @@ export function EmitirComprobanteForm({
                   type="date"
                   name="fecha"
                   required
+                  min={haceNDiasPeruISO(3)}
+                  max={hoyPeruISO()}
                   value={fecha}
                   onChange={(e) => setFecha(e.target.value)}
                   className={CAMPO}

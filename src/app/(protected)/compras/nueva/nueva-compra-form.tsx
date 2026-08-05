@@ -6,6 +6,8 @@ import { Buscador } from '@/components/buscador'
 import { SubirDocumentoCompra } from './subir-documento-compra'
 import type { DatosExtraidos } from './analizar-documento'
 import { crearProductoRapido } from './crear-producto-rapido'
+import { IGV_TASA, calcularImportes } from '@/lib/cotizaciones'
+import { hoyPeruISO, haceNDiasPeruISO } from '@/lib/fecha'
 
 type Proveedor = { id: number; nombre: string }
 type Producto = { id: number; nombre: string }
@@ -18,10 +20,6 @@ type Linea = {
 
 function lineaVacia(): Linea {
   return { producto_id: '', cantidad: '', costo_unitario: '' }
-}
-
-function hoyISO() {
-  return new Date().toISOString().slice(0, 10)
 }
 
 function normalizar(texto: string) {
@@ -67,7 +65,7 @@ export function NuevaCompraForm({
     error: null,
   })
   const [proveedorId, setProveedorId] = useState<number | ''>('')
-  const [fechaRegistro, setFechaRegistro] = useState(hoyISO())
+  const [fechaRegistro, setFechaRegistro] = useState(hoyPeruISO())
   const [tipoDocumento, setTipoDocumento] = useState<(typeof TIPOS_DOCUMENTO)[number]['valor']>('factura')
   const [documentoSerie, setDocumentoSerie] = useState('')
   const [documentoNumero, setDocumentoNumero] = useState('')
@@ -140,11 +138,15 @@ export function NuevaCompraForm({
     setLineas((prev) => (prev.length === 1 ? prev : prev.filter((_, idx) => idx !== i)))
   }
 
-  const total = useMemo(
+  // Mismo calculo que Cotizaciones/Ventas/Notas de credito (calcularImportes):
+  // costo_unitario ya incluye IGV, se desglosa hacia atras.
+  const { subtotal, igv, total } = useMemo(
     () =>
-      lineas.reduce(
-        (acc, l) => acc + (Number(l.cantidad) || 0) * (Number(l.costo_unitario) || 0),
-        0
+      calcularImportes(
+        lineas.map((l) => ({
+          cantidad: Number(l.cantidad) || 0,
+          precio_unitario: Number(l.costo_unitario) || 0,
+        }))
       ),
     [lineas]
   )
@@ -187,6 +189,8 @@ export function NuevaCompraForm({
             type="date"
             name="fecha_registro"
             required
+            min={haceNDiasPeruISO(3)}
+            max={hoyPeruISO()}
             value={fechaRegistro}
             onChange={(e) => setFechaRegistro(e.target.value)}
             className={CAMPO}
@@ -311,9 +315,14 @@ export function NuevaCompraForm({
           ))}
         </div>
 
-        <div className="mt-4 flex items-center justify-end gap-2 border-t-2 border-pink-100 pt-3">
-          <span className="text-sm font-medium text-[#64748b] dark:text-slate-400">Total:</span>
-          <span className="text-xl font-extrabold text-pink-600">S/ {total.toFixed(2)}</span>
+        <div className="mt-4 space-y-1 border-t-2 border-pink-100 pt-3 text-right">
+          <p className="text-sm text-[#64748b] dark:text-slate-400">
+            Subtotal (sin IGV): <span className="font-bold text-[#1e293b] dark:text-slate-100">S/ {subtotal.toFixed(2)}</span>
+          </p>
+          <p className="text-sm text-[#64748b] dark:text-slate-400">
+            IGV ({(IGV_TASA * 100).toFixed(0)}%): <span className="font-bold text-[#1e293b] dark:text-slate-100">S/ {igv.toFixed(2)}</span>
+          </p>
+          <p className="text-xl font-extrabold text-pink-600">Total: S/ {total.toFixed(2)}</p>
         </div>
         {totalDetectadoIA !== null && Math.abs(totalDetectadoIA - total) > 0.01 && (
           <p className="mt-1 text-right text-xs font-bold text-amber-600">

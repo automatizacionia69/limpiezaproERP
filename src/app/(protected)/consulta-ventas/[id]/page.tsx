@@ -5,6 +5,7 @@ import { requierePermiso } from '@/lib/permisos'
 import { TIPO_COMPROBANTE_LABELS, calcularFechaVencimiento } from '@/lib/motivos'
 import { ImprimirBoton } from '@/components/imprimir-boton'
 import { LogoEmpresa } from '@/components/logo-empresa'
+import { ReenviarNubefactBoton } from './reenviar-nubefact-boton'
 
 type DetalleRow = {
   id: number
@@ -45,7 +46,7 @@ export default async function ComprobantePage({
   const { data: comprobante } = await supabase
     .from('comprobantes')
     .select(
-      'id, tipo, serie, numero, subtotal, igv, total, estado, creado_en, fecha_emision, dias_credito, medio_pago, orden_venta_id, clientes(nombre, documento, direccion), vendedor:vendedor_id(nombre)'
+      'id, tipo, serie, numero, subtotal, igv, total, estado, creado_en, fecha_emision, dias_credito, medio_pago, orden_venta_id, clientes(nombre, documento, direccion), vendedor:vendedor_id(nombre), nubefact_estado, nubefact_enlace_pdf, nubefact_enlace_xml, nubefact_enlace_cdr, nubefact_error'
     )
     .eq('id', id)
     .single()
@@ -254,10 +255,71 @@ export default async function ComprobantePage({
         )}
 
         <p className="mt-10 text-center text-[11px] text-[#94a3b8] dark:text-slate-500">
-          Representación de {tipoLabel.toLowerCase()} generada por LimpiezaPro ERP — sin validez tributaria
-          (sin integración con SUNAT).
+          {comprobante.nubefact_estado === 'enviado'
+            ? `Comprobante electrónico enviado a SUNAT vía NUBEFACT — representación de ${tipoLabel.toLowerCase()} generada por LimpiezaPro ERP.`
+            : `Representación de ${tipoLabel.toLowerCase()} generada por LimpiezaPro ERP — sin validez tributaria (sin integración con SUNAT).`}
         </p>
       </div>
+
+      {(comprobante.tipo === 'factura' || comprobante.tipo === 'boleta') && (
+        <div className="mx-auto mt-6 max-w-5xl print:hidden">
+          {comprobante.nubefact_estado === 'enviado' && (
+            <div className="rounded-3xl border-2 border-emerald-100 bg-white dark:bg-[#141a2e] p-6 shadow-lg shadow-emerald-500/5">
+              <h2 className="text-base font-extrabold text-[#1e293b] dark:text-slate-100">
+                ✅ Enviado a SUNAT (NUBEFACT)
+              </h2>
+              <div className="mt-3 flex flex-wrap gap-3">
+                {comprobante.nubefact_enlace_pdf && (
+                  <a
+                    href={comprobante.nubefact_enlace_pdf}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-md bg-gradient-to-r from-emerald-500 to-green-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition-all active:scale-95"
+                  >
+                    📄 Descargar PDF
+                  </a>
+                )}
+                {comprobante.nubefact_enlace_xml && (
+                  <a
+                    href={comprobante.nubefact_enlace_xml}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-md bg-gradient-to-r from-emerald-500 to-green-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition-all active:scale-95"
+                  >
+                    🧾 Descargar XML
+                  </a>
+                )}
+                {comprobante.nubefact_enlace_cdr ? (
+                  <a
+                    href={comprobante.nubefact_enlace_cdr}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-md bg-gradient-to-r from-emerald-500 to-green-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition-all active:scale-95"
+                  >
+                    📋 Descargar CDR
+                  </a>
+                ) : (
+                  <span className="self-center text-xs text-[#64748b] dark:text-slate-400">
+                    CDR aún no disponible — SUNAT todavía no confirma la recepción.
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {comprobante.nubefact_estado === 'error' && (
+            <div className="rounded-3xl border-2 border-red-100 bg-white dark:bg-[#141a2e] p-6 shadow-lg shadow-red-500/5">
+              <h2 className="text-base font-extrabold text-[#1e293b] dark:text-slate-100">
+                ⚠️ No se pudo enviar a SUNAT (NUBEFACT)
+              </h2>
+              <p className="mt-1 text-xs font-medium text-[#64748b] dark:text-slate-400">
+                {comprobante.nubefact_error || 'Error desconocido.'}
+              </p>
+              <ReenviarNubefactBoton comprobanteId={comprobante.id} />
+            </div>
+          )}
+        </div>
+      )}
 
       {comprobante.estado === 'emitido' && (
         <div id="acciones" className="mx-auto mt-6 grid max-w-5xl grid-cols-1 gap-4 sm:grid-cols-3 print:hidden">

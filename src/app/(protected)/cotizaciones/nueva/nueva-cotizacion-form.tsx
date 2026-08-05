@@ -5,6 +5,7 @@ import { crearCotizacion, type EstadoFormulario } from '../actions'
 import { IGV_TASA, calcularImportes } from '@/lib/cotizaciones'
 import { Buscador } from '@/components/buscador'
 import { LogoEmpresa } from '@/components/logo-empresa'
+import { hoyPeruISO, haceNDiasPeruISO } from '@/lib/fecha'
 
 type Cliente = { id: number; nombre: string; documento: string | null; vendedor_id: string | null }
 type Producto = { id: number; nombre: string; cantidad: number; precio_venta: number | null }
@@ -13,10 +14,6 @@ type Linea = { producto_id: number | ''; cantidad: number | ''; precio_unitario:
 
 function lineaVacia(): Linea {
   return { producto_id: '', cantidad: '', precio_unitario: '' }
-}
-
-function hoyISO() {
-  return new Date().toISOString().slice(0, 10)
 }
 
 const DIAS_CREDITO = ['Contado', '7 días', '15 días', '30 días', '45 días', '60 días']
@@ -44,7 +41,7 @@ export function NuevaCotizacionForm({
   })
 
   const [clienteId, setClienteId] = useState<number | ''>('')
-  const [fecha, setFecha] = useState(hoyISO())
+  const [fecha, setFecha] = useState(hoyPeruISO())
   const [diasCredito, setDiasCredito] = useState('Contado')
   const [medioPago, setMedioPago] = useState('Transferencia')
   const [vendedorId, setVendedorId] = useState(usuarioActualId)
@@ -145,6 +142,8 @@ export function NuevaCotizacionForm({
                 type="date"
                 name="fecha"
                 required
+                min={haceNDiasPeruISO(3)}
+                max={hoyPeruISO()}
                 value={fecha}
                 onChange={(e) => setFecha(e.target.value)}
                 className={CAMPO}

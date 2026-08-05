@@ -138,7 +138,7 @@ export default async function ReporteVentasPorClientePage({
     return {
       fecha: n.creado_en.slice(0, 10),
       tipo: 'Nota de crédito',
-      serie: 'NC01',
+      serie: n.numero.split('-')[0],
       numero: n.numero,
       ruc: info?.ruc ?? '',
       cliente: info?.cliente ?? '—',
@@ -160,7 +160,7 @@ export default async function ReporteVentasPorClientePage({
     return {
       fecha: n.creado_en.slice(0, 10),
       tipo: 'Nota de débito',
-      serie: 'ND01',
+      serie: n.numero.split('-')[0],
       numero: n.numero,
       ruc: info?.ruc ?? '',
       cliente: info?.cliente ?? '—',

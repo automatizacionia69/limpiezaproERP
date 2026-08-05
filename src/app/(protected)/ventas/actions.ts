@@ -5,6 +5,8 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { tienePermiso } from '@/lib/permisos'
 import { calcularImportes } from '@/lib/cotizaciones'
+import { enviarComprobanteANubefact } from '@/lib/nubefact-envio'
+import { fechaDocumentoFueraDeRango } from '@/lib/fecha'
 
 export type EstadoFormulario = { error: string | null }
 
@@ -107,6 +109,9 @@ export async function emitirComprobante(
   if (!fecha) {
     return { error: 'Selecciona la fecha del comprobante.' }
   }
+  if (fechaDocumentoFueraDeRango(fecha)) {
+    return { error: 'La fecha del comprobante no puede ser futura ni atrasarse más de 3 días.' }
+  }
   if (!vendedorId) {
     return { error: 'Selecciona el vendedor (pestaña Vendedor).' }
   }
@@ -161,7 +166,11 @@ export async function emitirComprobante(
     await supabase.from('ordenes_venta').update({ estado: 'pendiente' }).eq('id', ordenId)
   }
 
-  const { data: cliente } = await supabase.from('clientes').select('documento, direccion').eq('id', clienteId).single()
+  const { data: cliente } = await supabase
+    .from('clientes')
+    .select('documento, direccion')
+    .eq('id', clienteId)
+    .single()
   if (tipo === 'factura' && (cliente?.documento ?? '').trim().length !== 11) {
     await liberarReserva()
     return {
@@ -280,6 +289,25 @@ export async function emitirComprobante(
     console.error(
       `Venta ${orden.numero} facturada OK pero sin guia de remision (comprobante ${comprobante.id}): ${errorGuia.message}`
     )
+  }
+
+  // Envio a NUBEFACT (SUNAT real) — solo Factura y Boleta son documentos
+  // electronicos validos ante SUNAT, Nota de venta y Ticket son documentos
+  // internos y no se envian. Corre AL FINAL, cuando la venta local ya quedo
+  // grabada por completo: si NUBEFACT falla o no responde, la venta NO se
+  // revierte (decision de negocio — no bloquear una venta real por un
+  // problema externo de SUNAT/NUBEFACT); el comprobante queda con
+  // nubefact_estado='error' y el mensaje en nubefact_error, para reenviarlo
+  // despues desde Consulta de Ventas (mismo helper que usa ese boton).
+  if (tipo === 'factura' || tipo === 'boleta') {
+    const resultadoNubefact = await enviarComprobanteANubefact(supabase, comprobante.id)
+    if (!resultadoNubefact.ok) {
+      console.error(
+        `Comprobante ${comprobante.id} (${orden.numero}) no se pudo enviar a NUBEFACT: ${resultadoNubefact.error}`
+      )
+    }
+  } else {
+    await supabase.from('comprobantes').update({ nubefact_estado: 'no_aplica' }).eq('id', comprobante.id)
   }
 
   // La orden ya quedo en 'facturada' en la reserva del principio; solo falta la
