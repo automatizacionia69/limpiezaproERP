@@ -5,6 +5,7 @@ import { requierePermiso } from '@/lib/permisos'
 import { DescargarPdfBoton } from './descargar-pdf-boton'
 import { ConvertirVentaBoton } from './convertir-venta-boton'
 import { calcularFechaVencimiento } from '@/lib/motivos'
+import { LogoEmpresa } from '@/components/logo-empresa'
 
 type DetalleRow = {
   id: number
@@ -59,12 +60,15 @@ export default async function CotizacionPage({
 
       <div className="mx-auto max-w-4xl rounded-3xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] p-10 shadow-lg shadow-slate-500/5 print:max-w-none print:rounded-none print:border-0 print:p-0 print:shadow-none">
         <div className="flex items-start justify-between gap-6 border-b-2 border-[#1e293b] dark:border-slate-600 pb-5">
-          <div>
-            <h1 className="text-xl font-extrabold text-[#1e293b] dark:text-slate-100">
-              {configuracion?.empresa ?? 'Distribuidora LimpiezaPro'}
-            </h1>
-            <p className="mt-1 text-xs text-[#64748b] dark:text-slate-400">{configuracion?.direccion || 'Piura, Perú'}</p>
-            <p className="text-xs text-[#64748b] dark:text-slate-400">{configuracion?.telefono && `Teléfono: ${configuracion.telefono}`}</p>
+          <div className="flex items-start gap-4">
+            <LogoEmpresa className="h-14 w-14 shrink-0 object-contain" fallback={null} />
+            <div>
+              <h1 className="text-xl font-extrabold text-[#1e293b] dark:text-slate-100">
+                {configuracion?.empresa ?? 'Distribuidora LimpiezaPro'}
+              </h1>
+              <p className="mt-1 text-xs text-[#64748b] dark:text-slate-400">{configuracion?.direccion || 'Piura, Perú'}</p>
+              <p className="text-xs text-[#64748b] dark:text-slate-400">{configuracion?.telefono && `Teléfono: ${configuracion.telefono}`}</p>
+            </div>
           </div>
           <div className="w-56 shrink-0 rounded-xl border-2 border-[#1e293b] dark:border-slate-600 p-4 text-center">
             {configuracion?.ruc && <p className="text-xs font-bold text-[#1e293b] dark:text-slate-100">RUC {configuracion.ruc}</p>}

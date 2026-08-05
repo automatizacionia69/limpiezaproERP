@@ -4,6 +4,7 @@ import { useActionState, useMemo, useState } from 'react'
 import { crearCotizacion, type EstadoFormulario } from '../actions'
 import { IGV_TASA, calcularImportes } from '@/lib/cotizaciones'
 import { Buscador } from '@/components/buscador'
+import { LogoEmpresa } from '@/components/logo-empresa'
 
 type Cliente = { id: number; nombre: string; documento: string | null; vendedor_id: string | null }
 type Producto = { id: number; nombre: string; cantidad: number; precio_venta: number | null }
@@ -316,9 +317,12 @@ export function NuevaCotizacionForm({
           👁️ Vista previa
         </p>
         <div className="flex items-start justify-between border-b-2 border-[#f1f5f9] dark:border-slate-800 pb-4">
-          <div>
-            <h2 className="text-lg font-extrabold text-[#1e293b] dark:text-slate-100">{empresa}</h2>
-            <p className="text-sm text-[#64748b] dark:text-slate-400">Cotización</p>
+          <div className="flex items-start gap-3">
+            <LogoEmpresa className="h-10 w-10 shrink-0 object-contain" fallback={null} />
+            <div>
+              <h2 className="text-lg font-extrabold text-[#1e293b] dark:text-slate-100">{empresa}</h2>
+              <p className="text-sm text-[#64748b] dark:text-slate-400">Cotización</p>
+            </div>
           </div>
           <div className="text-right text-xs text-[#64748b] dark:text-slate-400">
             <p>Fecha: {fecha || '—'}</p>

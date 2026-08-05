@@ -4,6 +4,7 @@ import { requierePermiso } from '@/lib/permisos'
 import { hoyPeruISO, haceUnMesPeruISO, inicioDiaPeru, finDiaPeru } from '@/lib/fecha'
 import { DescargarCsvBoton } from '@/components/descargar-csv-boton'
 import { ImprimirBoton } from '@/components/imprimir-boton'
+import { LogoEmpresa } from '@/components/logo-empresa'
 
 const TIPO_LABELS: Record<string, string> = {
   entrada: 'Entrada',
@@ -110,13 +111,16 @@ export default async function ReporteMovimientosPage({
       </div>
 
       <div className="mt-6 overflow-hidden rounded-3xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] shadow-lg shadow-slate-500/5 print:rounded-none print:border-0 print:shadow-none">
-        <div className="hidden border-b-2 border-[#f1f5f9] dark:border-slate-800 p-6 print:block">
-          <h2 className="text-xl font-extrabold">
-            {configuracion?.empresa ?? 'Distribuidora LimpiezaPro'} — Reporte de Movimientos
-          </h2>
-          <p className="text-sm text-[#64748b] dark:text-slate-400">
-            Del {desde} al {hasta} · Generado: {new Date().toLocaleString('es-PE')}
-          </p>
+        <div className="hidden items-start gap-4 border-b-2 border-[#f1f5f9] dark:border-slate-800 p-6 print:flex">
+          <LogoEmpresa className="h-12 w-12 shrink-0 object-contain" fallback={null} />
+          <div>
+            <h2 className="text-xl font-extrabold">
+              {configuracion?.empresa ?? 'Distribuidora LimpiezaPro'} — Reporte de Movimientos
+            </h2>
+            <p className="text-sm text-[#64748b] dark:text-slate-400">
+              Del {desde} al {hasta} · Generado: {new Date().toLocaleString('es-PE')}
+            </p>
+          </div>
         </div>
 
         <p className="border-b-2 border-[#f1f5f9] dark:border-slate-800 px-6 py-4 text-sm font-medium text-[#64748b] dark:text-slate-400 print:hidden">

@@ -5,6 +5,43 @@ import { createClient } from '@/lib/supabase/server'
 import { esAdmin } from '@/lib/permisos'
 
 export type EstadoFormulario = { error: string | null; ok?: boolean }
+export type EstadoLogo = { error: string | null; ok?: boolean }
+
+const TIPOS_LOGO_PERMITIDOS = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp']
+const MAX_BYTES_LOGO = 2 * 1024 * 1024
+
+export async function subirLogo(_prevState: EstadoLogo, formData: FormData): Promise<EstadoLogo> {
+  if (!(await esAdmin())) {
+    return { error: 'Solo un administrador puede cambiar el logo.' }
+  }
+
+  const archivo = formData.get('logo')
+  if (!(archivo instanceof File) || archivo.size === 0) {
+    return { error: 'Selecciona una imagen.' }
+  }
+  if (!TIPOS_LOGO_PERMITIDOS.includes(archivo.type)) {
+    return { error: 'Formato no soportado. Usa PNG, JPG, SVG o WebP.' }
+  }
+  if (archivo.size > MAX_BYTES_LOGO) {
+    return { error: 'La imagen no debe superar 2MB.' }
+  }
+
+  const supabase = await createClient()
+  // Ruta fija ('empresa-logo', ver src/lib/logo.ts) con upsert: cada subida
+  // pisa el archivo anterior en vez de acumular huérfanos en el bucket.
+  const { error } = await supabase.storage.from('branding').upload('empresa-logo', archivo, {
+    upsert: true,
+    contentType: archivo.type,
+    cacheControl: '300',
+  })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/configuracion')
+  return { error: null, ok: true }
+}
 
 export async function actualizarConfiguracion(
   _prevState: EstadoFormulario,

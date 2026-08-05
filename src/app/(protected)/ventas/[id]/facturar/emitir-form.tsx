@@ -5,6 +5,7 @@ import { emitirComprobante, type EstadoFormulario } from '../../actions'
 import { IGV_TASA, calcularImportes } from '@/lib/cotizaciones'
 import { DIAS_CREDITO_OPCIONES, MEDIOS_PAGO, TIPO_COMPROBANTE_LABELS, calcularFechaVencimiento } from '@/lib/motivos'
 import { Buscador } from '@/components/buscador'
+import { LogoEmpresa } from '@/components/logo-empresa'
 
 type Cliente = { id: number; nombre: string; documento: string | null }
 type Producto = { id: number; nombre: string; cantidad: number; precio_venta: number | null }
@@ -372,9 +373,12 @@ export function EmitirComprobanteForm({
         <aside className={`rounded-3xl border-2 border-teal-200 bg-white dark:bg-[#141a2e] p-7 shadow-lg xl:sticky xl:top-6 xl:block ${vistaPrevia ? 'block' : 'hidden'}`}>
           <p className="mb-4 text-center text-xs font-bold tracking-widest text-teal-500 uppercase">👁️ Vista previa</p>
           <div className="flex items-start justify-between border-b-2 border-[#f1f5f9] dark:border-slate-800 pb-4">
-            <div>
-              <h2 className="text-lg font-extrabold text-[#1e293b] dark:text-slate-100">{empresa}</h2>
-              <p className="text-sm text-[#64748b] dark:text-slate-400">{TIPO_COMPROBANTE_LABELS[tipo]}</p>
+            <div className="flex items-start gap-3">
+              <LogoEmpresa className="h-10 w-10 shrink-0 object-contain" fallback={null} />
+              <div>
+                <h2 className="text-lg font-extrabold text-[#1e293b] dark:text-slate-100">{empresa}</h2>
+                <p className="text-sm text-[#64748b] dark:text-slate-400">{TIPO_COMPROBANTE_LABELS[tipo]}</p>
+              </div>
             </div>
             <div className="text-right text-xs text-[#64748b] dark:text-slate-400">
               <p>Fecha: {fecha || '—'}</p>

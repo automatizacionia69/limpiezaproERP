@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { LogoEmpresa } from '@/components/logo-empresa'
 
 const NAV_ITEMS = [
   {
@@ -311,12 +312,9 @@ export function Sidebar({
       <Link
         key={item.href}
         href={item.href}
-        title={collapsed ? item.label : undefined}
-        className={`group flex items-center gap-3 rounded-2xl py-3.5 text-sm font-bold transition-all ${
-          collapsed ? 'justify-center px-0' : 'px-4'
-        } ${
+        className={`group flex items-center gap-2.5 rounded-xl px-3.5 py-2 text-[13px] font-bold transition-all ${
           active
-            ? `bg-gradient-to-r ${item.gradient} text-white shadow-lg ${item.glow}`
+            ? `bg-gradient-to-r ${item.gradient} text-white shadow-md ${item.glow}`
             : 'text-slate-400 hover:bg-white/5 hover:text-white'
         }`}
       >
@@ -325,82 +323,79 @@ export function Sidebar({
           fill="none"
           stroke="currentColor"
           strokeWidth={2}
-          className={`h-5 w-5 shrink-0 transition-transform ${active ? '' : 'group-hover:scale-110'}`}
+          className={`h-4 w-4 shrink-0 transition-transform ${active ? '' : 'group-hover:scale-110'}`}
         >
           {item.icon}
         </svg>
-        {!collapsed && <span>{item.label}</span>}
+        <span>{item.label}</span>
       </Link>
     )
   }
 
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-20 flex h-full flex-col bg-gradient-to-b from-[#0f172a] via-[#151b2e] to-[#1e1b3a] transition-[width] duration-200 print:hidden ${
-        collapsed ? 'w-20' : 'w-72'
+      className={`fixed inset-y-0 left-0 z-20 flex h-full w-72 flex-col bg-gradient-to-b from-[#0f172a] via-[#151b2e] to-[#1e1b3a] transition-transform duration-200 print:hidden ${
+        collapsed ? '-translate-x-full' : 'translate-x-0'
       }`}
     >
       <div className="h-1 shrink-0 bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-amber-400" />
 
-      <div className={`flex shrink-0 items-center gap-3 py-6 ${collapsed ? 'justify-center px-2' : 'px-6'}`}>
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white shadow-lg shadow-fuchsia-500/40">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-6 w-6">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M20.25 7.5l-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"
-            />
-          </svg>
+      <div className="flex shrink-0 items-center gap-2.5 px-5 py-4">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white shadow-lg shadow-fuchsia-500/40">
+          <LogoEmpresa
+            className="h-full w-full object-contain"
+            fallback={
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M20.25 7.5l-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"
+                />
+              </svg>
+            }
+          />
         </div>
-        {!collapsed && (
-          <div>
-            <div className="text-base font-extrabold leading-tight text-white">LimpiezaPro ERP</div>
-            <div className="text-[11px] leading-tight text-indigo-300">Gestión de Inventarios</div>
-          </div>
-        )}
+        <div>
+          <div className="text-sm font-extrabold leading-tight text-white">LimpiezaPro ERP</div>
+          <div className="text-[10px] leading-tight text-indigo-300">Gestión de Inventarios</div>
+        </div>
       </div>
 
-      {!collapsed && (
-        <div className="shrink-0 px-6 pt-2 pb-2 text-[10.5px] font-bold tracking-widest text-indigo-400/60 uppercase">
-          Menú principal
-        </div>
-      )}
-      <nav className={`flex-1 space-y-1.5 overflow-y-auto pb-6 ${collapsed ? 'px-3' : 'px-4'}`}>
+      <div className="shrink-0 px-5 pt-1 pb-1.5 text-[10px] font-bold tracking-widest text-indigo-400/60 uppercase">
+        Menú principal
+      </div>
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3.5 pb-6">
         {sinGrupo.map((item) => renderItem(item))}
 
         {grupos.map((g) => {
-          const abierto = collapsed || abiertos[g.clave]
+          const abierto = abiertos[g.clave]
           const tieneActivo = g.items.some((item) => esActivo(item, pathname))
           return (
             <div key={g.clave}>
-              {collapsed ? (
-                <div className="my-2 border-t border-white/10" />
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => alternarGrupo(g.clave)}
-                  className={`mt-3 flex w-full items-center justify-between rounded-xl px-4 py-2 text-[10.5px] font-bold tracking-widest uppercase transition-colors ${
-                    tieneActivo ? 'text-indigo-300' : 'text-indigo-400/60 hover:text-indigo-300'
-                  } hover:bg-white/5`}
+              <button
+                type="button"
+                onClick={() => alternarGrupo(g.clave)}
+                className={`mt-2 flex w-full items-center justify-between rounded-lg px-3.5 py-1.5 text-[10px] font-bold tracking-widest uppercase transition-colors ${
+                  tieneActivo ? 'text-indigo-300' : 'text-indigo-400/60 hover:text-indigo-300'
+                } hover:bg-white/5`}
+              >
+                <span>{GRUPO_LABELS[g.clave]}</span>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                  className={`h-3.5 w-3.5 transition-transform duration-200 ${abierto ? 'rotate-180' : ''}`}
                 >
-                  <span>{GRUPO_LABELS[g.clave]}</span>
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2.5}
-                    className={`h-3.5 w-3.5 transition-transform duration-200 ${abierto ? 'rotate-180' : ''}`}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-                  </svg>
-                </button>
-              )}
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                </svg>
+              </button>
               <div
                 className={`grid transition-[grid-template-rows] duration-200 ${
                   abierto ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
                 }`}
               >
-                <div className="space-y-1.5 overflow-hidden">{g.items.map((item) => renderItem(item))}</div>
+                <div className="space-y-1 overflow-hidden">{g.items.map((item) => renderItem(item))}</div>
               </div>
             </div>
           )

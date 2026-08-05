@@ -1,4 +1,5 @@
 import { LoginForm } from './login-form'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 const ERROR_MESSAGES: Record<string, string> = {
   'credenciales-invalidas': 'Correo o contraseña incorrectos.',
@@ -18,7 +19,10 @@ export default async function LoginPage({
   const errorMessage = error ? ERROR_MESSAGES[error] : undefined
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-linear-to-br from-slate-950 via-blue-950 to-indigo-950 p-4">
+    <main className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-[#e7ebf4] to-[#dbe2f2] p-4 dark:from-[#0b1120] dark:to-[#0a0e1a]">
+      <div className="absolute right-4 top-4">
+        <ThemeToggle />
+      </div>
       <LoginForm errorMessage={errorMessage} />
     </main>
   )

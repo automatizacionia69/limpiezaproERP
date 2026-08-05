@@ -37,10 +37,14 @@ export async function anularComprobante(
   const codigoMotivo = formData.get('motivo') as string
   const observacion = (formData.get('observacion') as string)?.trim()
   const lineasRaw = formData.get('lineas') as string | null
+  const comentarioBaja = (formData.get('comentario_baja') as string)?.trim()
 
   const motivoInfo = MOTIVOS_NOTA_CREDITO.find((m) => m.codigo === codigoMotivo)
   if (!motivoInfo) {
     return { error: 'Selecciona un motivo válido.' }
+  }
+  if (motivoInfo.anula && !comentarioBaja) {
+    return { error: 'Escribe un comentario para la Comunicación de Baja.' }
   }
 
   const supabase = await createClient()
@@ -50,7 +54,7 @@ export async function anularComprobante(
 
   const { data: comprobante, error: errorComp } = await supabase
     .from('comprobantes')
-    .select('id, tipo, numero, estado, total, orden_venta_id')
+    .select('id, tipo, numero, estado, total, orden_venta_id, fecha_emision')
     .eq('id', comprobanteId)
     .single()
 
@@ -266,6 +270,18 @@ export async function anularComprobante(
     }
 
     await supabase.from('ordenes_venta').update({ estado: 'anulada' }).eq('id', comprobante.orden_venta_id)
+
+    const { error: errorBaja } = await supabase.from('comunicaciones_baja').insert({
+      comprobante_id: comprobante.id,
+      nota_credito_id: notaCredito.id,
+      numero_documento: comprobante.numero,
+      fecha_documento: comprobante.fecha_emision,
+      comentario: comentarioBaja,
+      usuario_id: user?.id ?? null,
+    })
+    if (errorBaja) {
+      return { error: errorBaja.message }
+    }
   } else if (motivoInfo.reversaStock) {
     // Devolución por ítem: solo revierte stock de las cantidades seleccionadas.
     // `lineas` ya viene consolidado por producto y con el precio del servidor.

@@ -7,6 +7,7 @@ type GuiaRow = {
   id: number
   numero: string
   fecha: string
+  motivo: string
   direccion_despacho: string | null
   comprobantes: { numero: string; tipo: string; clientes: { nombre: string } | null } | null
 }
@@ -148,7 +149,13 @@ export function GuiasTabla({ guias }: { guias: GuiaRow[] }) {
                       <td className="px-6 py-4 text-[#64748b] dark:text-slate-400">
                         {new Date(`${g.fecha}T00:00:00`).toLocaleDateString('es-PE')}
                       </td>
-                      <td className="px-6 py-4">{cliente?.nombre ?? '—'}</td>
+                      <td className="px-6 py-4">
+                        {cliente?.nombre ?? (
+                          <span className="rounded-full bg-fuchsia-100 px-2.5 py-0.5 text-[11px] font-bold text-fuchsia-700 dark:bg-fuchsia-950/50 dark:text-fuchsia-400">
+                            🔁 Traslado interno
+                          </span>
+                        )}
+                      </td>
                       <td className="px-6 py-4 text-[#64748b] dark:text-slate-400">{comprobante?.numero ?? '—'}</td>
                       <td className="px-6 py-4 text-[#64748b] dark:text-slate-400">
                         {g.direccion_despacho || '—'}

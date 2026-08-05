@@ -4,6 +4,11 @@ import { NextResponse, type NextRequest } from 'next/server'
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request })
 
+  // Marcador propio (ver login/actions.ts) — si el usuario no marcó
+  // "Recordarme", esta cookie tampoco tiene duración propia, así que vive y
+  // muere junto con la sesión (ambas cookies de sesión del navegador).
+  const sinRecordar = request.cookies.get('sb-recordar')?.value === '0'
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -18,7 +23,11 @@ export async function updateSession(request: NextRequest) {
           })
           response = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options)
+            response.cookies.set(
+              name,
+              value,
+              sinRecordar ? { ...options, maxAge: undefined, expires: undefined } : options
+            )
           })
           Object.entries(headers).forEach(([key, value]) => {
             response.headers.set(key, value)

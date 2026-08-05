@@ -3,9 +3,8 @@ import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { requierePermiso } from '@/lib/permisos'
 import { TIPO_COMPROBANTE_LABELS, calcularFechaVencimiento } from '@/lib/motivos'
-import { AnularComprobanteForm } from './anular-form'
-import { NotaDebitoForm } from './nota-debito-form'
 import { ImprimirBoton } from '@/components/imprimir-boton'
+import { LogoEmpresa } from '@/components/logo-empresa'
 
 type DetalleRow = {
   id: number
@@ -80,46 +79,9 @@ export default async function ComprobantePage({
       supabase.from('configuracion').select('empresa, ruc, direccion, telefono').eq('id', 1).single(),
     ])
 
-  const idsNotasCredito = (notasCredito ?? []).map((n) => n.id)
-  const yaDevueltoPorProducto = new Map<number, number>()
-  if (idsNotasCredito.length > 0) {
-    const { data: detallesNc } = await supabase
-      .from('detalle_nota_credito')
-      .select('producto_id, cantidad')
-      .in('nota_credito_id', idsNotasCredito)
-    for (const d of detallesNc ?? []) {
-      yaDevueltoPorProducto.set(d.producto_id, (yaDevueltoPorProducto.get(d.producto_id) ?? 0) + Number(d.cantidad))
-    }
-  }
-
   const totalNotasCredito = (notasCredito ?? []).reduce((acc, n) => acc + Number(n.monto), 0)
   const totalNotasDebito = (notasDebito ?? []).reduce((acc, n) => acc + Number(n.monto), 0)
   const saldoActual = Math.max(0, Number(comprobante.total) - totalNotasCredito + totalNotasDebito)
-
-  // Se consolidan las lineas por producto antes de renderizar: el formulario
-  // indexa las cantidades por producto_id, asi que dos filas del mismo producto
-  // leian la misma casilla y la nota se emitia por el doble, reingresando el
-  // doble de stock. El precio es el promedio ponderado de lo facturado.
-  const vendidoPorProducto = new Map<
-    number,
-    { nombre: string; cantidad: number; importe: number }
-  >()
-  for (const d of detalles ?? []) {
-    const previo = vendidoPorProducto.get(d.producto_id)
-    vendidoPorProducto.set(d.producto_id, {
-      nombre: previo?.nombre ?? d.productos?.nombre ?? `Producto #${d.producto_id}`,
-      cantidad: (previo?.cantidad ?? 0) + Number(d.cantidad),
-      importe: (previo?.importe ?? 0) + Number(d.cantidad) * Number(d.precio_unitario),
-    })
-  }
-
-  const lineasParaAnular = [...vendidoPorProducto.entries()].map(([productoId, v]) => ({
-    producto_id: productoId,
-    nombre: v.nombre,
-    cantidadVendida: v.cantidad,
-    precioUnitario: v.cantidad > 0 ? v.importe / v.cantidad : 0,
-    cantidadDisponible: v.cantidad - (yaDevueltoPorProducto.get(productoId) ?? 0),
-  }))
 
   const tipoLabel = TIPO_COMPROBANTE_LABELS[comprobante.tipo] ?? comprobante.tipo
 
@@ -142,14 +104,17 @@ export default async function ComprobantePage({
         )}
 
         <div className="flex items-start justify-between gap-6 border-b-2 border-[#1e293b] dark:border-slate-600 pb-5">
-          <div>
-            <h1 className="text-xl font-extrabold text-[#1e293b] dark:text-slate-100">
-              {configuracion?.empresa ?? 'Distribuidora LimpiezaPro'}
-            </h1>
-            <p className="mt-1 text-xs text-[#64748b] dark:text-slate-400">
-              {configuracion?.direccion || 'Piura, Perú'}
-            </p>
-            <p className="text-xs text-[#64748b] dark:text-slate-400">{configuracion?.telefono && `Teléfono: ${configuracion.telefono}`}</p>
+          <div className="flex items-start gap-4">
+            <LogoEmpresa className="h-14 w-14 shrink-0 object-contain" fallback={null} />
+            <div>
+              <h1 className="text-xl font-extrabold text-[#1e293b] dark:text-slate-100">
+                {configuracion?.empresa ?? 'Distribuidora LimpiezaPro'}
+              </h1>
+              <p className="mt-1 text-xs text-[#64748b] dark:text-slate-400">
+                {configuracion?.direccion || 'Piura, Perú'}
+              </p>
+              <p className="text-xs text-[#64748b] dark:text-slate-400">{configuracion?.telefono && `Teléfono: ${configuracion.telefono}`}</p>
+            </div>
           </div>
           <div className="w-56 shrink-0 rounded-xl border-2 border-[#1e293b] dark:border-slate-600 p-4 text-center">
             {configuracion?.ruc && <p className="text-xs font-bold text-[#1e293b] dark:text-slate-100">RUC {configuracion.ruc}</p>}
@@ -295,30 +260,39 @@ export default async function ComprobantePage({
       </div>
 
       {comprobante.estado === 'emitido' && (
-        <div className="mx-auto mt-6 grid max-w-5xl grid-cols-1 gap-5 lg:grid-cols-[1.4fr_1fr] print:hidden">
-          <div className="rounded-3xl border-2 border-red-100 bg-white dark:bg-[#141a2e] p-6 shadow-lg shadow-red-500/5">
-            <h2 className="text-base font-extrabold text-[#1e293b] dark:text-slate-100">🚫 Anular con Nota de Crédito</h2>
-            <p className="mt-1 text-xs font-medium text-[#64748b] dark:text-slate-400">
-              N° {comprobante.numero} — solo "Anulación", "Anulación por error en el RUC" y "Devolución total"
-              revierten todo el stock y anulan el comprobante. "Devolución por ítem" y "Descuento por ítem" te
-              dejan elegir cuántas unidades de cada producto.
-            </p>
-            <AnularComprobanteForm
-              comprobanteId={comprobante.id}
-              numero={comprobante.numero}
-              totalComprobante={Number(comprobante.total)}
-              saldoDisponible={saldoActual}
-              lineas={lineasParaAnular}
-            />
-          </div>
+        <div id="acciones" className="mx-auto mt-6 grid max-w-5xl grid-cols-1 gap-4 sm:grid-cols-3 print:hidden">
+          <Link
+            href={`/consulta-ventas/${comprobante.id}/nota-credito`}
+            className="flex items-center gap-3 rounded-2xl border-2 border-red-100 bg-white p-5 shadow-md shadow-red-500/5 transition-all hover:border-red-300 active:scale-95 dark:border-red-900/30 dark:bg-[#141a2e]"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-600 dark:bg-red-950/50 dark:text-red-400">🧾</span>
+            <span>
+              <span className="block text-sm font-extrabold text-[#1e293b] dark:text-slate-100">Nota de Crédito</span>
+              <span className="block text-xs font-medium text-[#64748b] dark:text-slate-400">Descuento o devolución parcial</span>
+            </span>
+          </Link>
 
-          <div className="rounded-3xl border-2 border-amber-100 bg-white dark:bg-[#141a2e] p-6 shadow-lg shadow-amber-500/5">
-            <h2 className="text-base font-extrabold text-[#1e293b] dark:text-slate-100">➕ Registrar Nota de Débito</h2>
-            <p className="mt-1 text-xs font-medium text-[#64748b] dark:text-slate-400">
-              Un cargo adicional sobre este comprobante (interés, aumento de valor, etc.).
-            </p>
-            <NotaDebitoForm comprobanteId={comprobante.id} />
-          </div>
+          <Link
+            href={`/consulta-ventas/${comprobante.id}/nota-debito`}
+            className="flex items-center gap-3 rounded-2xl border-2 border-amber-100 bg-white p-5 shadow-md shadow-amber-500/5 transition-all hover:border-amber-300 active:scale-95 dark:border-amber-900/30 dark:bg-[#141a2e]"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400">➕</span>
+            <span>
+              <span className="block text-sm font-extrabold text-[#1e293b] dark:text-slate-100">Nota de Débito</span>
+              <span className="block text-xs font-medium text-[#64748b] dark:text-slate-400">Cargo adicional</span>
+            </span>
+          </Link>
+
+          <Link
+            href={`/consulta-ventas/${comprobante.id}/anular`}
+            className="flex items-center gap-3 rounded-2xl border-2 border-red-200 bg-white p-5 shadow-md shadow-red-500/5 transition-all hover:border-red-400 active:scale-95 dark:border-red-900/40 dark:bg-[#141a2e]"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-600 text-white">🚫</span>
+            <span>
+              <span className="block text-sm font-extrabold text-[#1e293b] dark:text-slate-100">Anular documento</span>
+              <span className="block text-xs font-medium text-[#64748b] dark:text-slate-400">Anula todo · Comunicación de Baja</span>
+            </span>
+          </Link>
         </div>
       )}
     </div>

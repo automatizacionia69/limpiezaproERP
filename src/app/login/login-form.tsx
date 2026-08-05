@@ -2,35 +2,43 @@
 
 import { useState } from 'react'
 import { signIn } from './actions'
+import { LogoEmpresa } from '@/components/logo-empresa'
+
+const CAMPO_CONTENEDOR =
+  'flex items-center gap-3 rounded-xl border-2 border-[#e2e8f0] bg-[#f8fafc] px-4 py-3 transition-all focus-within:border-indigo-400 focus-within:ring-4 focus-within:ring-indigo-100 dark:border-slate-700 dark:bg-[#0f1424] dark:focus-within:ring-indigo-950'
 
 export function LoginForm({ errorMessage }: { errorMessage?: string }) {
   const [verPassword, setVerPassword] = useState(false)
 
   return (
-    <div className="w-full max-w-sm rounded-3xl border border-white/20 bg-white/10 p-8 shadow-2xl backdrop-blur-xl">
-      <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-white/10">
-        <svg
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          className="h-10 w-10 text-blue-100"
-          aria-hidden="true"
-        >
-          <path d="M12 12c2.71 0 4.9-2.19 4.9-4.9S14.71 2.2 12 2.2 7.1 4.39 7.1 7.1 9.29 12 12 12Zm0 2.45c-3.65 0-9.8 1.83-9.8 5.48v2.87h19.6v-2.87c0-3.65-6.15-5.48-9.8-5.48Z" />
-        </svg>
+    <div className="w-full max-w-sm rounded-3xl border-2 border-[#e2e8f0] bg-white p-8 shadow-xl shadow-slate-500/10 dark:border-slate-700 dark:bg-[#141a2e]">
+      <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 to-fuchsia-500 text-white shadow-lg shadow-fuchsia-500/40">
+        <LogoEmpresa
+          className="h-full w-full object-contain"
+          fallback={
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-10 w-10">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M20.25 7.5l-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"
+              />
+            </svg>
+          }
+        />
       </div>
 
-      <h1 className="mb-6 text-center text-lg font-semibold text-white">
+      <h1 className="mb-6 text-center text-lg font-extrabold text-[#1e293b] dark:text-slate-100">
         Distribuidora LimpiezaPro
       </h1>
 
-      <form action={signIn} className="space-y-5">
-        <div className="flex items-center gap-3 border-b border-white/30 pb-2">
+      <form action={signIn} className="space-y-4">
+        <div className={CAMPO_CONTENEDOR}>
           <svg
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
             strokeWidth={1.5}
-            className="h-5 w-5 shrink-0 text-blue-100"
+            className="h-5 w-5 shrink-0 text-[#64748b] dark:text-slate-400"
             aria-hidden="true"
           >
             <path
@@ -45,17 +53,17 @@ export function LoginForm({ errorMessage }: { errorMessage?: string }) {
             name="email"
             placeholder="Correo electrónico"
             required
-            className="w-full bg-transparent text-white placeholder-white/60 outline-none"
+            className="w-full bg-transparent text-[#1e293b] placeholder-[#94a3b8] outline-none dark:text-slate-100 dark:placeholder-slate-500"
           />
         </div>
 
-        <div className="flex items-center gap-3 border-b border-white/30 pb-2">
+        <div className={CAMPO_CONTENEDOR}>
           <svg
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
             strokeWidth={1.5}
-            className="h-5 w-5 shrink-0 text-blue-100"
+            className="h-5 w-5 shrink-0 text-[#64748b] dark:text-slate-400"
             aria-hidden="true"
           >
             <rect x="4.5" y="10.5" width="15" height="9" rx="1.5" />
@@ -70,13 +78,13 @@ export function LoginForm({ errorMessage }: { errorMessage?: string }) {
             name="password"
             placeholder="Contraseña"
             required
-            className="w-full bg-transparent text-white placeholder-white/60 outline-none"
+            className="w-full bg-transparent text-[#1e293b] placeholder-[#94a3b8] outline-none dark:text-slate-100 dark:placeholder-slate-500"
           />
           <button
             type="button"
             onClick={() => setVerPassword((v) => !v)}
             title={verPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-            className="shrink-0 text-blue-100/70 transition-colors hover:text-white"
+            className="shrink-0 text-[#94a3b8] transition-colors hover:text-indigo-600 dark:text-slate-500 dark:hover:text-indigo-400"
           >
             {verPassword ? (
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-5 w-5" aria-hidden="true">
@@ -99,15 +107,25 @@ export function LoginForm({ errorMessage }: { errorMessage?: string }) {
           </button>
         </div>
 
+        <label className="flex select-none items-center gap-2 text-sm font-medium text-[#64748b] dark:text-slate-400">
+          <input
+            type="checkbox"
+            name="recordar"
+            defaultChecked
+            className="h-4 w-4 rounded border-2 border-[#cbd5e1] text-indigo-600 accent-indigo-600 dark:border-slate-600"
+          />
+          Recordarme en este dispositivo
+        </label>
+
         {errorMessage && (
-          <p role="alert" className="text-sm text-red-300">
+          <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700 dark:bg-red-950/40 dark:text-red-300">
             {errorMessage}
           </p>
         )}
 
         <button
           type="submit"
-          className="w-full rounded-full bg-blue-700 py-3 font-semibold text-white transition-colors hover:bg-blue-600"
+          className="w-full rounded-md bg-gradient-to-r from-indigo-600 to-fuchsia-600 py-3 font-bold text-white shadow-lg shadow-indigo-500/30 transition-all hover:from-indigo-500 hover:to-fuchsia-500 active:scale-95"
         >
           Iniciar sesión
         </button>

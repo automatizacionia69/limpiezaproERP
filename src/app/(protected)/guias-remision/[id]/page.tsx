@@ -5,11 +5,13 @@ import { requierePermiso } from '@/lib/permisos'
 import { TIPO_COMPROBANTE_LABELS } from '@/lib/motivos'
 import { ImprimirBoton } from '@/components/imprimir-boton'
 import { EditarGuiaForm } from './editar-guia-form'
+import { LogoEmpresa } from '@/components/logo-empresa'
 
 type GuiaDetalle = {
   id: number
   numero: string
   fecha: string
+  motivo: string
   direccion_despacho: string | null
   observacion: string | null
   comprobantes: {
@@ -39,7 +41,7 @@ export default async function GuiaRemisionPage({ params }: { params: Promise<{ i
     supabase
       .from('guias_remision')
       .select(
-        'id, numero, fecha, direccion_despacho, observacion, comprobantes(numero, tipo, total, orden_venta_id, clientes(nombre, documento))'
+        'id, numero, fecha, motivo, direccion_despacho, observacion, comprobantes(numero, tipo, total, orden_venta_id, clientes(nombre, documento))'
       )
       .eq('id', id)
       .single()
@@ -54,6 +56,7 @@ export default async function GuiaRemisionPage({ params }: { params: Promise<{ i
   const comprobante = Array.isArray(guia.comprobantes) ? guia.comprobantes[0] : guia.comprobantes
   const cliente = comprobante && (Array.isArray(comprobante.clientes) ? comprobante.clientes[0] : comprobante.clientes)
   const tipoLabel = comprobante ? (TIPO_COMPROBANTE_LABELS[comprobante.tipo] ?? comprobante.tipo) : '—'
+  const esTraslado = !comprobante
 
   const { data: detalles } = comprobante
     ? await supabase
@@ -61,7 +64,11 @@ export default async function GuiaRemisionPage({ params }: { params: Promise<{ i
         .select('cantidad, productos(nombre, codigo)')
         .eq('orden_id', comprobante.orden_venta_id)
         .returns<DetalleRow[]>()
-    : { data: null }
+    : await supabase
+        .from('detalle_guia_remision')
+        .select('cantidad, productos(nombre, codigo)')
+        .eq('guia_id', guia.id)
+        .returns<DetalleRow[]>()
 
   const productos = (detalles ?? []).map((d) => ({
     cantidad: d.cantidad,
@@ -81,11 +88,14 @@ export default async function GuiaRemisionPage({ params }: { params: Promise<{ i
 
       <div className="mx-auto max-w-4xl rounded-3xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] p-10 shadow-lg shadow-slate-500/5 print:max-w-none print:rounded-none print:border-0 print:p-0 print:shadow-none">
         <div className="flex items-start justify-between gap-6 border-b-2 border-[#1e293b] dark:border-slate-600 pb-5">
-          <div>
-            <h1 className="text-xl font-extrabold text-[#1e293b] dark:text-slate-100">
-              {configuracion?.empresa ?? 'Distribuidora LimpiezaPro'}
-            </h1>
-            <p className="mt-1 text-xs text-[#64748b] dark:text-slate-400">{configuracion?.direccion || 'Piura, Perú'}</p>
+          <div className="flex items-start gap-4">
+            <LogoEmpresa className="h-14 w-14 shrink-0 object-contain" fallback={null} />
+            <div>
+              <h1 className="text-xl font-extrabold text-[#1e293b] dark:text-slate-100">
+                {configuracion?.empresa ?? 'Distribuidora LimpiezaPro'}
+              </h1>
+              <p className="mt-1 text-xs text-[#64748b] dark:text-slate-400">{configuracion?.direccion || 'Piura, Perú'}</p>
+            </div>
           </div>
           <div className="w-56 shrink-0 rounded-xl border-2 border-[#1e293b] dark:border-slate-600 p-4 text-center">
             {configuracion?.ruc && <p className="text-xs font-bold text-[#1e293b] dark:text-slate-100">RUC {configuracion.ruc}</p>}
@@ -96,26 +106,38 @@ export default async function GuiaRemisionPage({ params }: { params: Promise<{ i
 
         <div className="mt-5 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
           <div className="rounded-xl border border-[#e2e8f0] dark:border-slate-700 p-4">
-            <p className="text-[10px] font-bold tracking-wide text-[#94a3b8] dark:text-slate-500 uppercase">Destinatario</p>
-            <p className="mt-1 font-bold text-[#1e293b] dark:text-slate-100">{cliente?.nombre ?? '—'}</p>
-            <p className="text-[#64748b] dark:text-slate-400">Documento: {cliente?.documento || '—'}</p>
+            <p className="text-[10px] font-bold tracking-wide text-[#94a3b8] dark:text-slate-500 uppercase">
+              {esTraslado ? 'Traslado interno' : 'Destinatario'}
+            </p>
+            {esTraslado ? (
+              <p className="mt-1 font-bold text-[#1e293b] dark:text-slate-100">{guia.motivo}</p>
+            ) : (
+              <>
+                <p className="mt-1 font-bold text-[#1e293b] dark:text-slate-100">{cliente?.nombre ?? '—'}</p>
+                <p className="text-[#64748b] dark:text-slate-400">Documento: {cliente?.documento || '—'}</p>
+              </>
+            )}
             <p className="text-[#64748b] dark:text-slate-400">
               Dirección de despacho: {guia.direccion_despacho || '—'}
             </p>
           </div>
           <div className="rounded-xl border border-[#e2e8f0] dark:border-slate-700 p-4">
             <p className="text-[10px] font-bold tracking-wide text-[#94a3b8] dark:text-slate-500 uppercase">
-              Comprobante anexado
+              {esTraslado ? 'Guía sin comprobante' : 'Comprobante anexado'}
             </p>
             <div className="mt-1.5 space-y-0.5">
-              <p className="flex justify-between text-[#1e293b] dark:text-slate-100">
-                <span className="text-[#64748b] dark:text-slate-400">Tipo</span>
-                <span className="font-semibold">{tipoLabel}</span>
-              </p>
-              <p className="flex justify-between text-[#1e293b] dark:text-slate-100">
-                <span className="text-[#64748b] dark:text-slate-400">Número</span>
-                <span className="font-semibold">{comprobante?.numero ?? '—'}</span>
-              </p>
+              {!esTraslado && (
+                <>
+                  <p className="flex justify-between text-[#1e293b] dark:text-slate-100">
+                    <span className="text-[#64748b] dark:text-slate-400">Tipo</span>
+                    <span className="font-semibold">{tipoLabel}</span>
+                  </p>
+                  <p className="flex justify-between text-[#1e293b] dark:text-slate-100">
+                    <span className="text-[#64748b] dark:text-slate-400">Número</span>
+                    <span className="font-semibold">{comprobante?.numero ?? '—'}</span>
+                  </p>
+                </>
+              )}
               <p className="flex justify-between text-[#1e293b] dark:text-slate-100">
                 <span className="text-[#64748b] dark:text-slate-400">Fecha de la guía</span>
                 <span className="font-semibold">{new Date(`${guia.fecha}T00:00:00`).toLocaleDateString('es-PE')}</span>

@@ -20,23 +20,33 @@ const LABEL = 'block text-xs font-bold text-[#1e293b] dark:text-slate-100'
 export function AnularComprobanteForm({
   comprobanteId,
   numero,
+  fechaEmision,
   totalComprobante,
   saldoDisponible,
   lineas,
+  motivos = MOTIVOS_NOTA_CREDITO,
+  comunicacionBaja = false,
 }: {
   comprobanteId: number
   numero: string
+  /** Solo se usa para mostrarla en el paso de Comunicación de Baja. */
+  fechaEmision?: string
   totalComprobante: number
   /** Saldo aun acreditable: total + notas de debito − notas de credito previas. */
   saldoDisponible: number
   lineas: LineaVenta[]
+  /** Subconjunto de motivos a ofrecer — filtrado por la página que lo usa (Nota de Crédito vs Anular). */
+  motivos?: readonly (typeof MOTIVOS_NOTA_CREDITO)[number][]
+  /** true en la página "Anular documento": pide el comentario de Comunicación de Baja. */
+  comunicacionBaja?: boolean
 }) {
   const [estado, formAction] = useActionState<EstadoFormulario, FormData>(anularComprobante, { error: null })
   const [codigoMotivo, setCodigoMotivo] = useState('')
   const [cantidades, setCantidades] = useState<Record<number, string>>({})
   const [montoManual, setMontoManual] = useState('')
+  const [comentarioBaja, setComentarioBaja] = useState('')
 
-  const motivoInfo = MOTIVOS_NOTA_CREDITO.find((m) => m.codigo === codigoMotivo)
+  const motivoInfo = motivos.find((m) => m.codigo === codigoMotivo)
   const requiereMontoManual = !!motivoInfo && !motivoInfo.anula && !motivoInfo.itemizable
 
   const lineasSeleccionadas = useMemo(
@@ -89,7 +99,7 @@ export function AnularComprobanteForm({
           <option value="" disabled>
             Selecciona un motivo
           </option>
-          {MOTIVOS_NOTA_CREDITO.map((m) => (
+          {motivos.map((m) => (
             <option key={m.codigo} value={m.codigo}>
               {m.label} {m.anula ? '· anula la operación' : m.itemizable ? '· por ítem' : ''}
             </option>
@@ -102,6 +112,36 @@ export function AnularComprobanteForm({
           </p>
         )}
       </div>
+
+      {comunicacionBaja && motivoInfo?.anula && (
+        <div className="rounded-xl border-2 border-red-200 bg-red-50/60 p-3.5 dark:border-red-900/50 dark:bg-red-950/20">
+          <p className="text-xs font-extrabold tracking-wide text-red-700 uppercase dark:text-red-400">
+            📋 Comunicación de Baja
+          </p>
+          <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-xs text-[#1e293b] dark:text-slate-100">
+            <p>
+              <span className="text-[#64748b] dark:text-slate-400">Documento:</span>{' '}
+              <span className="font-bold">{numero}</span>
+            </p>
+            {fechaEmision && (
+              <p>
+                <span className="text-[#64748b] dark:text-slate-400">Fecha:</span>{' '}
+                <span className="font-bold">{new Date(`${fechaEmision}T00:00:00`).toLocaleDateString('es-PE')}</span>
+              </p>
+            )}
+          </div>
+          <label className="mt-3 block text-xs font-bold text-[#1e293b] dark:text-slate-100">Comentario *</label>
+          <textarea
+            name="comentario_baja"
+            required
+            rows={3}
+            placeholder="Motivo de la comunicación de baja..."
+            value={comentarioBaja}
+            onChange={(e) => setComentarioBaja(e.target.value)}
+            className="mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] bg-white px-3.5 py-2.5 text-sm text-[#1e293b] outline-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-100 dark:border-slate-700 dark:bg-[#141a2e] dark:text-slate-100"
+          />
+        </div>
+      )}
 
       {motivoInfo?.itemizable && (
         <div className="rounded-xl border-2 border-red-100 bg-red-50/40 p-3">
@@ -191,10 +231,14 @@ export function AnularComprobanteForm({
 
       <button
         type="submit"
-        disabled={!codigoMotivo || (requiereMontoManual && monto <= 0)}
+        disabled={
+          !codigoMotivo ||
+          (requiereMontoManual && monto <= 0) ||
+          (comunicacionBaja && !comentarioBaja.trim())
+        }
         className="w-full rounded-md bg-red-500 py-2.5 text-sm font-bold text-white shadow-sm shadow-red-500/30 transition-all hover:bg-red-600 disabled:opacity-40 active:scale-95"
       >
-        Emitir nota de crédito
+        {comunicacionBaja ? 'Confirmar anulación' : 'Emitir nota de crédito'}
       </button>
     </form>
   )
