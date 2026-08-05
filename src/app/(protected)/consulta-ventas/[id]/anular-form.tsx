@@ -47,9 +47,9 @@ export function AnularComprobanteForm({
     [lineas, cantidades]
   )
 
-  // El monto por item usa calcularImportes (neto + IGV), la misma convencion
-  // que el server action: antes la pantalla sumaba solo el neto mientras la
-  // anulacion total usaba el total con IGV.
+  // El monto por item usa calcularImportes (precio_unitario con IGV
+  // incluido, ver src/lib/cotizaciones.ts), la misma convencion que el
+  // server action y que la anulacion total (totalComprobante).
   const monto = motivoInfo?.anula
     ? totalComprobante
     : motivoInfo?.itemizable
