@@ -6,6 +6,7 @@ import { Buscador } from '@/components/buscador'
 import { SubirDocumentoCompra } from './subir-documento-compra'
 import type { DatosExtraidos } from './analizar-documento'
 import { crearProductoRapido } from './crear-producto-rapido'
+import { IGV_TASA, calcularImportes } from '@/lib/cotizaciones'
 
 type Proveedor = { id: number; nombre: string }
 type Producto = { id: number; nombre: string }
@@ -140,11 +141,15 @@ export function NuevaCompraForm({
     setLineas((prev) => (prev.length === 1 ? prev : prev.filter((_, idx) => idx !== i)))
   }
 
-  const total = useMemo(
+  // Mismo calculo que Cotizaciones/Ventas/Notas de credito (calcularImportes):
+  // costo_unitario ya incluye IGV, se desglosa hacia atras.
+  const { subtotal, igv, total } = useMemo(
     () =>
-      lineas.reduce(
-        (acc, l) => acc + (Number(l.cantidad) || 0) * (Number(l.costo_unitario) || 0),
-        0
+      calcularImportes(
+        lineas.map((l) => ({
+          cantidad: Number(l.cantidad) || 0,
+          precio_unitario: Number(l.costo_unitario) || 0,
+        }))
       ),
     [lineas]
   )
@@ -311,9 +316,14 @@ export function NuevaCompraForm({
           ))}
         </div>
 
-        <div className="mt-4 flex items-center justify-end gap-2 border-t-2 border-pink-100 pt-3">
-          <span className="text-sm font-medium text-[#64748b] dark:text-slate-400">Total:</span>
-          <span className="text-xl font-extrabold text-pink-600">S/ {total.toFixed(2)}</span>
+        <div className="mt-4 space-y-1 border-t-2 border-pink-100 pt-3 text-right">
+          <p className="text-sm text-[#64748b] dark:text-slate-400">
+            Subtotal (sin IGV): <span className="font-bold text-[#1e293b] dark:text-slate-100">S/ {subtotal.toFixed(2)}</span>
+          </p>
+          <p className="text-sm text-[#64748b] dark:text-slate-400">
+            IGV ({(IGV_TASA * 100).toFixed(0)}%): <span className="font-bold text-[#1e293b] dark:text-slate-100">S/ {igv.toFixed(2)}</span>
+          </p>
+          <p className="text-xl font-extrabold text-pink-600">Total: S/ {total.toFixed(2)}</p>
         </div>
         {totalDetectadoIA !== null && Math.abs(totalDetectadoIA - total) > 0.01 && (
           <p className="mt-1 text-right text-xs font-bold text-amber-600">
