@@ -207,7 +207,7 @@ export default async function ReporteVentasPorProductoPage({
           Number(d.precio_unitario),
           'Nota de crédito',
           n.numero,
-          'NC01',
+          n.numero.split('-')[0],
           fecha
         )
       })
@@ -227,7 +227,7 @@ export default async function ReporteVentasPorProductoPage({
         Number(dn.precio_unitario),
         'Nota de crédito',
         n.numero,
-        'NC01',
+        n.numero.split('-')[0],
         fecha
       )
     })
