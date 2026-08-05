@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { tienePermiso } from '@/lib/permisos'
 import { calcularImportes } from '@/lib/cotizaciones'
+import { generarComprobanteNubefact } from '@/lib/nubefact'
 
 export type EstadoFormulario = { error: string | null }
 
@@ -161,7 +162,11 @@ export async function emitirComprobante(
     await supabase.from('ordenes_venta').update({ estado: 'pendiente' }).eq('id', ordenId)
   }
 
-  const { data: cliente } = await supabase.from('clientes').select('documento, direccion').eq('id', clienteId).single()
+  const { data: cliente } = await supabase
+    .from('clientes')
+    .select('nombre, documento, direccion, email')
+    .eq('id', clienteId)
+    .single()
   if (tipo === 'factura' && (cliente?.documento ?? '').trim().length !== 11) {
     await liberarReserva()
     return {
@@ -232,7 +237,7 @@ export async function emitirComprobante(
       igv,
       total,
     })
-    .select('id')
+    .select('id, serie, numero')
     .single()
 
   if (errorComp || !comprobante) {
@@ -280,6 +285,76 @@ export async function emitirComprobante(
     console.error(
       `Venta ${orden.numero} facturada OK pero sin guia de remision (comprobante ${comprobante.id}): ${errorGuia.message}`
     )
+  }
+
+  // Envio a NUBEFACT (SUNAT real) — solo Factura y Boleta son documentos
+  // electronicos validos ante SUNAT, Nota de venta y Ticket son documentos
+  // internos y no se envian. Corre AL FINAL, cuando la venta local ya quedo
+  // grabada por completo: si NUBEFACT falla o no responde, la venta NO se
+  // revierte (decision de negocio — no bloquear una venta real por un
+  // problema externo de SUNAT/NUBEFACT); el comprobante queda con
+  // nubefact_estado='error' y el mensaje en nubefact_error, para reenviarlo
+  // despues en vez de perder la venta.
+  if (tipo === 'factura' || tipo === 'boleta') {
+    const productoIds = [...new Set(lineas.map((l) => l.producto_id))]
+    const { data: productosLineas } = await supabase
+      .from('productos')
+      .select('id, nombre, codigo, unidades_medida(nombre)')
+      .in('id', productoIds)
+      .returns<
+        { id: number; nombre: string; codigo: string | null; unidades_medida: { nombre: string } | null }[]
+      >()
+
+    const productosPorId = new Map((productosLineas ?? []).map((p) => [p.id, p]))
+    const numeroNubefact = Number(comprobante.numero.split('-').pop())
+    const [anio, mes, dia] = fecha.split('-')
+
+    const resultadoNubefact = await generarComprobanteNubefact({
+      tipo,
+      serie: comprobante.serie,
+      numero: numeroNubefact,
+      cliente: {
+        documento: cliente?.documento ?? '',
+        denominacion: cliente?.nombre ?? '',
+        direccion: cliente?.direccion ?? undefined,
+        email: cliente?.email ?? undefined,
+      },
+      fechaEmision: `${dia}-${mes}-${anio}`,
+      lineas: lineas.map((l) => {
+        const p = productosPorId.get(l.producto_id)
+        return {
+          descripcion: p?.nombre ?? 'PRODUCTO',
+          codigo: p?.codigo ?? undefined,
+          unidadErp: p?.unidades_medida?.nombre ?? 'und',
+          cantidad: l.cantidad,
+          precioUnitario: l.precio_unitario,
+        }
+      }),
+    })
+
+    if (resultadoNubefact.ok) {
+      await supabase
+        .from('comprobantes')
+        .update({
+          nubefact_estado: 'enviado',
+          nubefact_enlace: resultadoNubefact.data.enlace,
+          nubefact_enlace_pdf: resultadoNubefact.data.enlace_del_pdf,
+          nubefact_enlace_xml: resultadoNubefact.data.enlace_del_xml,
+          nubefact_codigo_hash: resultadoNubefact.data.codigo_hash,
+          nubefact_enviado_en: new Date().toISOString(),
+        })
+        .eq('id', comprobante.id)
+    } else {
+      console.error(
+        `Comprobante ${comprobante.id} (${orden.numero}) no se pudo enviar a NUBEFACT: ${resultadoNubefact.error}`
+      )
+      await supabase
+        .from('comprobantes')
+        .update({ nubefact_estado: 'error', nubefact_error: resultadoNubefact.error })
+        .eq('id', comprobante.id)
+    }
+  } else {
+    await supabase.from('comprobantes').update({ nubefact_estado: 'no_aplica' }).eq('id', comprobante.id)
   }
 
   // La orden ya quedo en 'facturada' en la reserva del principio; solo falta la
