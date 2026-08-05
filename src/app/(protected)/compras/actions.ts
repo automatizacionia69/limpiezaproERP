@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { tienePermiso } from '@/lib/permisos'
+import { fechaDocumentoFueraDeRango } from '@/lib/fecha'
 
 export type EstadoFormulario = { error: string | null }
 
@@ -30,6 +31,9 @@ export async function crearOrdenCompra(
   }
   if (!fechaRegistro) {
     return { error: 'Selecciona la fecha de registro.' }
+  }
+  if (fechaDocumentoFueraDeRango(fechaRegistro)) {
+    return { error: 'La fecha de registro no puede ser futura ni atrasarse más de 3 días.' }
   }
   if (!['factura', 'boleta', 'guia_remision'].includes(tipoDocumento)) {
     return { error: 'Selecciona el tipo de documento del proveedor.' }

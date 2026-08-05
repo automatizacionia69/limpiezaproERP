@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { tienePermiso } from '@/lib/permisos'
+import { fechaDocumentoFueraDeRango } from '@/lib/fecha'
 
 export type EstadoFormulario = { error: string | null }
 
@@ -29,6 +30,9 @@ export async function editarGuiaRemision(
   }
   if (!fecha) {
     return { error: 'Selecciona la fecha de la guía.' }
+  }
+  if (fechaDocumentoFueraDeRango(fecha)) {
+    return { error: 'La fecha de la guía no puede ser futura ni atrasarse más de 3 días.' }
   }
 
   const supabase = await createClient()

@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { tienePermiso } from '@/lib/permisos'
 import { calcularImportes } from '@/lib/cotizaciones'
+import { fechaDocumentoFueraDeRango } from '@/lib/fecha'
 
 export type EstadoFormulario = { error: string | null }
 
@@ -31,6 +32,9 @@ export async function crearCotizacion(
   }
   if (!fecha) {
     return { error: 'Selecciona la fecha de la cotización.' }
+  }
+  if (fechaDocumentoFueraDeRango(fecha)) {
+    return { error: 'La fecha de la cotización no puede ser futura ni atrasarse más de 3 días.' }
   }
   if (!vendedorId) {
     return { error: 'Selecciona el vendedor (pestaña Vendedor).' }

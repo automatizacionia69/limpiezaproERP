@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { tienePermiso } from '@/lib/permisos'
 import { calcularImportes } from '@/lib/cotizaciones'
 import { enviarComprobanteANubefact } from '@/lib/nubefact-envio'
+import { fechaDocumentoFueraDeRango } from '@/lib/fecha'
 
 export type EstadoFormulario = { error: string | null }
 
@@ -107,6 +108,9 @@ export async function emitirComprobante(
   }
   if (!fecha) {
     return { error: 'Selecciona la fecha del comprobante.' }
+  }
+  if (fechaDocumentoFueraDeRango(fecha)) {
+    return { error: 'La fecha del comprobante no puede ser futura ni atrasarse más de 3 días.' }
   }
   if (!vendedorId) {
     return { error: 'Selecciona el vendedor (pestaña Vendedor).' }

@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react'
 import { editarGuiaRemision, type EstadoFormulario } from '../actions'
+import { hoyPeruISO, haceNDiasPeruISO } from '@/lib/fecha'
 
 type Guia = {
   id: number
@@ -29,7 +30,15 @@ export function EditarGuiaForm({ guia }: { guia: Guia }) {
         </div>
         <div>
           <label className={LABEL}>Fecha *</label>
-          <input type="date" name="fecha" required defaultValue={guia.fecha} className={CAMPO} />
+          <input
+            type="date"
+            name="fecha"
+            required
+            min={haceNDiasPeruISO(3)}
+            max={hoyPeruISO()}
+            defaultValue={guia.fecha}
+            className={CAMPO}
+          />
         </div>
         <div className="sm:col-span-2">
           <label className={LABEL}>Dirección de despacho</label>

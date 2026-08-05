@@ -7,6 +7,7 @@ import { SubirDocumentoCompra } from './subir-documento-compra'
 import type { DatosExtraidos } from './analizar-documento'
 import { crearProductoRapido } from './crear-producto-rapido'
 import { IGV_TASA, calcularImportes } from '@/lib/cotizaciones'
+import { hoyPeruISO, haceNDiasPeruISO } from '@/lib/fecha'
 
 type Proveedor = { id: number; nombre: string }
 type Producto = { id: number; nombre: string }
@@ -19,10 +20,6 @@ type Linea = {
 
 function lineaVacia(): Linea {
   return { producto_id: '', cantidad: '', costo_unitario: '' }
-}
-
-function hoyISO() {
-  return new Date().toISOString().slice(0, 10)
 }
 
 function normalizar(texto: string) {
@@ -68,7 +65,7 @@ export function NuevaCompraForm({
     error: null,
   })
   const [proveedorId, setProveedorId] = useState<number | ''>('')
-  const [fechaRegistro, setFechaRegistro] = useState(hoyISO())
+  const [fechaRegistro, setFechaRegistro] = useState(hoyPeruISO())
   const [tipoDocumento, setTipoDocumento] = useState<(typeof TIPOS_DOCUMENTO)[number]['valor']>('factura')
   const [documentoSerie, setDocumentoSerie] = useState('')
   const [documentoNumero, setDocumentoNumero] = useState('')
@@ -192,6 +189,8 @@ export function NuevaCompraForm({
             type="date"
             name="fecha_registro"
             required
+            min={haceNDiasPeruISO(3)}
+            max={hoyPeruISO()}
             value={fechaRegistro}
             onChange={(e) => setFechaRegistro(e.target.value)}
             className={CAMPO}
