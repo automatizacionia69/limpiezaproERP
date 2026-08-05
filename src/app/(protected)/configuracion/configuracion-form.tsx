@@ -11,6 +11,12 @@ type Configuracion = {
   telefono: string | null
   email: string | null
   moneda: string
+  titular: string | null
+  yape: string | null
+  cuenta_bcp_soles: string | null
+  cci_bcp: string | null
+  cuenta_bbva_soles: string | null
+  cci_bbva: string | null
 }
 
 const CAMPO =
@@ -49,6 +55,17 @@ export function ConfiguracionForm({
             name="ruc"
             disabled={!puedeEditar}
             defaultValue={configuracion.ruc ?? ''}
+            className={CAMPO}
+          />
+        </div>
+        <div>
+          <label className={LABEL}>Titular (dueño del RUC)</label>
+          <input
+            type="text"
+            name="titular"
+            disabled={!puedeEditar}
+            defaultValue={configuracion.titular ?? ''}
+            placeholder="Ej. Heredia Vasquez Frank Eduardo"
             className={CAMPO}
           />
         </div>
@@ -92,6 +109,63 @@ export function ConfiguracionForm({
             defaultValue={configuracion.email ?? ''}
             className={CAMPO}
           />
+        </div>
+      </div>
+
+      <div>
+        <p className="text-sm font-bold text-[#1e293b] dark:text-slate-100">Cuentas para pago (aparecen en la cotización)</p>
+        <div className="mt-3 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <label className={LABEL}>Yape</label>
+            <input
+              type="text"
+              name="yape"
+              disabled={!puedeEditar}
+              defaultValue={configuracion.yape ?? ''}
+              placeholder="Número Yape"
+              className={CAMPO}
+            />
+          </div>
+          <div>
+            <label className={LABEL}>Cuenta BCP (soles)</label>
+            <input
+              type="text"
+              name="cuenta_bcp_soles"
+              disabled={!puedeEditar}
+              defaultValue={configuracion.cuenta_bcp_soles ?? ''}
+              className={CAMPO}
+            />
+          </div>
+          <div>
+            <label className={LABEL}>CCI BCP</label>
+            <input
+              type="text"
+              name="cci_bcp"
+              disabled={!puedeEditar}
+              defaultValue={configuracion.cci_bcp ?? ''}
+              className={CAMPO}
+            />
+          </div>
+          <div>
+            <label className={LABEL}>Cuenta BBVA (soles)</label>
+            <input
+              type="text"
+              name="cuenta_bbva_soles"
+              disabled={!puedeEditar}
+              defaultValue={configuracion.cuenta_bbva_soles ?? ''}
+              className={CAMPO}
+            />
+          </div>
+          <div>
+            <label className={LABEL}>CCI BBVA</label>
+            <input
+              type="text"
+              name="cci_bbva"
+              disabled={!puedeEditar}
+              defaultValue={configuracion.cci_bbva ?? ''}
+              className={CAMPO}
+            />
+          </div>
         </div>
       </div>
 

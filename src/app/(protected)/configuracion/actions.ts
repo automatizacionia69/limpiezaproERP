@@ -57,6 +57,12 @@ export async function actualizarConfiguracion(
   const telefono = (formData.get('telefono') as string)?.trim()
   const email = (formData.get('email') as string)?.trim()
   const moneda = (formData.get('moneda') as string)?.trim()
+  const titular = (formData.get('titular') as string)?.trim()
+  const yape = (formData.get('yape') as string)?.trim()
+  const cuentaBcpSoles = (formData.get('cuenta_bcp_soles') as string)?.trim()
+  const cciBcp = (formData.get('cci_bcp') as string)?.trim()
+  const cuentaBbvaSoles = (formData.get('cuenta_bbva_soles') as string)?.trim()
+  const cciBbva = (formData.get('cci_bbva') as string)?.trim()
 
   if (!empresa) {
     return { error: 'El nombre de la empresa es obligatorio.' }
@@ -72,6 +78,12 @@ export async function actualizarConfiguracion(
       telefono: telefono || null,
       email: email || null,
       moneda: moneda || 'S/',
+      titular: titular || null,
+      yape: yape || null,
+      cuenta_bcp_soles: cuentaBcpSoles || null,
+      cci_bcp: cciBcp || null,
+      cuenta_bbva_soles: cuentaBbvaSoles || null,
+      cci_bbva: cciBbva || null,
       actualizado_en: new Date().toISOString(),
     })
     .eq('id', 1)

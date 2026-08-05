@@ -2,6 +2,15 @@ import { createClient } from '@/lib/supabase/server'
 import { requierePermiso } from '@/lib/permisos'
 import { NuevaCotizacionForm } from './nueva-cotizacion-form'
 
+type ProductoRow = {
+  id: number
+  nombre: string
+  codigo: string | null
+  cantidad: number
+  precio_venta: number | null
+  unidades_medida: { nombre: string } | null
+}
+
 export default async function NuevaCotizacionPage() {
   await requierePermiso('cotizaciones')
   const supabase = await createClient()
@@ -10,12 +19,25 @@ export default async function NuevaCotizacionPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const [{ data: clientes }, { data: productos }, { data: vendedores }, { data: configuracion }] =
+  const [{ data: clientes }, { data: productos }, { data: vendedores }, { data: configuracion }, { data: unidadesMedida }] =
     await Promise.all([
-      supabase.from('clientes').select('id, nombre, documento, vendedor_id').eq('activo', true).order('nombre'),
-      supabase.from('productos').select('id, nombre, cantidad, precio_venta').order('nombre'),
+      supabase
+        .from('clientes')
+        .select('id, nombre, documento, direccion, vendedor_id')
+        .eq('activo', true)
+        .order('nombre'),
+      supabase
+        .from('productos')
+        .select('id, nombre, codigo, cantidad, precio_venta, unidades_medida(nombre)')
+        .order('nombre')
+        .returns<ProductoRow[]>(),
       supabase.from('usuarios_perfil').select('id, nombre').order('nombre'),
-      supabase.from('configuracion').select('empresa').eq('id', 1).single(),
+      supabase
+        .from('configuracion')
+        .select('empresa, ruc, direccion, telefono, email, titular, yape, cuenta_bcp_soles, cci_bcp, cuenta_bbva_soles, cci_bbva')
+        .eq('id', 1)
+        .single(),
+      supabase.from('unidades_medida').select('id, nombre').order('nombre'),
     ])
 
   return (
@@ -32,8 +54,21 @@ export default async function NuevaCotizacionPage() {
           clientes={clientes}
           productos={productos ?? []}
           vendedores={vendedores ?? []}
+          unidadesMedida={unidadesMedida ?? []}
           usuarioActualId={user?.id ?? ''}
-          empresa={configuracion?.empresa ?? 'Distribuidora LimpiezaPro'}
+          configuracion={{
+            empresa: configuracion?.empresa ?? 'Distribuidora LimpiezaPro',
+            ruc: configuracion?.ruc ?? null,
+            direccion: configuracion?.direccion ?? null,
+            telefono: configuracion?.telefono ?? null,
+            email: configuracion?.email ?? null,
+            titular: configuracion?.titular ?? null,
+            yape: configuracion?.yape ?? null,
+            cuenta_bcp_soles: configuracion?.cuenta_bcp_soles ?? null,
+            cci_bcp: configuracion?.cci_bcp ?? null,
+            cuenta_bbva_soles: configuracion?.cuenta_bbva_soles ?? null,
+            cci_bbva: configuracion?.cci_bbva ?? null,
+          }}
         />
       )}
     </div>

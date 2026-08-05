@@ -35,6 +35,14 @@ export function finDiaPeru(fechaISO: string): string {
   return `${fechaISO}T23:59:59-05:00`
 }
 
+/** `dias` adelante desde una fecha ISO dada (aritmetica pura de año/mes via
+ * Date.UTC, que normaliza el desborde de dia sin mutar un objeto Date
+ * existente). Usado para calcular vigencia de cotizaciones y similares. */
+export function sumarDiasISO(fechaISO: string, dias: number): string {
+  const [anio, mes, dia] = fechaISO.split('-').map(Number)
+  return new Date(Date.UTC(anio, mes - 1, dia + dias)).toISOString().slice(0, 10)
+}
+
 /** Dia 1 del mes actual en Peru, `mesesAtras` meses atras. */
 export function inicioDeMesPeru(mesesAtras = 0): Date {
   const [anio, mes] = hoyPeruISO().split('-').map(Number)

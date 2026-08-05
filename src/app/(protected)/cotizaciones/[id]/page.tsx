@@ -4,14 +4,17 @@ import { createClient } from '@/lib/supabase/server'
 import { requierePermiso } from '@/lib/permisos'
 import { DescargarPdfBoton } from './descargar-pdf-boton'
 import { ConvertirVentaBoton } from './convertir-venta-boton'
-import { calcularFechaVencimiento } from '@/lib/motivos'
-import { LogoEmpresa } from '@/components/logo-empresa'
+import { CotizacionDocumento, type LineaDocumentoCotizacion } from '@/components/cotizacion-documento'
+
+const SIMBOLO_MONEDA: Record<string, string> = { PEN: 'S/', USD: '$' }
 
 type DetalleRow = {
   id: number
   cantidad: number
   precio_unitario: number
-  productos: { nombre: string } | null
+  caracteristicas: string | null
+  unidad_nombre: string | null
+  productos: { nombre: string; codigo: string | null; unidades_medida: { nombre: string } | null } | null
 }
 
 export default async function CotizacionPage({
@@ -27,16 +30,20 @@ export default async function CotizacionPage({
     supabase
       .from('cotizaciones')
       .select(
-        'id, numero, fecha, dias_credito, medio_pago, subtotal, igv, total, observacion, clientes(nombre, documento, direccion), vendedor:vendedor_id(nombre)'
+        'id, numero, fecha, dias_credito, medio_pago, subtotal, igv, total, observacion, moneda, fecha_entrega, documento_referencia, vigencia_dias, descuento_tipo, descuento_valor, descuento_monto, clientes(nombre, documento, direccion), vendedor:vendedor_id(nombre)'
       )
       .eq('id', id)
       .single(),
     supabase
       .from('detalle_cotizacion')
-      .select('id, cantidad, precio_unitario, productos(nombre)')
+      .select('id, cantidad, precio_unitario, caracteristicas, unidad_nombre, productos(nombre, codigo, unidades_medida(nombre))')
       .eq('cotizacion_id', id)
       .returns<DetalleRow[]>(),
-    supabase.from('configuracion').select('empresa, ruc, direccion, telefono').eq('id', 1).single(),
+    supabase
+      .from('configuracion')
+      .select('empresa, ruc, direccion, telefono, email, titular, yape, cuenta_bcp_soles, cci_bcp, cuenta_bbva_soles, cci_bbva')
+      .eq('id', 1)
+      .single(),
   ])
 
   if (!cotizacion) {
@@ -45,6 +52,16 @@ export default async function CotizacionPage({
 
   const cliente = Array.isArray(cotizacion.clientes) ? cotizacion.clientes[0] : cotizacion.clientes
   const vendedor = Array.isArray(cotizacion.vendedor) ? cotizacion.vendedor[0] : cotizacion.vendedor
+  const simbolo = SIMBOLO_MONEDA[cotizacion.moneda] ?? 'S/'
+
+  const lineas: LineaDocumentoCotizacion[] = (detalles ?? []).map((d) => ({
+    codigo: d.productos?.codigo ?? null,
+    nombre: d.productos?.nombre ?? '—',
+    unidad: d.unidad_nombre ?? d.productos?.unidades_medida?.nombre ?? null,
+    cantidad: Number(d.cantidad),
+    precioUnitario: Number(d.precio_unitario),
+    caracteristicas: d.caracteristicas,
+  }))
 
   return (
     <div>
@@ -58,115 +75,39 @@ export default async function CotizacionPage({
         </div>
       </div>
 
-      <div className="mx-auto max-w-4xl rounded-3xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] p-10 shadow-lg shadow-slate-500/5 print:max-w-none print:rounded-none print:border-0 print:p-0 print:shadow-none">
-        <div className="flex items-start justify-between gap-6 border-b-2 border-[#1e293b] dark:border-slate-600 pb-5">
-          <div className="flex items-start gap-4">
-            <LogoEmpresa className="h-14 w-14 shrink-0 object-contain" fallback={null} />
-            <div>
-              <h1 className="text-xl font-extrabold text-[#1e293b] dark:text-slate-100">
-                {configuracion?.empresa ?? 'Distribuidora LimpiezaPro'}
-              </h1>
-              <p className="mt-1 text-xs text-[#64748b] dark:text-slate-400">{configuracion?.direccion || 'Piura, Perú'}</p>
-              <p className="text-xs text-[#64748b] dark:text-slate-400">{configuracion?.telefono && `Teléfono: ${configuracion.telefono}`}</p>
-            </div>
-          </div>
-          <div className="w-56 shrink-0 rounded-xl border-2 border-[#1e293b] dark:border-slate-600 p-4 text-center">
-            {configuracion?.ruc && <p className="text-xs font-bold text-[#1e293b] dark:text-slate-100">RUC {configuracion.ruc}</p>}
-            <p className="mt-1 text-sm font-extrabold tracking-wide text-[#1e293b] dark:text-slate-100 uppercase">Cotización</p>
-            <p className="mt-1 text-lg font-extrabold text-sky-600">{cotizacion.numero}</p>
-          </div>
-        </div>
-
-        <div className="mt-5 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
-          <div className="rounded-xl border border-[#e2e8f0] dark:border-slate-700 p-4">
-            <p className="text-[10px] font-bold tracking-wide text-[#94a3b8] dark:text-slate-500 uppercase">Cliente</p>
-            <p className="mt-1 font-bold text-[#1e293b] dark:text-slate-100">{cliente?.nombre ?? '—'}</p>
-            <p className="text-[#64748b] dark:text-slate-400">Documento: {cliente?.documento || '—'}</p>
-            {cliente?.direccion && <p className="text-[#64748b] dark:text-slate-400">{cliente.direccion}</p>}
-          </div>
-          <div className="rounded-xl border border-[#e2e8f0] dark:border-slate-700 p-4">
-            <p className="text-[10px] font-bold tracking-wide text-[#94a3b8] dark:text-slate-500 uppercase">Detalles</p>
-            <div className="mt-1.5 space-y-0.5">
-              <p className="flex justify-between text-[#1e293b] dark:text-slate-100">
-                <span className="text-[#64748b] dark:text-slate-400">Fecha</span>
-                <span className="font-semibold">{cotizacion.fecha}</span>
-              </p>
-              <p className="flex justify-between text-[#1e293b] dark:text-slate-100">
-                <span className="text-[#64748b] dark:text-slate-400">Días de crédito</span>
-                <span className="font-semibold">{cotizacion.dias_credito}</span>
-              </p>
-              <p className="flex justify-between text-[#1e293b] dark:text-slate-100">
-                <span className="text-[#64748b] dark:text-slate-400">
-                  {cotizacion.dias_credito === 'Contado' ? 'Condición de pago' : 'Fecha de vencimiento'}
-                </span>
-                <span className="font-semibold">
-                  {calcularFechaVencimiento(cotizacion.fecha, cotizacion.dias_credito)}
-                </span>
-              </p>
-              <p className="flex justify-between text-[#1e293b] dark:text-slate-100">
-                <span className="text-[#64748b] dark:text-slate-400">Medio de pago</span>
-                <span className="font-semibold">{cotizacion.medio_pago}</span>
-              </p>
-              <p className="flex justify-between text-[#1e293b] dark:text-slate-100">
-                <span className="text-[#64748b] dark:text-slate-400">Vendedor</span>
-                <span className="font-semibold">{vendedor?.nombre ?? '—'}</span>
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <table className="mt-6 w-full text-left text-sm">
-          <thead>
-            <tr className="border-y-2 border-[#1e293b] dark:border-slate-600 text-[#1e293b] dark:text-slate-100">
-              <th className="py-2 font-bold">Descripción</th>
-              <th className="py-2 font-bold">Cantidad</th>
-              <th className="py-2 font-bold">P. unit.</th>
-              <th className="py-2 text-right font-bold">Valor venta</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(detalles ?? []).map((d) => (
-              <tr key={d.id} className="border-b border-[#f1f5f9] dark:border-slate-800">
-                <td className="py-2.5">{d.productos?.nombre ?? '—'}</td>
-                <td className="py-2.5">{d.cantidad}</td>
-                <td className="py-2.5">S/ {Number(d.precio_unitario).toFixed(2)}</td>
-                <td className="py-2.5 text-right">
-                  S/ {(Number(d.cantidad) * Number(d.precio_unitario)).toFixed(2)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        <div className="mt-6 flex justify-end">
-          <div className="w-64 space-y-1.5 rounded-xl border border-[#e2e8f0] dark:border-slate-700 p-4">
-            <p className="flex justify-between text-sm text-[#64748b] dark:text-slate-400">
-              <span>Op. gravada</span>
-              <span className="font-semibold text-[#1e293b] dark:text-slate-100">S/ {Number(cotizacion.subtotal).toFixed(2)}</span>
-            </p>
-            <p className="flex justify-between text-sm text-[#64748b] dark:text-slate-400">
-              <span>IGV (18%)</span>
-              <span className="font-semibold text-[#1e293b] dark:text-slate-100">S/ {Number(cotizacion.igv).toFixed(2)}</span>
-            </p>
-            <p className="flex justify-between border-t-2 border-[#1e293b] dark:border-slate-600 pt-2 text-lg font-extrabold text-[#1e293b] dark:text-slate-100">
-              <span>Total</span>
-              <span>S/ {Number(cotizacion.total).toFixed(2)}</span>
-            </p>
-          </div>
-        </div>
-
-        {cotizacion.observacion && (
-          <div className="mt-6 rounded-xl bg-[#f8fafc] dark:bg-slate-800/60 p-4 text-sm text-[#64748b] dark:text-slate-400">
-            <span className="font-bold text-[#1e293b] dark:text-slate-100">Observación: </span>
-            {cotizacion.observacion}
-          </div>
-        )}
-
-        <p className="mt-10 text-center text-[11px] text-[#94a3b8] dark:text-slate-500">
-          Cotización válida sujeta a disponibilidad de stock al momento de confirmar el pedido — documento
-          sin validez tributaria.
-        </p>
-      </div>
+      <CotizacionDocumento
+        numero={cotizacion.numero}
+        empresa={configuracion?.empresa ?? 'Distribuidora LimpiezaPro'}
+        titular={configuracion?.titular ?? null}
+        ruc={configuracion?.ruc ?? null}
+        direccion={configuracion?.direccion ?? null}
+        telefono={configuracion?.telefono ?? null}
+        email={configuracion?.email ?? null}
+        yape={configuracion?.yape ?? null}
+        cuentaBcpSoles={configuracion?.cuenta_bcp_soles ?? null}
+        cciBcp={configuracion?.cci_bcp ?? null}
+        cuentaBbvaSoles={configuracion?.cuenta_bbva_soles ?? null}
+        cciBbva={configuracion?.cci_bbva ?? null}
+        fecha={cotizacion.fecha}
+        fechaEntrega={cotizacion.fecha_entrega}
+        documentoReferencia={cotizacion.documento_referencia}
+        condicionVenta={cotizacion.dias_credito}
+        cliente={cliente?.nombre ?? '—'}
+        documentoCliente={cliente?.documento ?? null}
+        direccionCliente={cliente?.direccion ?? null}
+        vendedor={vendedor?.nombre ?? '—'}
+        lineas={lineas}
+        subtotal={Number(cotizacion.subtotal)}
+        igv={Number(cotizacion.igv)}
+        descuentoMonto={Number(cotizacion.descuento_monto ?? 0)}
+        descuentoTipo={cotizacion.descuento_tipo}
+        descuentoValor={Number(cotizacion.descuento_valor ?? 0)}
+        total={Number(cotizacion.total)}
+        simbolo={simbolo}
+        moneda={cotizacion.moneda === 'USD' ? 'USD' : 'PEN'}
+        observaciones={cotizacion.observacion}
+        vigenciaDias={cotizacion.vigencia_dias}
+      />
     </div>
   )
 }

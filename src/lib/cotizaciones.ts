@@ -35,15 +35,41 @@ function aCentimos(valor: number): number {
  * les suma el 18% encima). Los comprobantes ya EMITIDOS no se ven afectados
  * (sus totales quedaron grabados al momento de emitir, no se recalculan).
  */
-export function calcularImportes(
-  lineas: { cantidad: number; precio_unitario: number }[]
-): ImportesDocumento {
-  const total = aCentimos(
-    lineas.reduce((acc, l) => acc + l.cantidad * l.precio_unitario, 0)
-  )
-  const subtotal = aCentimos(total / (1 + IGV_TASA))
+function importesDesdeTotal(total: number): ImportesDocumento {
+  const totalRedondeado = aCentimos(total)
+  const subtotal = aCentimos(totalRedondeado / (1 + IGV_TASA))
 
   // igv se deriva de total - subtotal (ya redondeados) para que
   // subtotal + igv === total exactamente, sin centimos huerfanos.
-  return { subtotal, igv: aCentimos(total - subtotal), total }
+  return { subtotal, igv: aCentimos(totalRedondeado - subtotal), total: totalRedondeado }
+}
+
+export function calcularImportes(
+  lineas: { cantidad: number; precio_unitario: number }[]
+): ImportesDocumento {
+  const total = lineas.reduce((acc, l) => acc + l.cantidad * l.precio_unitario, 0)
+  return importesDesdeTotal(total)
+}
+
+export type DescuentoTipo = 'porcentaje' | 'monto'
+
+/**
+ * Descuento global de una cotizacion — hoy solo lo usa ese modulo, Ventas y
+ * Compras no tienen este concepto (por eso no vive dentro de
+ * calcularImportes, para no cambiarles el calculo a ellos).
+ */
+export function calcularDescuento(
+  total: number,
+  tipo: DescuentoTipo | null,
+  valor: number
+): number {
+  if (!tipo || !valor || valor <= 0) return 0
+  const bruto = tipo === 'porcentaje' ? (total * valor) / 100 : valor
+  return Math.min(aCentimos(bruto), total)
+}
+
+/** Aplica un descuento ya calculado (ver `calcularDescuento`) sobre los
+ * importes brutos y vuelve a derivar subtotal/IGV desde el total resultante. */
+export function aplicarDescuento(importesBrutos: ImportesDocumento, descuento: number): ImportesDocumento {
+  return importesDesdeTotal(importesBrutos.total - descuento)
 }

@@ -5,6 +5,13 @@
    se adapta a propósito vía dark:, en vez de heredar blanco-sobre-blanco. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+html {
+  /* Reduce el tamaño base para que todo el ERP (que usa clases text-sm/base/lg
+     de Tailwind, medidas en rem) se vea mas compacto sin tener que tocar cada
+     pantalla una por una. */
+  font-size: 87.5%;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

@@ -4,12 +4,19 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { tienePermiso } from '@/lib/permisos'
-import { calcularImportes } from '@/lib/cotizaciones'
+import { calcularImportes, calcularDescuento, aplicarDescuento, type DescuentoTipo } from '@/lib/cotizaciones'
 import { fechaDocumentoFueraDeRango } from '@/lib/fecha'
 
 export type EstadoFormulario = { error: string | null }
 
-type Linea = { producto_id: number; cantidad: number; precio_unitario: number }
+type Linea = {
+  producto_id: number
+  cantidad: number
+  precio_unitario: number
+  caracteristicas?: string | null
+  fecha_entrega?: string | null
+  unidad_nombre?: string | null
+}
 
 export async function crearCotizacion(
   _prevState: EstadoFormulario,
@@ -26,6 +33,14 @@ export async function crearCotizacion(
   const vendedorId = formData.get('vendedor_id') as string
   const observacion = (formData.get('observacion') as string)?.trim()
   const lineasRaw = formData.get('lineas') as string
+  const moneda = (formData.get('moneda') as string) || 'PEN'
+  const fechaEntrega = (formData.get('fecha_entrega') as string) || null
+  const documentoReferencia = (formData.get('documento_referencia') as string)?.trim() || null
+  const vigenciaDias = Number(formData.get('vigencia_dias')) || 15
+  const descuentoTipoRaw = formData.get('descuento_tipo') as string
+  const descuentoTipo: DescuentoTipo | null =
+    descuentoTipoRaw === 'porcentaje' || descuentoTipoRaw === 'monto' ? descuentoTipoRaw : null
+  const descuentoValor = Number(formData.get('descuento_valor')) || 0
 
   if (!clienteId) {
     return { error: 'Selecciona un cliente.' }
@@ -37,7 +52,16 @@ export async function crearCotizacion(
     return { error: 'La fecha de la cotización no puede ser futura ni atrasarse más de 3 días.' }
   }
   if (!vendedorId) {
-    return { error: 'Selecciona el vendedor (pestaña Vendedor).' }
+    return { error: 'Selecciona el vendedor.' }
+  }
+  if (moneda !== 'PEN' && moneda !== 'USD') {
+    return { error: 'Moneda inválida.' }
+  }
+  if (vigenciaDias <= 0) {
+    return { error: 'La vigencia de la oferta debe ser mayor a 0 días.' }
+  }
+  if (descuentoValor < 0) {
+    return { error: 'El descuento no puede ser negativo.' }
   }
 
   let lineas: Linea[]
@@ -55,7 +79,9 @@ export async function crearCotizacion(
     return { error: 'El precio unitario no puede ser negativo.' }
   }
 
-  const { subtotal, igv, total } = calcularImportes(lineas)
+  const importesBrutos = calcularImportes(lineas)
+  const descuento = calcularDescuento(importesBrutos.total, descuentoTipo, descuentoValor)
+  const { subtotal, igv, total } = aplicarDescuento(importesBrutos, descuento)
 
   const supabase = await createClient()
   const {
@@ -72,6 +98,13 @@ export async function crearCotizacion(
       vendedor_id: vendedorId,
       usuario_id: user?.id ?? null,
       observacion: observacion || null,
+      moneda,
+      fecha_entrega: fechaEntrega,
+      documento_referencia: documentoReferencia,
+      vigencia_dias: vigenciaDias,
+      descuento_tipo: descuentoTipo,
+      descuento_valor: descuentoValor,
+      descuento_monto: descuento,
       subtotal,
       igv,
       total,
@@ -89,6 +122,9 @@ export async function crearCotizacion(
       producto_id: l.producto_id,
       cantidad: l.cantidad,
       precio_unitario: l.precio_unitario,
+      caracteristicas: l.caracteristicas || null,
+      fecha_entrega: l.fecha_entrega || null,
+      unidad_nombre: l.unidad_nombre || null,
     }))
   )
 
