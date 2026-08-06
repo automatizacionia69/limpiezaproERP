@@ -367,11 +367,11 @@ export function Sidebar({
       <Link
         key={subItem.href}
         href={subItem.href}
-        className={`group flex items-center gap-3 rounded-xl py-2.5 pr-4 pl-11 text-[13.5px] font-semibold transition-all ${
+        className={`group flex items-center gap-2.5 rounded-lg py-2 pr-3.5 pl-10 text-[12.5px] font-semibold transition-all ${
           active ? 'bg-white/10 text-white' : 'text-slate-500 hover:bg-white/5 hover:text-slate-200'
         }`}
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4 shrink-0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-3.5 w-3.5 shrink-0">
           {subItem.icon}
         </svg>
         <span>{subItem.label}</span>
@@ -389,9 +389,9 @@ export function Sidebar({
           <button
             type="button"
             onClick={() => alternarSubmenu(item.href)}
-            className={`group flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-bold transition-all ${
+            className={`group flex w-full items-center gap-2.5 rounded-xl px-3.5 py-2 text-[13px] font-bold transition-all ${
               active
-                ? `bg-gradient-to-r ${item.gradient} text-white shadow-lg ${item.glow}`
+                ? `bg-gradient-to-r ${item.gradient} text-white shadow-md ${item.glow}`
                 : 'text-slate-400 hover:bg-white/5 hover:text-white'
             }`}
           >
@@ -400,7 +400,7 @@ export function Sidebar({
               fill="none"
               stroke="currentColor"
               strokeWidth={2}
-              className={`h-5 w-5 shrink-0 transition-transform ${active ? '' : 'group-hover:scale-110'}`}
+              className={`h-4 w-4 shrink-0 transition-transform ${active ? '' : 'group-hover:scale-110'}`}
             >
               {item.icon}
             </svg>
