@@ -48,6 +48,41 @@ const NAV_ITEMS = [
         d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h18M16.5 3 21 7.5m0 0L16.5 12M21 7.5H3"
       />
     ),
+    subItems: [
+      {
+        href: '/movimientos/entradas',
+        label: 'Entradas',
+        icon: (
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"
+          />
+        ),
+      },
+      {
+        href: '/movimientos/salidas',
+        label: 'Salidas',
+        icon: (
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"
+          />
+        ),
+      },
+      {
+        href: '/movimientos/ajustes',
+        label: 'Ajustes',
+        icon: (
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75"
+          />
+        ),
+      },
+    ],
   },
   {
     href: '/compras',
@@ -279,19 +314,29 @@ export function Sidebar({
   // Todos abiertos en SSR (evita mismatch de hidratación); la preferencia
   // guardada se aplica recién en el cliente.
   const [abiertos, setAbiertos] = useState<Record<string, boolean>>(TODOS_ABIERTOS)
+  const [submenusAbiertos, setSubmenusAbiertos] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     try {
       const guardado = localStorage.getItem('sidebar-grupos')
       if (guardado) setAbiertos({ ...TODOS_ABIERTOS, ...JSON.parse(guardado) })
+      const guardadoSub = localStorage.getItem('sidebar-submenus')
+      if (guardadoSub) setSubmenusAbiertos(JSON.parse(guardadoSub))
     } catch {}
   }, [])
 
-  // El grupo de la página activa siempre queda abierto para no perder de vista dónde estás.
+  // El grupo (y el submenú, si aplica) de la página activa siempre queda
+  // abierto para no perder de vista dónde estás.
   useEffect(() => {
     const grupoActivo = grupos.find((g) => g.items.some((item) => esActivo(item, pathname)))
     if (grupoActivo) {
       setAbiertos((prev) => (prev[grupoActivo.clave] ? prev : { ...prev, [grupoActivo.clave]: true }))
+    }
+    const itemConSubActivo = items.find(
+      (item) => 'subItems' in item && item.subItems?.some((s) => pathname === s.href || pathname.startsWith(s.href + '/'))
+    )
+    if (itemConSubActivo) {
+      setSubmenusAbiertos((prev) => (prev[itemConSubActivo.href] ? prev : { ...prev, [itemConSubActivo.href]: true }))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname])
@@ -306,8 +351,81 @@ export function Sidebar({
     })
   }
 
+  function alternarSubmenu(href: string) {
+    setSubmenusAbiertos((prev) => {
+      const siguiente = { ...prev, [href]: !prev[href] }
+      try {
+        localStorage.setItem('sidebar-submenus', JSON.stringify(siguiente))
+      } catch {}
+      return siguiente
+    })
+  }
+
+  function renderSubItem(subItem: { href: string; label: string; icon: React.ReactNode }) {
+    const active = pathname === subItem.href || pathname.startsWith(subItem.href + '/')
+    return (
+      <Link
+        key={subItem.href}
+        href={subItem.href}
+        className={`group flex items-center gap-3 rounded-xl py-2.5 pr-4 pl-11 text-[13.5px] font-semibold transition-all ${
+          active ? 'bg-white/10 text-white' : 'text-slate-500 hover:bg-white/5 hover:text-slate-200'
+        }`}
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4 shrink-0">
+          {subItem.icon}
+        </svg>
+        <span>{subItem.label}</span>
+      </Link>
+    )
+  }
+
   function renderItem(item: NavItem) {
     const active = esActivo(item, pathname)
+
+    if ('subItems' in item && !collapsed) {
+      const abierto = submenusAbiertos[item.href] ?? false
+      return (
+        <div key={item.href}>
+          <button
+            type="button"
+            onClick={() => alternarSubmenu(item.href)}
+            className={`group flex w-full items-center gap-3 rounded-2xl px-4 py-3.5 text-sm font-bold transition-all ${
+              active
+                ? `bg-gradient-to-r ${item.gradient} text-white shadow-lg ${item.glow}`
+                : 'text-slate-400 hover:bg-white/5 hover:text-white'
+            }`}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              className={`h-5 w-5 shrink-0 transition-transform ${active ? '' : 'group-hover:scale-110'}`}
+            >
+              {item.icon}
+            </svg>
+            <span className="flex-1 text-left">{item.label}</span>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2.5}
+              className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${abierto ? 'rotate-180' : ''}`}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+            </svg>
+          </button>
+          <div
+            className={`grid transition-[grid-template-rows] duration-200 ${
+              abierto ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'
+            }`}
+          >
+            <div className="space-y-1 overflow-hidden pt-1">{item.subItems?.map((s) => renderSubItem(s))}</div>
+          </div>
+        </div>
+      )
+    }
+
     return (
       <Link
         key={item.href}
