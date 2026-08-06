@@ -55,9 +55,16 @@ fecha): `add-usuarios-dni.sql`, `add-ventas.sql`, `add-compras.sql`,
 `ordenes_venta.dias_credito`, para que "Facturar" no pierda el plazo de
 crédito que ya se había elegido en la cotización), `add-notificaciones.sql`
 (tabla `notificaciones`, 2026-08-01 — campana de pedidos creados por el
-chatbot, ver más abajo). `import-inventario.sql` /
-`import-inventario-sin-comentarios.sql` fueron una carga de datos puntual
-(las ~140 SKUs reales), no schema.
+chatbot, ver más abajo), `add-entradas-cabecera.sql` (tabla
+`entradas_cabecera` + columnas `movimientos.entrada_cabecera_id`/`lote`/
+`fecha_vencimiento`), `add-configuracion-lote-vencimiento.sql` (columna
+`configuracion.usa_lote_vencimiento`), `add-salidas-cabecera.sql` (tabla
+`salidas_cabecera` + `movimientos.salida_cabecera_id`) y
+`add-ajustes-cabecera.sql` (tabla `ajustes_cabecera`, sin proveedor ni
+documento + `movimientos.ajuste_cabecera_id`) — las 4 del rediseño de
+Movimientos > Entradas/Salidas/Ajustes de 2026-08-06, ver más abajo.
+`import-inventario.sql` / `import-inventario-sin-comentarios.sql` fueron una
+carga de datos puntual (las ~140 SKUs reales), no schema.
 
 **Tablas/conceptos clave para orientarse rápido** (no exhaustivo — confirmar
 detalle en el SQL antes de asumir columnas):
@@ -66,6 +73,22 @@ detalle en el SQL antes de asumir columnas):
   negativo a propósito (ver `add-permitir-stock-negativo.sql`).
 - `movimientos` — ledger inmutable de entradas/salidas/ajustes (costeo
   promedio ponderado). Nunca se borra ni edita un movimiento ya insertado.
+- `entradas_cabecera`/`salidas_cabecera`/`ajustes_cabecera` (2026-08-06) —
+  cada sub-apartado de **Movimientos** (Entradas/Salidas/Ajustes) tiene su
+  propia cabecera (fecha, motivo, numeración `ENT-`/`SAL-`/`AJU-`) enlazada
+  a N filas de `movimientos` vía `entrada_cabecera_id`/`salida_cabecera_id`/
+  `ajuste_cabecera_id`. Entradas y Salidas comparten el catálogo de tipos de
+  documento (`movimientos/documentos.ts`) y tienen Proveedor opcional (RUC
+  con autocompletado SUNAT/Decolecta, obligatorio solo si motivo=compra o
+  motivo=devolución a proveedor); Ajustes **no** tiene proveedor ni
+  documento — es una corrección 100% interna. Salidas no pide costo unitario
+  por ítem (el trigger lo autocompleta); Ajustes tampoco, y su "cantidad"
+  por ítem es el conteo físico absoluto, no un delta. Ninguna de las 3 tiene
+  política de DELETE — igual que `movimientos`, una vez finalizada no se
+  edita ni se borra. El interruptor `configuracion.usa_lote_vencimiento`
+  (apagado por defecto — LimpiezaPro tiene rotación rápida y no lo necesita)
+  controla si los campos Lote/Fecha de vencimiento aparecen en Entradas y
+  Salidas.
 - `usuarios_perfil` (rol: `admin`/`almacen`/`ventas`) + `usuarios_permisos`
   — permisos por módulo por usuario, capa adicional sobre RLS por rol.
 - `ordenes_compra`/`detalle_compra` y `ordenes_venta`/`detalle_venta` —

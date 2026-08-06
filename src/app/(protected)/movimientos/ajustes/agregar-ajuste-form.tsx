@@ -1,0 +1,299 @@
+'use client'
+
+import { useActionState, useMemo, useState } from 'react'
+import { haceNDiasPeruISO, fechaDocumentoFueraDeRango } from '@/lib/fecha'
+import { Buscador } from '@/components/buscador'
+import { crearAjuste, type EstadoFormulario } from './actions'
+import { MOTIVOS_AJUSTE } from './constantes'
+
+type Producto = { id: number; nombre: string; codigo: string | null; cantidad: number }
+
+const CAMPO_BASE =
+  'w-full rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-3 text-base text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-amber-500 focus:ring-4 focus:ring-amber-100 disabled:cursor-not-allowed disabled:bg-[#f8fafc] disabled:text-[#94a3b8] dark:disabled:bg-slate-800/40 dark:disabled:text-slate-500'
+const CAMPO = `mt-1.5 ${CAMPO_BASE}`
+// El icono nativo del <input type="date"> sale minúsculo por defecto — lo
+// agrandamos y le damos más "hitbox" de clic (igual en Entradas/Salidas).
+const CAMPO_FECHA = `${CAMPO} [&::-webkit-calendar-picker-indicator]:scale-150 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:mr-1.5`
+const LABEL = 'block text-sm font-bold text-[#1e293b] dark:text-slate-100'
+const ERROR = 'mt-1.5 text-xs font-semibold text-red-600'
+
+type Errores = Partial<Record<'fecha' | 'motivo' | 'motivoOtro' | 'items', string>>
+
+type ItemAjuste = {
+  id: string
+  productoId: number
+  productoNombre: string
+  productoCodigo: string | null
+  stockActual: number
+  cantidad: number | ''
+}
+
+function IconoBasura() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
+      />
+    </svg>
+  )
+}
+
+export function AgregarAjusteForm({
+  usuarioNombre,
+  usuarioRol,
+  productos,
+  fechaHoy,
+}: {
+  usuarioNombre: string
+  usuarioRol: string
+  productos: Producto[]
+  fechaHoy: string
+}) {
+  const [fecha, setFecha] = useState(fechaHoy)
+  const [motivo, setMotivo] = useState('')
+  const [motivoOtro, setMotivoOtro] = useState('')
+  const [observaciones, setObservaciones] = useState('')
+
+  const [items, setItems] = useState<ItemAjuste[]>([])
+  const [productoParaAgregar, setProductoParaAgregar] = useState<number | ''>('')
+
+  const [errores, setErrores] = useState<Errores>({})
+
+  const [estado, formAction] = useActionState<EstadoFormulario, FormData>(crearAjuste, { error: null })
+
+  const opcionesProductos = useMemo(
+    () => productos.map((p) => ({ id: p.id, nombre: p.nombre, subtitulo: `stock: ${p.cantidad}` })),
+    [productos]
+  )
+
+  function agregarProductoDesdeBuscador(id: number | string | '') {
+    const productoId = Number(id)
+    if (!productoId) return
+    const producto = productos.find((p) => p.id === productoId)
+    if (!producto) return
+    setItems((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        productoId: producto.id,
+        productoNombre: producto.nombre,
+        productoCodigo: producto.codigo,
+        stockActual: producto.cantidad,
+        cantidad: producto.cantidad,
+      },
+    ])
+    setProductoParaAgregar('')
+  }
+
+  function actualizarItem(id: string, valor: string) {
+    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, cantidad: valor === '' ? '' : Number(valor) } : it)))
+  }
+
+  function alQuitarItem(id: string) {
+    setItems((prev) => prev.filter((it) => it.id !== id))
+  }
+
+  function validar(): boolean {
+    const nuevos: Errores = {}
+    if (!fecha) nuevos.fecha = 'La fecha del ajuste es obligatoria.'
+    else if (fechaDocumentoFueraDeRango(fecha)) nuevos.fecha = 'La fecha no puede ser futura ni atrasarse más de 3 días.'
+    if (!motivo) nuevos.motivo = 'Selecciona un motivo.'
+    if (motivo === 'otro' && !motivoOtro.trim()) nuevos.motivoOtro = 'Especifica el motivo.'
+    if (items.length === 0) nuevos.items = 'Agrega al menos un ítem al ajuste.'
+    else if (items.some((it) => it.cantidad === '' || Number(it.cantidad) < 0))
+      nuevos.items = 'Revisa el conteo físico de cada ítem.'
+    setErrores(nuevos)
+    return Object.keys(nuevos).length === 0
+  }
+
+  function alEnviar(e: React.FormEvent) {
+    if (!validar()) e.preventDefault()
+  }
+
+  const itemsJson = JSON.stringify(
+    items.map((it) => ({
+      producto_id: it.productoId,
+      cantidad: Number(it.cantidad) || 0,
+    }))
+  )
+
+  return (
+    <form
+      action={formAction}
+      onSubmit={alEnviar}
+      className="rounded-3xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] p-7 shadow-lg shadow-slate-500/5"
+    >
+      <input type="hidden" name="fecha" value={fecha} />
+      <input type="hidden" name="motivo" value={motivo} />
+      <input type="hidden" name="motivo_otro" value={motivoOtro} />
+      <input type="hidden" name="observaciones" value={observaciones} />
+      <input type="hidden" name="items" value={itemsJson} />
+
+      <h2 className="text-lg font-extrabold text-[#1e293b] dark:text-slate-100">Agregar Ajuste</h2>
+      <p className="mt-1 text-sm font-medium text-[#64748b] dark:text-slate-400">
+        Corrección interna de inventario — luego agrega los productos en la sección de Ítems.
+      </p>
+
+      <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div>
+          <label className={LABEL}>Fecha del ajuste *</label>
+          <input
+            type="date"
+            value={fecha}
+            min={haceNDiasPeruISO(3)}
+            max={fechaHoy}
+            onChange={(e) => setFecha(e.target.value)}
+            className={CAMPO_FECHA}
+          />
+          {errores.fecha && <p className={ERROR}>{errores.fecha}</p>}
+        </div>
+
+        <div>
+          <label className={LABEL}>Usuario</label>
+          <input type="text" value={`${usuarioNombre} — ${usuarioRol}`} disabled readOnly className={CAMPO} />
+        </div>
+
+        <div className="sm:col-span-2 lg:col-span-1">
+          <label className={LABEL}>Motivo del ajuste *</label>
+          <select value={motivo} onChange={(e) => setMotivo(e.target.value)} className={CAMPO}>
+            <option value="">Selecciona un motivo...</option>
+            {MOTIVOS_AJUSTE.map((m) => (
+              <option key={m.valor} value={m.valor}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+          {errores.motivo && <p className={ERROR}>{errores.motivo}</p>}
+          {motivo === 'otro' && (
+            <div className="mt-3">
+              <input
+                type="text"
+                value={motivoOtro}
+                onChange={(e) => setMotivoOtro(e.target.value)}
+                placeholder="Especifica el motivo"
+                className={CAMPO_BASE}
+              />
+              {errores.motivoOtro && <p className={ERROR}>{errores.motivoOtro}</p>}
+            </div>
+          )}
+        </div>
+
+        <div className="sm:col-span-2 lg:col-span-1">
+          <label className={LABEL}>Observaciones</label>
+          <textarea
+            value={observaciones}
+            maxLength={500}
+            onChange={(e) => setObservaciones(e.target.value)}
+            placeholder="Opcional"
+            rows={1}
+            className={`${CAMPO} resize-none`}
+          />
+        </div>
+      </div>
+
+      <p className="mt-1.5 text-xs font-medium text-[#94a3b8] dark:text-slate-500">
+        No se aceptan fechas futuras ni atrasos de más de 3 días.
+      </p>
+
+      <div className="mt-8 rounded-2xl bg-amber-50/60 dark:bg-amber-950/10 p-5">
+        <h3 className="text-xs font-bold tracking-widest text-[#94a3b8] dark:text-slate-500 uppercase">
+          📦 Ítems del ajuste
+        </h3>
+        <div className="mt-3">
+          <Buscador
+            opciones={opcionesProductos}
+            valor={productoParaAgregar}
+            onChange={agregarProductoDesdeBuscador}
+            placeholder="Escribe el nombre del producto para agregarlo al ajuste..."
+          />
+        </div>
+
+        {errores.items && <p className={ERROR}>{errores.items}</p>}
+
+        {items.length === 0 ? (
+          <p className="mt-3 text-xs font-medium text-[#94a3b8] dark:text-slate-500">
+            Todavía no agregaste ningún producto — búscalo arriba para agregarlo.
+          </p>
+        ) : (
+          <div className="mt-4 overflow-x-auto rounded-2xl border border-[#e5e9f0] dark:border-slate-700">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-[#f8fafc] dark:bg-slate-800/60">
+                <tr>
+                  <th className="px-4 py-3 font-bold text-[#64748b] dark:text-slate-400">N°</th>
+                  <th className="px-4 py-3 font-bold text-[#64748b] dark:text-slate-400">Producto</th>
+                  <th className="px-4 py-3 font-bold text-[#64748b] dark:text-slate-400">Stock actual</th>
+                  <th className="px-4 py-3 font-bold text-[#64748b] dark:text-slate-400">Conteo físico</th>
+                  <th className="px-4 py-3 font-bold text-[#64748b] dark:text-slate-400">Diferencia</th>
+                  <th className="px-4 py-3 font-bold text-[#64748b] dark:text-slate-400"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item, i) => {
+                  const diferencia = (Number(item.cantidad) || 0) - item.stockActual
+                  return (
+                    <tr key={item.id} className="border-t border-[#e5e9f0] dark:border-slate-700">
+                      <td className="px-4 py-3 text-[#64748b] dark:text-slate-400">{i + 1}</td>
+                      <td className="px-4 py-3 font-semibold text-[#1e293b] dark:text-slate-100">
+                        {item.productoNombre}
+                        {item.productoCodigo && (
+                          <span className="ml-2 text-xs font-medium text-[#94a3b8]">{item.productoCodigo}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-[#64748b] dark:text-slate-400">{item.stockActual}</td>
+                      <td className="px-4 py-3">
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={item.cantidad}
+                          onChange={(e) => actualizarItem(item.id, e.target.value)}
+                          className="w-24 rounded-lg border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-2 py-1.5 text-sm text-[#1e293b] dark:text-slate-100 outline-none focus:border-amber-500"
+                        />
+                      </td>
+                      <td
+                        className={`px-4 py-3 font-bold ${
+                          diferencia > 0 ? 'text-emerald-600' : diferencia < 0 ? 'text-red-600' : 'text-[#64748b] dark:text-slate-400'
+                        }`}
+                      >
+                        {diferencia > 0 ? '+' : ''}
+                        {diferencia}
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          type="button"
+                          title="Quitar ítem"
+                          onClick={() => alQuitarItem(item.id)}
+                          className="rounded-md p-1.5 text-[#64748b] transition-colors hover:bg-red-100 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-950/40"
+                        >
+                          <IconoBasura />
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="mt-3 text-xs font-medium text-[#94a3b8] dark:text-slate-500">
+          "Conteo físico" es el total real contado, no la diferencia — el sistema calcula el ajuste solo.
+        </p>
+      </div>
+
+      {estado.error && (
+        <p role="alert" className="mt-6 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          {estado.error}
+        </p>
+      )}
+
+      <button
+        type="submit"
+        className="mt-6 w-full rounded-md bg-gradient-to-r from-amber-500 to-orange-500 py-3.5 text-base font-bold text-white shadow-lg shadow-amber-500/30 transition-all active:scale-95"
+      >
+        Guardar ajuste
+      </button>
+    </form>
+  )
+}
