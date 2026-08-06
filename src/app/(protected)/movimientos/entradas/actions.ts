@@ -8,14 +8,15 @@ import { fechaDocumentoFueraDeRango } from '@/lib/fecha'
 
 export type EstadoFormulario = { error: string | null }
 
-type ItemSalida = {
+type ItemEntrada = {
   producto_id: number
   cantidad: number
+  costo_unitario: number
   lote: string | null
   fecha_vencimiento: string | null
 }
 
-export async function crearSalida(
+export async function crearEntrada(
   _prevState: EstadoFormulario,
   formData: FormData
 ): Promise<EstadoFormulario> {
@@ -36,7 +37,7 @@ export async function crearSalida(
   const itemsRaw = formData.get('items') as string
 
   if (!fecha) {
-    return { error: 'La fecha de salida es obligatoria.' }
+    return { error: 'La fecha de ingreso es obligatoria.' }
   }
   if (fechaDocumentoFueraDeRango(fecha)) {
     return { error: 'La fecha no puede ser futura ni atrasarse más de 3 días.' }
@@ -47,24 +48,27 @@ export async function crearSalida(
   if (motivo === 'otro' && !motivoOtro) {
     return { error: 'Especifica el motivo.' }
   }
-  const esDevolucionProveedor = motivo === 'devolucion_proveedor'
-  if (esDevolucionProveedor && !/^\d{11}$/.test(ruc || '')) {
-    return { error: 'El RUC del proveedor es obligatorio (11 dígitos) cuando el motivo es Devolución a proveedor.' }
+  const esCompra = motivo === 'compra'
+  if (esCompra && !/^\d{11}$/.test(ruc || '')) {
+    return { error: 'El RUC del proveedor es obligatorio (11 dígitos) cuando el motivo es Compra.' }
   }
   if (documentoTipo === 'otro' && !documentoOtro) {
     return { error: 'Especifica el tipo de documento.' }
   }
 
-  let items: ItemSalida[]
+  let items: ItemEntrada[]
   try {
     items = JSON.parse(itemsRaw || '[]')
   } catch {
-    return { error: 'Los ítems de la salida no son válidos.' }
+    return { error: 'Los ítems de la entrada no son válidos.' }
   }
 
   items = items.filter((it) => it.producto_id && it.cantidad > 0)
   if (items.length === 0) {
-    return { error: 'Agrega al menos un ítem a la salida.' }
+    return { error: 'Agrega al menos un ítem a la entrada.' }
+  }
+  if (items.some((it) => it.costo_unitario < 0)) {
+    return { error: 'El costo unitario no puede ser negativo.' }
   }
 
   const supabase = await createClient()
@@ -79,7 +83,7 @@ export async function crearSalida(
   }
 
   const { data: cabecera, error: errorCabecera } = await supabase
-    .from('salidas_cabecera')
+    .from('entradas_cabecera')
     .insert({
       fecha,
       usuario_id: user?.id ?? null,
@@ -98,20 +102,19 @@ export async function crearSalida(
     .single()
 
   if (errorCabecera || !cabecera) {
-    return { error: errorCabecera?.message ?? 'No se pudo crear la salida.' }
+    return { error: errorCabecera?.message ?? 'No se pudo crear la entrada.' }
   }
 
-  // costo_unitario no se manda: el trigger aplicar_movimiento() lo autocompleta
-  // con el costo promedio ponderado vigente del producto para tipo='salida'.
   const { error: errorMovs } = await supabase.from('movimientos').insert(
     items.map((it) => ({
       producto_id: it.producto_id,
-      tipo: 'salida',
+      tipo: 'entrada',
       cantidad: it.cantidad,
+      costo_unitario: it.costo_unitario,
       usuario_id: user?.id ?? null,
       motivo: motivo === 'otro' ? motivoOtro : motivo,
       referencia: cabecera.numero,
-      salida_cabecera_id: cabecera.id,
+      entrada_cabecera_id: cabecera.id,
       lote: it.lote || null,
       fecha_vencimiento: it.fecha_vencimiento || null,
     }))
@@ -124,9 +127,9 @@ export async function crearSalida(
     return { error: errorMovs.message }
   }
 
-  revalidatePath('/movimientos/salidas')
+  revalidatePath('/movimientos/entradas')
   revalidatePath('/productos')
   revalidatePath('/movimientos')
   revalidatePath('/dashboard')
-  redirect('/movimientos/salidas')
+  redirect('/movimientos/entradas')
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { actualizarConfiguracion, type EstadoFormulario } from './actions'
 import { filtrarTelefono } from '@/lib/telefono'
 
@@ -17,6 +17,7 @@ type Configuracion = {
   cci_bcp: string | null
   cuenta_bbva_soles: string | null
   cci_bbva: string | null
+  usa_lote_vencimiento: boolean
 }
 
 const CAMPO =
@@ -33,9 +34,11 @@ export function ConfiguracionForm({
   const [estado, formAction] = useActionState<EstadoFormulario, FormData>(actualizarConfiguracion, {
     error: null,
   })
+  const [usaLoteVencimiento, setUsaLoteVencimiento] = useState(configuracion.usa_lote_vencimiento)
 
   return (
     <form action={formAction} className="mt-6 space-y-5">
+      <input type="hidden" name="usa_lote_vencimiento" value={String(usaLoteVencimiento)} />
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         <div className="sm:col-span-2 lg:col-span-3">
           <label className={LABEL}>Nombre de la empresa *</label>
@@ -167,6 +170,34 @@ export function ConfiguracionForm({
             />
           </div>
         </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-4 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 p-4">
+        <div>
+          <p className="text-sm font-bold text-[#1e293b] dark:text-slate-100">Usar lote y fecha de vencimiento</p>
+          <p className="mt-0.5 text-xs font-medium text-[#64748b] dark:text-slate-400">
+            Muestra los campos de Lote y Fecha de vencimiento al agregar ítems en Movimientos → Entradas. Actívalo solo
+            si el negocio maneja productos perecibles o con control de lote — para insumos de rotación rápida puedes
+            dejarlo apagado.
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={usaLoteVencimiento}
+          disabled={!puedeEditar}
+          title={usaLoteVencimiento ? 'Desactivar lote/vencimiento' : 'Activar lote/vencimiento'}
+          onClick={() => setUsaLoteVencimiento((v) => !v)}
+          className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+            usaLoteVencimiento ? 'bg-emerald-500' : 'bg-[#e2e8f0] dark:bg-slate-700'
+          }`}
+        >
+          <span
+            className={`inline-block h-4.5 w-4.5 transform rounded-full bg-white shadow transition-transform ${
+              usaLoteVencimiento ? 'translate-x-[22px]' : 'translate-x-1'
+            }`}
+          />
+        </button>
       </div>
 
       {estado.error && (

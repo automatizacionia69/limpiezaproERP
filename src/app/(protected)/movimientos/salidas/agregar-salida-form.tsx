@@ -4,18 +4,17 @@ import { useActionState, useEffect, useMemo, useState } from 'react'
 import { haceNDiasPeruISO, fechaDocumentoFueraDeRango } from '@/lib/fecha'
 import { buscarRazonSocialPorRuc } from '@/lib/decolecta'
 import { Buscador } from '@/components/buscador'
-import { crearEntrada, type EstadoFormulario } from './actions'
-import { MOTIVOS, DOCUMENTOS_GRUPOS } from './constantes'
+import { crearSalida, type EstadoFormulario } from './actions'
+import { MOTIVOS_SALIDA, DOCUMENTOS_GRUPOS } from './constantes'
 
 type Proveedor = { id: number; nombre: string; ruc: string | null }
-type Producto = { id: number; nombre: string; codigo: string | null; costo: number; cantidad: number }
+type Producto = { id: number; nombre: string; codigo: string | null; cantidad: number }
 
 const CAMPO_BASE =
-  'w-full rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-3 text-base text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-[#f8fafc] disabled:text-[#94a3b8] dark:disabled:bg-slate-800/40 dark:disabled:text-slate-500'
+  'w-full rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-3 text-base text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-100 disabled:cursor-not-allowed disabled:bg-[#f8fafc] disabled:text-[#94a3b8] dark:disabled:bg-slate-800/40 dark:disabled:text-slate-500'
 const CAMPO = `mt-1.5 ${CAMPO_BASE}`
 // El icono nativo del <input type="date"> sale minúsculo por defecto — lo
-// agrandamos y le damos más "hitbox" de clic para que se note que ahí se
-// abre el calendario (igual en Entradas/Salidas/Ajustes).
+// agrandamos y le damos más "hitbox" de clic (igual en Entradas/Salidas/Ajustes).
 const CAMPO_FECHA = `${CAMPO} [&::-webkit-calendar-picker-indicator]:scale-150 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:mr-1.5`
 const LABEL = 'block text-sm font-bold text-[#1e293b] dark:text-slate-100'
 const ERROR = 'mt-1.5 text-xs font-semibold text-red-600'
@@ -24,14 +23,13 @@ type Errores = Partial<
   Record<'fecha' | 'motivo' | 'motivoOtro' | 'ruc' | 'documentoOtro' | 'items', string>
 >
 
-type ItemEntrada = {
+type ItemSalida = {
   id: string
   productoId: number
   productoNombre: string
   productoCodigo: string | null
   stockActual: number
   cantidad: number | ''
-  costoUnitario: number | ''
   lote: string
   fechaVencimiento: string
 }
@@ -48,10 +46,9 @@ function IconoBasura() {
   )
 }
 
-export function AgregarEntradaForm({
+export function AgregarSalidaForm({
   usuarioNombre,
   usuarioRol,
-  moneda,
   proveedores,
   productos,
   fechaHoy,
@@ -59,7 +56,6 @@ export function AgregarEntradaForm({
 }: {
   usuarioNombre: string
   usuarioRol: string
-  moneda: string
   proveedores: Proveedor[]
   productos: Producto[]
   fechaHoy: string
@@ -81,19 +77,19 @@ export function AgregarEntradaForm({
   const [correlativoDocumento, setCorrelativoDocumento] = useState('')
   const [observaciones, setObservaciones] = useState('')
 
-  const [items, setItems] = useState<ItemEntrada[]>([])
+  const [items, setItems] = useState<ItemSalida[]>([])
   const [productoParaAgregar, setProductoParaAgregar] = useState<number | ''>('')
 
   const [errores, setErrores] = useState<Errores>({})
 
-  const [estado, formAction] = useActionState<EstadoFormulario, FormData>(crearEntrada, { error: null })
+  const [estado, formAction] = useActionState<EstadoFormulario, FormData>(crearSalida, { error: null })
 
-  const esCompra = motivo === 'compra'
+  const esDevolucionProveedor = motivo === 'devolucion_proveedor'
   const documentoRequiereNumeracion = documentoTipo !== '' && documentoTipo !== 'sin_documento'
 
   // Auto-consulta apenas el RUC tiene 11 dígitos: primero contra los
   // proveedores ya registrados (vínculo local), y si no aparece ahí, contra
-  // la API de SUNAT/Decolecta — igual que el alta de proveedores.
+  // la API de SUNAT/Decolecta — igual que en Entradas.
   useEffect(() => {
     const rucLimpio = ruc.trim()
     if (!/^\d{11}$/.test(rucLimpio)) {
@@ -151,7 +147,6 @@ export function AgregarEntradaForm({
         productoCodigo: producto.codigo,
         stockActual: producto.cantidad,
         cantidad: 1,
-        costoUnitario: producto.costo,
         lote: '',
         fechaVencimiento: '',
       },
@@ -159,10 +154,8 @@ export function AgregarEntradaForm({
     setProductoParaAgregar('')
   }
 
-  function actualizarItem(id: string, campo: 'cantidad' | 'costoUnitario', valor: string) {
-    setItems((prev) =>
-      prev.map((it) => (it.id === id ? { ...it, [campo]: valor === '' ? '' : Number(valor) } : it))
-    )
+  function actualizarItem(id: string, valor: string) {
+    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, cantidad: valor === '' ? '' : Number(valor) } : it)))
   }
 
   function actualizarItemTexto(id: string, campo: 'lote' | 'fechaVencimiento', valor: string) {
@@ -175,15 +168,15 @@ export function AgregarEntradaForm({
 
   function validar(): boolean {
     const nuevos: Errores = {}
-    if (!fecha) nuevos.fecha = 'La fecha de ingreso es obligatoria.'
+    if (!fecha) nuevos.fecha = 'La fecha de salida es obligatoria.'
     else if (fechaDocumentoFueraDeRango(fecha)) nuevos.fecha = 'La fecha no puede ser futura ni atrasarse más de 3 días.'
     if (!motivo) nuevos.motivo = 'Selecciona un motivo.'
     if (motivo === 'otro' && !motivoOtro.trim()) nuevos.motivoOtro = 'Especifica el motivo.'
-    if (esCompra && !/^\d{11}$/.test(ruc.trim())) nuevos.ruc = 'El RUC del proveedor es obligatorio (11 dígitos).'
+    if (esDevolucionProveedor && !/^\d{11}$/.test(ruc.trim())) nuevos.ruc = 'El RUC del proveedor es obligatorio (11 dígitos).'
     if (documentoTipo === 'otro' && !documentoOtro.trim()) nuevos.documentoOtro = 'Especifica el tipo de documento.'
-    if (items.length === 0) nuevos.items = 'Agrega al menos un ítem a la entrada.'
-    else if (items.some((it) => it.cantidad === '' || Number(it.cantidad) <= 0 || it.costoUnitario === '' || Number(it.costoUnitario) < 0))
-      nuevos.items = 'Revisa la cantidad y el costo unitario de cada ítem.'
+    if (items.length === 0) nuevos.items = 'Agrega al menos un ítem a la salida.'
+    else if (items.some((it) => it.cantidad === '' || Number(it.cantidad) <= 0))
+      nuevos.items = 'Revisa la cantidad de cada ítem.'
     setErrores(nuevos)
     return Object.keys(nuevos).length === 0
   }
@@ -196,7 +189,6 @@ export function AgregarEntradaForm({
     items.map((it) => ({
       producto_id: it.productoId,
       cantidad: Number(it.cantidad) || 0,
-      costo_unitario: Number(it.costoUnitario) || 0,
       lote: it.lote || null,
       fecha_vencimiento: it.fechaVencimiento || null,
     }))
@@ -220,19 +212,19 @@ export function AgregarEntradaForm({
       <input type="hidden" name="observaciones" value={observaciones} />
       <input type="hidden" name="items" value={itemsJson} />
 
-      <h2 className="text-lg font-extrabold text-[#1e293b] dark:text-slate-100">Agregar Entrada</h2>
+      <h2 className="text-lg font-extrabold text-[#1e293b] dark:text-slate-100">Agregar Salida</h2>
       <p className="mt-1 text-sm font-medium text-[#64748b] dark:text-slate-400">
-        Información general de la entrada — luego agrega los productos en la sección de Ítems.
+        Información general de la salida — luego agrega los productos en la sección de Ítems.
       </p>
 
       <div className="mt-6 grid grid-cols-1 gap-8 lg:grid-cols-2">
         <div className="space-y-5">
           <h3 className="text-xs font-bold tracking-widest text-[#94a3b8] dark:text-slate-500 uppercase">
-            Datos del ingreso
+            Datos de la salida
           </h3>
 
           <div>
-            <label className={LABEL}>Fecha de ingreso *</label>
+            <label className={LABEL}>Fecha de salida *</label>
             <input
               type="date"
               value={fecha}
@@ -253,10 +245,10 @@ export function AgregarEntradaForm({
           </div>
 
           <div>
-            <label className={LABEL}>Motivo del ingreso *</label>
+            <label className={LABEL}>Motivo de la salida *</label>
             <select value={motivo} onChange={(e) => setMotivo(e.target.value)} className={CAMPO}>
               <option value="">Selecciona un motivo...</option>
-              {MOTIVOS.map((m) => (
+              {MOTIVOS_SALIDA.map((m) => (
                 <option key={m.valor} value={m.valor}>
                   {m.label}
                 </option>
@@ -278,7 +270,7 @@ export function AgregarEntradaForm({
           </div>
 
           <div>
-            <label className={LABEL}>Proveedor {esCompra && '*'}</label>
+            <label className={LABEL}>Proveedor {esDevolucionProveedor && '*'}</label>
             <div className="mt-1.5 grid grid-cols-[140px_1fr] gap-2">
               <input
                 type="text"
@@ -298,6 +290,9 @@ export function AgregarEntradaForm({
                 className={CAMPO_BASE}
               />
             </div>
+            <p className="mt-1.5 text-xs font-medium text-[#94a3b8] dark:text-slate-500">
+              Solo aplica si la salida es una devolución de mercadería a un proveedor.
+            </p>
             {errores.ruc && <p className={ERROR}>{errores.ruc}</p>}
             {buscandoRuc && <p className="mt-1.5 text-xs font-medium text-[#94a3b8]">Consultando RUC...</p>}
             {!buscandoRuc && mensajeRuc && (
@@ -353,7 +348,7 @@ export function AgregarEntradaForm({
                 value={serieDocumento}
                 disabled={!documentoRequiereNumeracion}
                 onChange={(e) => setSerieDocumento(e.target.value)}
-                placeholder="ej. F001"
+                placeholder="ej. T001"
                 className={CAMPO}
               />
             </div>
@@ -376,7 +371,7 @@ export function AgregarEntradaForm({
               value={observaciones}
               maxLength={500}
               onChange={(e) => setObservaciones(e.target.value)}
-              placeholder="Escriba cualquier observación relacionada con esta entrada."
+              placeholder="Escriba cualquier observación relacionada con esta salida."
               rows={4}
               className={`${CAMPO} resize-none`}
             />
@@ -385,16 +380,16 @@ export function AgregarEntradaForm({
         </div>
       </div>
 
-      <div className="mt-8 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/10 p-5">
+      <div className="mt-8 rounded-2xl bg-red-50/60 dark:bg-red-950/10 p-5">
         <h3 className="text-xs font-bold tracking-widest text-[#94a3b8] dark:text-slate-500 uppercase">
-          📦 Ítems de la entrada
+          📦 Ítems de la salida
         </h3>
         <div className="mt-3">
           <Buscador
             opciones={opcionesProductos}
             valor={productoParaAgregar}
             onChange={agregarProductoDesdeBuscador}
-            placeholder="Escribe el nombre del producto para agregarlo a la entrada..."
+            placeholder="Escribe el nombre del producto para agregarlo a la salida..."
           />
         </div>
 
@@ -412,7 +407,6 @@ export function AgregarEntradaForm({
                   <th className="px-4 py-3 font-bold text-[#64748b] dark:text-slate-400">N°</th>
                   <th className="px-4 py-3 font-bold text-[#64748b] dark:text-slate-400">Producto</th>
                   <th className="px-4 py-3 font-bold text-[#64748b] dark:text-slate-400">Cantidad</th>
-                  <th className="px-4 py-3 font-bold text-[#64748b] dark:text-slate-400">Costo unit.</th>
                   {usaLoteVencimiento && (
                     <>
                       <th className="px-4 py-3 font-bold text-[#64748b] dark:text-slate-400">Lote</th>
@@ -431,7 +425,13 @@ export function AgregarEntradaForm({
                       {item.productoCodigo && (
                         <span className="ml-2 text-xs font-medium text-[#94a3b8]">{item.productoCodigo}</span>
                       )}
-                      <span className="mt-1 block w-fit rounded-lg bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+                      <span
+                        className={`mt-1 block w-fit rounded-lg px-2 py-0.5 text-[10px] font-bold ${
+                          item.stockActual <= 0
+                            ? 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400'
+                            : 'bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-400'
+                        }`}
+                      >
                         📦 stock: {item.stockActual}
                       </span>
                     </td>
@@ -441,24 +441,9 @@ export function AgregarEntradaForm({
                         min="1"
                         step="1"
                         value={item.cantidad}
-                        onChange={(e) => actualizarItem(item.id, 'cantidad', e.target.value)}
-                        className="w-24 rounded-lg border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-2 py-1.5 text-sm text-[#1e293b] dark:text-slate-100 outline-none focus:border-emerald-500"
+                        onChange={(e) => actualizarItem(item.id, e.target.value)}
+                        className="w-24 rounded-lg border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-2 py-1.5 text-sm text-[#1e293b] dark:text-slate-100 outline-none focus:border-red-500"
                       />
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="relative">
-                        <span className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-xs font-bold text-[#94a3b8]">
-                          {moneda}
-                        </span>
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={item.costoUnitario}
-                          onChange={(e) => actualizarItem(item.id, 'costoUnitario', e.target.value)}
-                          className="w-28 rounded-lg border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] py-1.5 pl-8 pr-2 text-sm text-[#1e293b] dark:text-slate-100 outline-none focus:border-emerald-500"
-                        />
-                      </div>
                     </td>
                     {usaLoteVencimiento && (
                       <>
@@ -468,7 +453,7 @@ export function AgregarEntradaForm({
                             value={item.lote}
                             onChange={(e) => actualizarItemTexto(item.id, 'lote', e.target.value)}
                             placeholder="Opcional"
-                            className="w-28 rounded-lg border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-2 py-1.5 text-sm text-[#1e293b] dark:text-slate-100 outline-none focus:border-emerald-500"
+                            className="w-28 rounded-lg border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-2 py-1.5 text-sm text-[#1e293b] dark:text-slate-100 outline-none focus:border-red-500"
                           />
                         </td>
                         <td className="px-4 py-3">
@@ -476,7 +461,7 @@ export function AgregarEntradaForm({
                             type="date"
                             value={item.fechaVencimiento}
                             onChange={(e) => actualizarItemTexto(item.id, 'fechaVencimiento', e.target.value)}
-                            className="rounded-lg border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-2 py-1.5 text-sm text-[#1e293b] dark:text-slate-100 outline-none focus:border-emerald-500 [&::-webkit-calendar-picker-indicator]:scale-150 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:mr-1"
+                            className="rounded-lg border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-2 py-1.5 text-sm text-[#1e293b] dark:text-slate-100 outline-none focus:border-red-500 [&::-webkit-calendar-picker-indicator]:scale-150 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:mr-1"
                           />
                         </td>
                       </>
@@ -507,9 +492,9 @@ export function AgregarEntradaForm({
 
       <button
         type="submit"
-        className="mt-6 w-full rounded-md bg-gradient-to-r from-emerald-500 to-emerald-600 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-500/30 transition-all active:scale-95"
+        className="mt-6 w-full rounded-md bg-gradient-to-r from-red-500 to-rose-600 py-3.5 text-base font-bold text-white shadow-lg shadow-red-500/30 transition-all active:scale-95"
       >
-        Guardar entrada
+        Guardar salida
       </button>
     </form>
   )

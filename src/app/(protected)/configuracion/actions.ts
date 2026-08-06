@@ -63,6 +63,7 @@ export async function actualizarConfiguracion(
   const cciBcp = (formData.get('cci_bcp') as string)?.trim()
   const cuentaBbvaSoles = (formData.get('cuenta_bbva_soles') as string)?.trim()
   const cciBbva = (formData.get('cci_bbva') as string)?.trim()
+  const usaLoteVencimiento = formData.get('usa_lote_vencimiento') === 'true'
 
   if (!empresa) {
     return { error: 'El nombre de la empresa es obligatorio.' }
@@ -84,6 +85,7 @@ export async function actualizarConfiguracion(
       cci_bcp: cciBcp || null,
       cuenta_bbva_soles: cuentaBbvaSoles || null,
       cci_bbva: cciBbva || null,
+      usa_lote_vencimiento: usaLoteVencimiento,
       actualizado_en: new Date().toISOString(),
     })
     .eq('id', 1)
@@ -95,5 +97,6 @@ export async function actualizarConfiguracion(
   revalidatePath('/configuracion')
   revalidatePath('/cotizaciones')
   revalidatePath('/reportes')
+  revalidatePath('/movimientos/entradas')
   return { error: null, ok: true }
 }

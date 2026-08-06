@@ -1,8 +1,15 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { requierePermiso } from '@/lib/permisos'
-import { SalidaForm } from './salida-form'
-import { MovimientosTabla } from '../movimientos-tabla'
+import { hoyPeruISO } from '@/lib/fecha'
+import { AgregarSalidaForm } from './agregar-salida-form'
+import { SalidasTabla, type SalidaCabeceraRow } from './salidas-tabla'
+
+const ROLE_LABELS: Record<string, string> = {
+  admin: 'Administrador',
+  almacen: 'Almacén',
+  ventas: 'Ventas',
+}
 
 type KardexRow = {
   id: number
@@ -17,12 +24,43 @@ type KardexRow = {
   creado_en: string
 }
 
+type CabeceraRaw = {
+  id: number
+  numero: string
+  fecha: string
+  motivo: string
+  motivo_otro: string | null
+  documento_tipo: string | null
+  documento_otro: string | null
+  documento_serie: string | null
+  documento_correlativo: string | null
+  proveedor_razon_social: string | null
+  estado: string
+  usuarios_perfil: { nombre: string } | { nombre: string }[] | null
+}
+
 export default async function SalidasPage() {
   await requierePermiso('movimientos')
   const supabase = await createClient()
 
-  const [{ data: productos }, { data: salidas }] = await Promise.all([
-    supabase.from('productos').select('id, nombre').order('nombre'),
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const [
+    { data: perfil },
+    { data: configuracion },
+    { data: proveedores },
+    { data: productos },
+    { data: salidas },
+    { data: cabecerasRaw },
+  ] = await Promise.all([
+    user
+      ? supabase.from('usuarios_perfil').select('nombre, rol').eq('id', user.id).single()
+      : Promise.resolve({ data: null }),
+    supabase.from('configuracion').select('usa_lote_vencimiento').eq('id', 1).single(),
+    supabase.from('proveedores').select('id, nombre, ruc').eq('activo', true).order('nombre'),
+    supabase.from('productos').select('id, nombre, codigo, cantidad').order('nombre'),
     supabase
       .from('kardex_valorizado')
       .select(
@@ -32,11 +70,56 @@ export default async function SalidasPage() {
       .order('creado_en', { ascending: false })
       .limit(200)
       .returns<KardexRow[]>(),
+    supabase
+      .from('salidas_cabecera')
+      .select(
+        'id, numero, fecha, motivo, motivo_otro, documento_tipo, documento_otro, documento_serie, documento_correlativo, proveedor_razon_social, estado, usuarios_perfil(nombre)'
+      )
+      .order('creado_en', { ascending: false })
+      .limit(200)
+      .returns<CabeceraRaw[]>(),
   ])
 
   const filas = salidas ?? []
   const totalUnidades = filas.reduce((acc, m) => acc + Number(m.cantidad), 0)
   const totalValor = filas.reduce((acc, m) => acc + Math.abs(Number(m.valor_movimiento ?? 0)), 0)
+
+  const cabeceras = cabecerasRaw ?? []
+  const idsCabecera = cabeceras.map((c) => c.id)
+  const { data: lineasPorCabecera } =
+    idsCabecera.length > 0
+      ? await supabase.from('movimientos').select('salida_cabecera_id, cantidad').in('salida_cabecera_id', idsCabecera)
+      : { data: [] as { salida_cabecera_id: number | null; cantidad: number }[] }
+
+  const agregadosPorCabecera = new Map<number, { lineas: number; cantidad: number }>()
+  for (const l of lineasPorCabecera ?? []) {
+    if (l.salida_cabecera_id === null) continue
+    const actual = agregadosPorCabecera.get(l.salida_cabecera_id) ?? { lineas: 0, cantidad: 0 }
+    actual.lineas += 1
+    actual.cantidad += Number(l.cantidad)
+    agregadosPorCabecera.set(l.salida_cabecera_id, actual)
+  }
+
+  const filasCabecera: SalidaCabeceraRow[] = cabeceras.map((c) => {
+    const agregado = agregadosPorCabecera.get(c.id) ?? { lineas: 0, cantidad: 0 }
+    const usuario = Array.isArray(c.usuarios_perfil) ? c.usuarios_perfil[0] : c.usuarios_perfil
+    return {
+      id: c.id,
+      numero: c.numero,
+      fecha: c.fecha,
+      motivo: c.motivo,
+      motivoOtro: c.motivo_otro,
+      documentoTipo: c.documento_tipo,
+      documentoOtro: c.documento_otro,
+      documentoSerie: c.documento_serie,
+      documentoCorrelativo: c.documento_correlativo,
+      proveedor: c.proveedor_razon_social,
+      estado: c.estado,
+      usuarioNombre: usuario?.nombre ?? null,
+      numeroLineas: agregado.lineas,
+      cantidadItems: agregado.cantidad,
+    }
+  })
 
   return (
     <div>
@@ -49,10 +132,21 @@ export default async function SalidasPage() {
         <p className="mt-1 text-sm font-medium text-[#64748b] dark:text-slate-400">Despachos de mercadería del inventario</p>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="mt-6">
+        <AgregarSalidaForm
+          usuarioNombre={perfil?.nombre ?? '—'}
+          usuarioRol={perfil ? ROLE_LABELS[perfil.rol] ?? perfil.rol : '—'}
+          proveedores={proveedores ?? []}
+          productos={productos ?? []}
+          fechaHoy={hoyPeruISO()}
+          usaLoteVencimiento={configuracion?.usa_lote_vencimiento ?? false}
+        />
+      </div>
+
+      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="rounded-2xl border border-[#e5e9f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] p-6 shadow-sm">
           <p className="text-xs font-bold tracking-wide text-[#94a3b8] dark:text-slate-500 uppercase">Salidas registradas</p>
-          <p className="mt-3 text-3xl font-extrabold text-[#0f172a] dark:text-white">{filas.length}</p>
+          <p className="mt-3 text-3xl font-extrabold text-[#0f172a] dark:text-white">{cabeceras.length}</p>
         </div>
         <div className="rounded-2xl border border-[#e5e9f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] p-6 shadow-sm">
           <p className="text-xs font-bold tracking-wide text-[#94a3b8] dark:text-slate-500 uppercase">Unidades salidas</p>
@@ -64,19 +158,8 @@ export default async function SalidasPage() {
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[400px_1fr]">
-        <div className="rounded-3xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] p-7 shadow-lg shadow-slate-500/5">
-          <h2 className="text-base font-extrabold text-[#1e293b] dark:text-slate-100">Registrar salida</h2>
-          {!productos || productos.length === 0 ? (
-            <p className="mt-6 text-sm font-medium text-[#64748b] dark:text-slate-400">
-              Todavía no hay productos — crea uno primero en Productos.
-            </p>
-          ) : (
-            <SalidaForm productos={productos} />
-          )}
-        </div>
-
-        <MovimientosTabla movimientos={filas} />
+      <div className="mt-6">
+        <SalidasTabla salidas={filasCabecera} />
       </div>
     </div>
   )
