@@ -263,12 +263,24 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 DECOLECTA_API_TOKEN=
+SMTP_HOST=
+SMTP_PORT=
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=
 ```
 Las dos primeras se obtienen del panel de Supabase (Project Settings → API).
 `SUPABASE_SERVICE_ROLE_KEY` es necesaria para crear/editar/eliminar usuarios
 desde el módulo Usuarios (usa el Admin API de Supabase Auth) — **nunca
 exponerla client-side**, solo se usa en Server Actions
 (`src/lib/supabase/admin.ts`). `DECOLECTA_API_TOKEN` es para el autocompletado
-de RUC/DNI al crear clientes/proveedores (`src/lib/decolecta.ts`). Estas
-mismas 4 variables deben estar cargadas también en Vercel → Settings →
-Environment Variables para que el deploy en producción funcione.
+de RUC/DNI al crear clientes/proveedores (`src/lib/decolecta.ts`). Las 5
+variables `SMTP_*` son para el botón "Enviar por correo" del modal de éxito
+de Cotizaciones (`src/app/(protected)/cotizaciones/actions.ts`, función
+`enviarCorreoCotizacion`, vía `nodemailer`) — como el ERP se revende a
+distintos clientes, cada despliegue configura su propia cuenta (Gmail u
+Outlook con "contraseña de aplicación", no la contraseña normal de la
+cuenta). Sin estas variables el botón de correo muestra un error inline
+pero el resto del modal (PDF, WhatsApp) sigue funcionando igual. Todas estas
+variables deben estar cargadas también en Vercel → Settings → Environment
+Variables para que el deploy en producción funcione.
