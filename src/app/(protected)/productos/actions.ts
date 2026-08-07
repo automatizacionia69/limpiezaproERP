@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { tienePermiso } from '@/lib/permisos'
+import { AFECTACIONES_IGV, AFECTACION_IGV_DEFAULT } from '@/lib/afectacion-igv'
 
 export type EstadoFormulario = { error: string | null }
 
@@ -92,12 +93,16 @@ export async function crearProducto(
   const categoriaId = formData.get('categoria_id') as string
   const precioVenta = formData.get('precio_venta') as string
   const puntoReorden = formData.get('punto_reorden') as string
+  const tipoAfectacionIgv = (formData.get('tipo_afectacion_igv') as string) || AFECTACION_IGV_DEFAULT
 
   if (!nombre) {
     return { error: 'El nombre es obligatorio.' }
   }
   if (!unidadId) {
     return { error: 'La unidad es obligatoria.' }
+  }
+  if (!AFECTACIONES_IGV.some((a) => a.codigo === tipoAfectacionIgv)) {
+    return { error: 'Tipo de afectación IGV inválido.' }
   }
 
   const campos = validarCamposCodigo(
@@ -120,6 +125,7 @@ export async function crearProducto(
     categoria_id: categoriaId ? Number(categoriaId) : null,
     precio_venta: precioVenta ? Number(precioVenta) : null,
     punto_reorden: puntoReorden ? Number(puntoReorden) : 0,
+    tipo_afectacion_igv: tipoAfectacionIgv,
     cantidad: 0,
     costo: 0,
   })
@@ -148,6 +154,7 @@ export async function editarProducto(
   const zonaId = formData.get('zona_id') as string
   const precioVenta = formData.get('precio_venta') as string
   const puntoReorden = formData.get('punto_reorden') as string
+  const tipoAfectacionIgv = (formData.get('tipo_afectacion_igv') as string) || AFECTACION_IGV_DEFAULT
 
   if (!id) {
     return { error: 'Producto inválido.' }
@@ -157,6 +164,9 @@ export async function editarProducto(
   }
   if (!unidadId) {
     return { error: 'La unidad es obligatoria.' }
+  }
+  if (!AFECTACIONES_IGV.some((a) => a.codigo === tipoAfectacionIgv)) {
+    return { error: 'Tipo de afectación IGV inválido.' }
   }
 
   const campos = validarCamposCodigo(
@@ -182,6 +192,7 @@ export async function editarProducto(
       zona_id: zonaId ? Number(zonaId) : null,
       precio_venta: precioVenta ? Number(precioVenta) : null,
       punto_reorden: puntoReorden ? Number(puntoReorden) : 0,
+      tipo_afectacion_igv: tipoAfectacionIgv,
     })
     .eq('id', Number(id))
 

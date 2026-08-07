@@ -4,6 +4,7 @@ import { useActionState, useState } from 'react'
 import { editarProducto } from '../../actions'
 import type { EstadoFormulario } from '../../actions'
 import { Buscador } from '@/components/buscador'
+import { AFECTACIONES_IGV } from '@/lib/afectacion-igv'
 
 type Opcion = { id: number; nombre: string }
 
@@ -19,6 +20,7 @@ type Producto = {
   zona_id: number | null
   precio_venta: number | null
   punto_reorden: number | null
+  tipo_afectacion_igv: string
 }
 
 const CAMPO =
@@ -93,6 +95,22 @@ export function EditarProductoForm({
             placeholder="Código del proveedor/fabricante (opcional)"
             className={CAMPO}
           />
+        </div>
+
+        <div>
+          <label className={LABEL}>Tipo de afectación IGV *</label>
+          <select
+            name="tipo_afectacion_igv"
+            required
+            defaultValue={producto.tipo_afectacion_igv}
+            className={CAMPO}
+          >
+            {AFECTACIONES_IGV.map((a) => (
+              <option key={a.codigo} value={a.codigo} className="text-[#1e293b] dark:text-slate-100">
+                {a.etiqueta}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>
