@@ -63,6 +63,11 @@ chatbot, ver más abajo), `add-entradas-cabecera.sql` (tabla
 `add-ajustes-cabecera.sql` (tabla `ajustes_cabecera`, sin proveedor ni
 documento + `movimientos.ajuste_cabecera_id`) — las 4 del rediseño de
 Movimientos > Entradas/Salidas/Ajustes de 2026-08-06, ver más abajo.
+`add-nubefact.sql` (columnas `nubefact_*` en `comprobantes`: estado,
+enlaces a PDF/XML/CDR, hash, error) y `add-nubefact-cdr.sql`,
+`add-serie-nubefact-temporal.sql` y
+`add-serie-nubefact-temporal-notas-guias.sql` — las 4 de la integración real
+con NUBEFACT de 2026-08-04, ver Fase 4 más abajo.
 `import-inventario.sql` / `import-inventario-sin-comentarios.sql` fueron una
 carga de datos puntual (las ~140 SKUs reales), no schema.
 
@@ -147,11 +152,19 @@ fuerza modo claro automáticamente al imprimir/descargar PDF).
   costeo promedio ponderado, alertas de stock bajo).
 - **Fase 3 — Compras y Ventas** ✅ (proveedores/clientes, flujo
   pendiente→recibida/facturada).
-- **Fase 4 — Facturación** ✅ implementada **dentro de la propia app** (no
-  integrada a un OSE real como Nubefact — los comprobantes son
-  representaciones sin validez tributaria/SUNAT, aclarado en cada PDF). Si
-  en algún momento se retoma la idea de una integración real con un OSE
-  peruano, es trabajo nuevo, no asumir que ya existe.
+- **Fase 4 — Facturación** ✅ implementada dentro de la propia app **y
+  conectada a un OSE real (NUBEFACT)** desde el 2026-08-04 — esta nota decía
+  antes que no había integración real, quedó desactualizada, corregido el
+  2026-08-07. Cada vez que se emite una factura/boleta (`ventas/actions.ts`)
+  se llama a `enviarComprobanteANubefact()` (`src/lib/nubefact-envio.ts`),
+  que arma el payload y llama a la API de NUBEFACT vía `src/lib/nubefact.ts`
+  — el comprobante SÍ se manda a SUNAT de verdad. El resultado (enlaces a
+  PDF/XML/CDR, hash) se guarda en columnas `nubefact_*` de `comprobantes`;
+  si falla, queda en `nubefact_estado='error'` con el mensaje en
+  `nubefact_error`, reintentable con el botón "Reintentar envío a SUNAT" en
+  Consulta de Ventas — la venta en sí **nunca se revierte** por un fallo de
+  NUBEFACT (decisión explícita del usuario al conectar la integración).
+  Requiere `NUBEFACT_TOKEN`/`NUBEFACT_RUTA` en el entorno (ver más abajo).
 - Después de estas 4 fases se agregaron, fuera del roadmap original:
   sistema de permisos por usuario/módulo, Guías de Remisión, modo oscuro,
   reorganización del menú lateral en grupos plegables, y despliegue a
@@ -268,6 +281,8 @@ SMTP_PORT=
 SMTP_USER=
 SMTP_PASS=
 SMTP_FROM=
+NUBEFACT_TOKEN=
+NUBEFACT_RUTA=
 ```
 Las dos primeras se obtienen del panel de Supabase (Project Settings → API).
 `SUPABASE_SERVICE_ROLE_KEY` es necesaria para crear/editar/eliminar usuarios
@@ -281,6 +296,11 @@ de Cotizaciones (`src/app/(protected)/cotizaciones/actions.ts`, función
 distintos clientes, cada despliegue configura su propia cuenta (Gmail u
 Outlook con "contraseña de aplicación", no la contraseña normal de la
 cuenta). Sin estas variables el botón de correo muestra un error inline
-pero el resto del modal (PDF, WhatsApp) sigue funcionando igual. Todas estas
-variables deben estar cargadas también en Vercel → Settings → Environment
+pero el resto del modal (PDF, WhatsApp) sigue funcionando igual.
+`NUBEFACT_TOKEN`/`NUBEFACT_RUTA` son para la integración real con NUBEFACT
+(OSE peruano, ver Fase 4 más arriba) — sin ellas, `generarComprobanteNubefact`
+falla y el comprobante queda en Supabase con `nubefact_estado='error'`, pero
+la venta/factura interna se sigue guardando igual (nunca se revierte por un
+fallo de NUBEFACT). Todas estas variables deben estar cargadas también en
+Vercel → Settings → Environment
 Variables para que el deploy en producción funcione.
