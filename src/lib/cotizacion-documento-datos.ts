@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import type { LineaDocumentoCotizacion } from '@/components/cotizacion-documento'
 import type { DescuentoTipo } from '@/lib/cotizaciones'
+import { calcularImportes, aplicarDescuento } from '@/lib/cotizaciones'
 
 const SIMBOLO_MONEDA: Record<string, string> = { PEN: 'S/', USD: '$' }
 
@@ -10,6 +11,7 @@ type DetalleRow = {
   precio_unitario: number
   caracteristicas: string | null
   unidad_nombre: string | null
+  tipo_afectacion_igv: string
   productos: { nombre: string; codigo: string | null; unidades_medida: { nombre: string } | null } | null
 }
 
@@ -45,6 +47,9 @@ export type DatosDocumentoCotizacion = {
   moneda: 'PEN' | 'USD'
   observaciones: string | null
   vigenciaDias: number | null
+  opGravada: number
+  opExonerada: number
+  opInafecta: number
 }
 
 /**
@@ -65,7 +70,7 @@ export async function obtenerDatosDocumentoCotizacion(id: string | number): Prom
       .single(),
     supabase
       .from('detalle_cotizacion')
-      .select('id, cantidad, precio_unitario, caracteristicas, unidad_nombre, productos(nombre, codigo, unidades_medida(nombre))')
+      .select('id, cantidad, precio_unitario, caracteristicas, unidad_nombre, tipo_afectacion_igv, productos(nombre, codigo, unidades_medida(nombre))')
       .eq('cotizacion_id', id)
       .returns<DetalleRow[]>(),
     supabase
@@ -91,6 +96,15 @@ export async function obtenerDatosDocumentoCotizacion(id: string | number): Prom
     precioUnitario: Number(d.precio_unitario),
     caracteristicas: d.caracteristicas,
   }))
+
+  const bruto = calcularImportes(
+    (detalles ?? []).map((d) => ({
+      cantidad: Number(d.cantidad),
+      precio_unitario: Number(d.precio_unitario),
+      tipo_afectacion_igv: d.tipo_afectacion_igv,
+    }))
+  )
+  const { opGravada, opExonerada, opInafecta } = aplicarDescuento(bruto, Number(cotizacion.descuento_monto ?? 0))
 
   return {
     numero: cotizacion.numero,
@@ -124,5 +138,8 @@ export async function obtenerDatosDocumentoCotizacion(id: string | number): Prom
     moneda: cotizacion.moneda === 'USD' ? 'USD' : 'PEN',
     observaciones: cotizacion.observacion,
     vigenciaDias: cotizacion.vigencia_dias,
+    opGravada,
+    opExonerada,
+    opInafecta,
   }
 }
