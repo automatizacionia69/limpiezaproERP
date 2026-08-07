@@ -9,6 +9,7 @@ import { tienePermiso } from '@/lib/permisos'
 import { calcularImportes, calcularDescuento, aplicarDescuento, type DescuentoTipo } from '@/lib/cotizaciones'
 import { fechaDocumentoFueraDeRango, hoyPeruISO } from '@/lib/fecha'
 import { obtenerDatosDocumentoCotizacion, type DatosDocumentoCotizacion } from '@/lib/cotizacion-documento-datos'
+import { AFECTACIONES_IGV, AFECTACION_IGV_DEFAULT } from '@/lib/afectacion-igv'
 
 export type EstadoFormulario = {
   error: string | null
@@ -35,6 +36,7 @@ type Linea = {
   caracteristicas?: string | null
   fecha_entrega?: string | null
   unidad_nombre?: string | null
+  tipo_afectacion_igv: string
 }
 
 type DatosCotizacion = {
@@ -110,6 +112,12 @@ function parsearYValidarCotizacion(formData: FormData): { error: string } | { da
   if (lineas.length === 0) {
     return { error: 'Agrega al menos un producto a la cotización.' }
   }
+  lineas = lineas.map((l) => ({
+    ...l,
+    tipo_afectacion_igv: AFECTACIONES_IGV.some((a) => a.codigo === l.tipo_afectacion_igv)
+      ? l.tipo_afectacion_igv
+      : AFECTACION_IGV_DEFAULT,
+  }))
   if (lineas.some((l) => l.precio_unitario < 0)) {
     return { error: 'El precio unitario no puede ser negativo.' }
   }
@@ -197,6 +205,7 @@ export async function crearCotizacion(
       caracteristicas: l.caracteristicas || null,
       fecha_entrega: l.fecha_entrega || null,
       unidad_nombre: l.unidad_nombre || null,
+      tipo_afectacion_igv: l.tipo_afectacion_igv,
     }))
   )
 
@@ -285,6 +294,7 @@ export async function actualizarCotizacion(
       caracteristicas: l.caracteristicas || null,
       fecha_entrega: l.fecha_entrega || null,
       unidad_nombre: l.unidad_nombre || null,
+      tipo_afectacion_igv: l.tipo_afectacion_igv,
     }))
   )
 
@@ -324,7 +334,7 @@ export async function duplicarCotizacion(cotizacionId: number) {
 
   const { data: detalles, error: errorDetalles } = await supabase
     .from('detalle_cotizacion')
-    .select('producto_id, cantidad, precio_unitario, caracteristicas, fecha_entrega, unidad_nombre')
+    .select('producto_id, cantidad, precio_unitario, caracteristicas, fecha_entrega, unidad_nombre, tipo_afectacion_igv')
     .eq('cotizacion_id', cotizacionId)
 
   if (errorDetalles) {
@@ -371,6 +381,7 @@ export async function duplicarCotizacion(cotizacionId: number) {
         caracteristicas: l.caracteristicas,
         fecha_entrega: l.fecha_entrega,
         unidad_nombre: l.unidad_nombre,
+        tipo_afectacion_igv: l.tipo_afectacion_igv,
       }))
     )
 
@@ -529,7 +540,7 @@ export async function crearFacturaDesdeCotizacion(cotizacionId: number) {
 
   const { data: detalles, error: errorDetalles } = await supabase
     .from('detalle_cotizacion')
-    .select('producto_id, cantidad, precio_unitario')
+    .select('producto_id, cantidad, precio_unitario, tipo_afectacion_igv')
     .eq('cotizacion_id', cotizacionId)
 
   if (errorDetalles || !detalles || detalles.length === 0) {
@@ -563,6 +574,7 @@ export async function crearFacturaDesdeCotizacion(cotizacionId: number) {
       producto_id: d.producto_id,
       cantidad: d.cantidad,
       precio_unitario: d.precio_unitario,
+      tipo_afectacion_igv: d.tipo_afectacion_igv,
     }))
   )
 

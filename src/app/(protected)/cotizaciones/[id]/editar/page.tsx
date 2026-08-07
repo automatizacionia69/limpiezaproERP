@@ -10,6 +10,7 @@ type ProductoRow = {
   codigo: string | null
   cantidad: number
   precio_venta: number | null
+  tipo_afectacion_igv: string
   unidades_medida: { nombre: string } | null
 }
 
@@ -20,6 +21,7 @@ type DetalleRow = {
   caracteristicas: string | null
   fecha_entrega: string | null
   unidad_nombre: string | null
+  tipo_afectacion_igv: string
 }
 
 export default async function EditarCotizacionPage({ params }: { params: Promise<{ id: string }> }) {
@@ -49,7 +51,7 @@ export default async function EditarCotizacionPage({ params }: { params: Promise
       .single(),
     supabase
       .from('detalle_cotizacion')
-      .select('producto_id, cantidad, precio_unitario, caracteristicas, fecha_entrega, unidad_nombre')
+      .select('producto_id, cantidad, precio_unitario, caracteristicas, fecha_entrega, unidad_nombre, tipo_afectacion_igv')
       .eq('cotizacion_id', id)
       .returns<DetalleRow[]>(),
     supabase
@@ -59,7 +61,7 @@ export default async function EditarCotizacionPage({ params }: { params: Promise
       .order('nombre'),
     supabase
       .from('productos')
-      .select('id, nombre, codigo, cantidad, precio_venta, unidades_medida(nombre)')
+      .select('id, nombre, codigo, cantidad, precio_venta, tipo_afectacion_igv, unidades_medida(nombre)')
       .order('nombre')
       .returns<ProductoRow[]>(),
     supabase.from('usuarios_perfil').select('id, nombre').order('nombre'),
@@ -112,6 +114,7 @@ export default async function EditarCotizacionPage({ params }: { params: Promise
       caracteristicas: d.caracteristicas ?? '',
       fecha_entrega: d.fecha_entrega ?? '',
       unidad_nombre: d.unidad_nombre ?? '',
+      tipo_afectacion_igv: d.tipo_afectacion_igv,
     })),
   }
 
