@@ -29,6 +29,7 @@ export default async function NuevaCotizacionPage() {
       supabase
         .from('productos')
         .select('id, nombre, codigo, cantidad, precio_venta, unidades_medida(nombre)')
+        .eq('activo', true)
         .order('nombre')
         .returns<ProductoRow[]>(),
       supabase.from('usuarios_perfil').select('id, nombre').order('nombre'),

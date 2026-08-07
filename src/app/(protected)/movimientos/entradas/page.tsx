@@ -60,7 +60,7 @@ export default async function EntradasPage() {
       : Promise.resolve({ data: null }),
     supabase.from('configuracion').select('moneda, usa_lote_vencimiento').eq('id', 1).single(),
     supabase.from('proveedores').select('id, nombre, ruc').eq('activo', true).order('nombre'),
-    supabase.from('productos').select('id, nombre, codigo, costo, cantidad').order('nombre'),
+    supabase.from('productos').select('id, nombre, codigo, costo, cantidad').eq('activo', true).order('nombre'),
     supabase
       .from('kardex_valorizado')
       .select(

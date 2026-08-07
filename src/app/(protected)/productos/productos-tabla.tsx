@@ -1,13 +1,17 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo, useState, useTransition } from 'react'
-import { eliminarProducto } from './actions'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import { cambiarEstadoProducto } from './actions'
 
 type ProductoRow = {
   id: number
   nombre: string
   codigo: string | null
+  sku: string
+  codigo_barras: string | null
+  marca: string | null
+  activo: boolean
   cantidad: number
   costo: number
   precio_venta: number | null
@@ -17,6 +21,30 @@ type ProductoRow = {
 }
 
 type CampoOrden = 'cantidad' | 'precio_venta'
+type Criterio = 'nombre' | 'categoria' | 'unidad' | 'sku' | 'codigo_barras'
+
+const CRITERIOS: { valor: Criterio; etiqueta: string; placeholder: string }[] = [
+  { valor: 'nombre', etiqueta: 'Nombre', placeholder: 'Buscar por nombre...' },
+  { valor: 'categoria', etiqueta: 'Categoría', placeholder: 'Buscar por categoría...' },
+  { valor: 'unidad', etiqueta: 'Unidad', placeholder: 'Buscar por unidad...' },
+  { valor: 'sku', etiqueta: 'Código SKU', placeholder: 'Buscar por SKU (ej: LIM-0001)...' },
+  { valor: 'codigo_barras', etiqueta: 'Código de barras', placeholder: 'Buscar por código de barras...' },
+]
+
+function valorSegunCriterio(p: ProductoRow, criterio: Criterio): string {
+  switch (criterio) {
+    case 'nombre':
+      return p.nombre
+    case 'categoria':
+      return p.categorias?.nombre ?? ''
+    case 'unidad':
+      return p.unidades_medida?.nombre ?? ''
+    case 'sku':
+      return p.sku
+    case 'codigo_barras':
+      return p.codigo_barras ?? ''
+  }
+}
 
 function IconoOrden({ activo, direccion }: { activo: boolean; direccion: 'asc' | 'desc' }) {
   return (
@@ -34,15 +62,112 @@ function IconoOrden({ activo, direccion }: { activo: boolean; direccion: 'asc' |
   )
 }
 
-export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
-  const [filtro, setFiltro] = useState('')
-  const [errorEliminar, setErrorEliminar] = useState<string | null>(null)
-  const [pendienteId, setPendienteId] = useState<number | null>(null)
+function SelectorCriterio({ criterio, onChange }: { criterio: Criterio; onChange: (c: Criterio) => void }) {
+  const [abierto, setAbierto] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function onClickFuera(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setAbierto(false)
+    }
+    document.addEventListener('mousedown', onClickFuera)
+    return () => document.removeEventListener('mousedown', onClickFuera)
+  }, [])
+
+  return (
+    <div ref={ref} className="relative flex">
+      <button
+        type="button"
+        onClick={() => setAbierto((a) => !a)}
+        title="Elegir criterio de búsqueda"
+        className="flex items-center gap-1 rounded-r-2xl border-2 border-l-0 border-[#e2e8f0] dark:border-slate-700 bg-[#f8fafc] dark:bg-slate-800/60 px-3 text-xs font-bold text-[#64748b] dark:text-slate-400 transition-colors hover:bg-[#f1f5f9] dark:hover:bg-slate-800"
+      >
+        {CRITERIOS.find((c) => c.valor === criterio)?.etiqueta}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className={`h-3.5 w-3.5 transition-transform ${abierto ? 'rotate-180' : ''}`}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+        </svg>
+      </button>
+      {abierto && (
+        <div className="absolute right-0 top-full z-20 mt-1.5 w-48 overflow-hidden rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] py-1.5 shadow-xl">
+          {CRITERIOS.map((c) => (
+            <button
+              key={c.valor}
+              type="button"
+              onClick={() => {
+                onChange(c.valor)
+                setAbierto(false)
+              }}
+              className={`block w-full px-4 py-2 text-left text-sm transition-colors hover:bg-indigo-50 dark:hover:bg-slate-800 ${
+                criterio === c.valor ? 'bg-indigo-50 dark:bg-slate-800 font-bold text-indigo-700 dark:text-indigo-400' : 'text-[#1e293b] dark:text-slate-100'
+              }`}
+            >
+              {c.etiqueta}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SwitchActivo({ producto }: { producto: ProductoRow }) {
   const [isPending, startTransition] = useTransition()
+  const [error, setError] = useState<string | null>(null)
+
+  function alternar() {
+    setError(null)
+    const nuevoValor = !producto.activo
+    if (!nuevoValor) {
+      const confirmado = confirm(
+        `¿Desactivar "${producto.nombre}"? Dejará de aparecer en Ventas, Compras, Cotizaciones y Movimientos, pero sigue existiendo aquí y puedes reactivarlo cuando quieras.`
+      )
+      if (!confirmado) return
+    }
+    startTransition(async () => {
+      try {
+        await cambiarEstadoProducto(producto.id, nuevoValor)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'No se pudo cambiar el estado.')
+      }
+    })
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      {error && <span className="text-[11px] font-medium text-red-600">{error}</span>}
+      <span className={`text-[11px] font-bold ${producto.activo ? 'text-emerald-600' : 'text-[#94a3b8] dark:text-slate-500'}`}>
+        {producto.activo ? 'Activo' : 'Inactivo'}
+      </span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={producto.activo}
+        disabled={isPending}
+        onClick={alternar}
+        title={producto.activo ? 'Desactivar producto' : 'Activar producto'}
+        className={`relative h-5 w-9 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
+          producto.activo ? 'bg-emerald-500' : 'bg-[#cbd5e1] dark:bg-slate-700'
+        }`}
+      >
+        <span
+          className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+            producto.activo ? 'translate-x-4' : 'translate-x-0'
+          }`}
+        />
+      </button>
+    </div>
+  )
+}
+
+export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
+  const [criterio, setCriterio] = useState<Criterio>('nombre')
+  const [texto, setTexto] = useState('')
   const [orden, setOrden] = useState<{ campo: CampoOrden | null; direccion: 'asc' | 'desc' }>({
     campo: null,
     direccion: 'desc',
   })
+
+  const placeholderActual = CRITERIOS.find((c) => c.valor === criterio)?.placeholder ?? 'Buscar...'
 
   function ordenarPor(campo: CampoOrden) {
     setOrden((actual) =>
@@ -52,32 +177,9 @@ export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
     )
   }
 
-  function handleEliminar(id: number, nombre: string) {
-    if (!confirm(`¿Eliminar "${nombre}"? Esta acción no se puede deshacer.`)) return
-    setErrorEliminar(null)
-    setPendienteId(id)
-    startTransition(async () => {
-      try {
-        await eliminarProducto(id)
-      } catch (e) {
-        setErrorEliminar(e instanceof Error ? e.message : 'No se pudo eliminar el producto.')
-      } finally {
-        setPendienteId(null)
-      }
-    })
-  }
-
   const filtrados = useMemo(() => {
-    const q = filtro.trim().toLowerCase()
-    const base = !q
-      ? productos
-      : productos.filter((p) =>
-          [p.nombre, p.codigo, p.categorias?.nombre, p.unidades_medida?.nombre]
-            .filter(Boolean)
-            .join(' ')
-            .toLowerCase()
-            .includes(q)
-        )
+    const q = texto.trim().toLowerCase()
+    const base = !q ? productos : productos.filter((p) => valorSegunCriterio(p, criterio).toLowerCase().includes(q))
 
     if (!orden.campo) return base
 
@@ -88,7 +190,7 @@ export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
       const valorB = campo === 'precio_venta' ? (b.precio_venta ?? -1) : b[campo]
       return (valorA - valorB) * signo
     })
-  }, [productos, filtro, orden])
+  }, [productos, texto, criterio, orden])
 
   return (
     <div>
@@ -100,34 +202,31 @@ export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Link
-            href="/categorias"
-            className="rounded-md border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-3 text-sm font-bold text-[#1e293b] dark:text-slate-100 transition-all hover:border-violet-300 hover:bg-violet-50 active:scale-95"
-          >
-            🏷️ Categorías
-          </Link>
-          <Link
-            href="/unidades"
-            className="rounded-md border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-3 text-sm font-bold text-[#1e293b] dark:text-slate-100 transition-all hover:border-fuchsia-300 hover:bg-fuchsia-50 active:scale-95"
-          >
-            📏 Unidades
-          </Link>
-          <div className="relative">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-[#94a3b8] dark:text-slate-500"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-            </svg>
-            <input
-              type="text"
-              value={filtro}
-              onChange={(e) => setFiltro(e.target.value)}
-              placeholder="Filtrar..."
-              className="rounded-2xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] py-2.5 pr-4 pl-10 text-sm font-medium text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+          <div className="flex items-stretch">
+            <div className="relative">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-[#94a3b8] dark:text-slate-500"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+              </svg>
+              <input
+                type="text"
+                value={texto}
+                onChange={(e) => setTexto(e.target.value)}
+                placeholder={placeholderActual}
+                className="h-full rounded-l-2xl border-2 border-r-0 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] py-2.5 pr-4 pl-10 text-sm font-medium text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+              />
+            </div>
+            <SelectorCriterio
+              criterio={criterio}
+              onChange={(c) => {
+                setCriterio(c)
+                setTexto('')
+              }}
             />
           </div>
           <Link
@@ -142,12 +241,6 @@ export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
         </div>
       </div>
 
-      {errorEliminar && (
-        <p role="alert" className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-          {errorEliminar}
-        </p>
-      )}
-
       <div className="mt-6 overflow-hidden rounded-3xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] shadow-lg shadow-slate-500/5">
         {productos.length === 0 ? (
           <p className="p-12 text-center text-sm font-medium text-[#64748b] dark:text-slate-400">
@@ -158,14 +251,16 @@ export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
             para agregar el primero.
           </p>
         ) : filtrados.length === 0 ? (
-          <p className="p-12 text-center text-sm font-medium text-[#64748b] dark:text-slate-400">Ningún producto coincide con “{filtro}”.</p>
+          <p className="p-12 text-center text-sm font-medium text-[#64748b] dark:text-slate-400">Ningún producto coincide con “{texto}”.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-[13.5px]">
               <thead>
                 <tr className="border-b-2 border-[#f1f5f9] dark:border-slate-800 bg-[#f8fafc] dark:bg-slate-800/60 text-[#64748b] dark:text-slate-400">
                   <th className="px-6 py-4 font-bold">Nombre</th>
-                  <th className="px-6 py-4 font-bold">Código</th>
+                  <th className="px-6 py-4 font-bold">SKU</th>
+                  <th className="px-6 py-4 font-bold">Código de barras</th>
+                  <th className="px-6 py-4 font-bold">Marca</th>
                   <th className="px-6 py-4 font-bold">Categoría</th>
                   <th className="px-6 py-4 font-bold">Unidad</th>
                   <th className="px-6 py-4 font-bold">
@@ -191,6 +286,7 @@ export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
                       <IconoOrden activo={orden.campo === 'precio_venta'} direccion={orden.direccion} />
                     </button>
                   </th>
+                  <th className="px-6 py-4 font-bold">Estado</th>
                   <th className="px-6 py-4 text-right font-bold">Acciones</th>
                 </tr>
               </thead>
@@ -198,9 +294,18 @@ export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
                 {filtrados.map((p) => {
                   const bajo = p.punto_reorden !== null && p.cantidad <= p.punto_reorden
                   return (
-                    <tr key={p.id} className="border-b border-[#f1f5f9] dark:border-slate-800 text-[#1e293b] dark:text-slate-100 transition-colors hover:bg-indigo-50/40">
+                    <tr
+                      key={p.id}
+                      className={`border-b border-[#f1f5f9] dark:border-slate-800 text-[#1e293b] dark:text-slate-100 transition-colors hover:bg-indigo-50/40 ${
+                        p.activo ? '' : 'opacity-60'
+                      }`}
+                    >
                       <td className="px-6 py-4 font-bold">{p.nombre}</td>
-                      <td className="px-6 py-4 text-[#64748b] dark:text-slate-400">{p.codigo ?? '—'}</td>
+                      <td className="px-6 py-4">
+                        <span className="font-mono text-xs font-bold text-[#1e293b] dark:text-slate-100">{p.sku}</span>
+                      </td>
+                      <td className="px-6 py-4 font-mono text-xs text-[#64748b] dark:text-slate-400">{p.codigo_barras ?? '—'}</td>
+                      <td className="px-6 py-4 text-[#64748b] dark:text-slate-400">{p.marca ?? '—'}</td>
                       <td className="px-6 py-4 text-[#64748b] dark:text-slate-400">{p.categorias?.nombre ?? '—'}</td>
                       <td className="px-6 py-4 text-[#64748b] dark:text-slate-400">{p.unidades_medida?.nombre ?? '—'}</td>
                       <td className="px-6 py-4">
@@ -214,6 +319,9 @@ export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
                       <td className="px-6 py-4 text-[#64748b] dark:text-slate-400">S/ {Number(p.costo).toFixed(2)}</td>
                       <td className="px-6 py-4 text-[#64748b] dark:text-slate-400">
                         {p.precio_venta !== null ? `S/ ${Number(p.precio_venta).toFixed(2)}` : '—'}
+                      </td>
+                      <td className="px-6 py-4">
+                        <SwitchActivo producto={p} />
                       </td>
                       <td className="px-6 py-4 text-right whitespace-nowrap">
                         <Link
@@ -242,21 +350,13 @@ export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
                             />
                           </svg>
                         </Link>
-                        <button
-                          type="button"
-                          onClick={() => handleEliminar(p.id, p.nombre)}
-                          disabled={isPending && pendienteId === p.id}
-                          title="Eliminar"
-                          className="ml-1.5 inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] dark:text-slate-400 transition-all hover:bg-red-100 hover:text-red-600 disabled:opacity-50"
-                        >
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
-                            />
-                          </svg>
-                        </button>
+                        {/*
+                          Borrado físico intencionalmente sin botón: reservado para
+                          administradores internos de nuestra empresa (ver
+                          eliminarProductoFisico en actions.ts). El switch de la
+                          columna Estado es la única forma de "quitar" un producto
+                          del flujo normal del ERP.
+                        */}
                       </td>
                     </tr>
                   )

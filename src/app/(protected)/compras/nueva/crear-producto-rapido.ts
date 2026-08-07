@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { tienePermiso } from '@/lib/permisos'
+import { sugerirSku } from '../../productos/actions'
 
 export type ProductoCreado = { id: number; nombre: string }
 export type ResultadoCrearProducto = { producto: ProductoCreado } | { error: string }
@@ -43,20 +44,37 @@ export async function crearProductoRapido(nombre: string, costo: number): Promis
     return { error: 'No hay unidades de medida configuradas — crea una primero en Unidades.' }
   }
 
-  const { data: producto, error } = await supabase
-    .from('productos')
-    .insert({
-      nombre: nombreLimpio,
-      unidad_id: unidadId,
-      cantidad: 0,
-      costo: Math.max(0, costo) || 0,
-    })
-    .select('id, nombre')
-    .single()
+  // No hay categoria al crear desde una factura leida por IA: sugerirSku cae
+  // al prefijo "GEN" (mismo criterio que el backfill de la migracion). Esta
+  // funcion se llama en paralelo (Promise.all en nueva-compra-form.tsx, una
+  // vez por cada producto sin match detectado en la misma factura), asi que
+  // dos llamadas pueden sugerir el mismo SKU antes de que la primera termine
+  // de insertar — se reintenta con un sufijo aleatorio si el insert choca
+  // contra el UNIQUE de sku.
+  for (let intento = 0; intento < 3; intento++) {
+    const base = await sugerirSku(null)
+    const sku = intento === 0 ? base : `${base}${Math.floor(100 + Math.random() * 900)}`
 
-  if (error || !producto) {
-    return { error: error?.message ?? 'No se pudo crear el producto.' }
+    const { data: producto, error } = await supabase
+      .from('productos')
+      .insert({
+        nombre: nombreLimpio,
+        unidad_id: unidadId,
+        sku,
+        activo: true,
+        cantidad: 0,
+        costo: Math.max(0, costo) || 0,
+      })
+      .select('id, nombre')
+      .single()
+
+    if (!error && producto) {
+      return { producto }
+    }
+    if (!error || error.code !== '23505' || intento === 2) {
+      return { error: error?.message ?? 'No se pudo crear el producto.' }
+    }
   }
 
-  return { producto }
+  return { error: 'No se pudo generar un SKU único, intenta de nuevo.' }
 }

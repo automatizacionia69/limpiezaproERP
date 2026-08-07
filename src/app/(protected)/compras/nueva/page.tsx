@@ -7,7 +7,7 @@ export default async function NuevaCompraPage() {
   const supabase = await createClient()
   const [{ data: proveedores }, { data: productos }] = await Promise.all([
     supabase.from('proveedores').select('id, nombre').eq('activo', true).order('nombre'),
-    supabase.from('productos').select('id, nombre').order('nombre'),
+    supabase.from('productos').select('id, nombre').eq('activo', true).order('nombre'),
   ])
 
   return (

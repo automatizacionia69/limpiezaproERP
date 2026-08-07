@@ -11,6 +11,9 @@ type Producto = {
   id: number
   nombre: string
   codigo: string | null
+  sku: string
+  codigo_barras: string | null
+  marca: string | null
   unidad_id: number
   categoria_id: number | null
   zona_id: number | null
@@ -51,8 +54,45 @@ export function EditarProductoForm({
         </div>
 
         <div>
-          <label className={LABEL}>Código</label>
-          <input type="text" name="codigo" defaultValue={producto.codigo ?? ''} className={CAMPO} />
+          <label className={LABEL}>SKU *</label>
+          <input
+            type="text"
+            name="sku"
+            required
+            defaultValue={producto.sku}
+            className={`${CAMPO} uppercase`}
+          />
+          <p className="mt-1.5 text-xs font-medium text-[#94a3b8] dark:text-slate-500">
+            Código interno único del ERP.
+          </p>
+        </div>
+
+        <div>
+          <label className={LABEL}>Código de barras</label>
+          <input
+            type="text"
+            name="codigo_barras"
+            inputMode="numeric"
+            defaultValue={producto.codigo_barras ?? ''}
+            placeholder="EAN/UPC (opcional)"
+            className={CAMPO}
+          />
+        </div>
+
+        <div>
+          <label className={LABEL}>Marca</label>
+          <input type="text" name="marca" defaultValue={producto.marca ?? ''} placeholder="Opcional" className={CAMPO} />
+        </div>
+
+        <div>
+          <label className={LABEL}>Cód. fabricante</label>
+          <input
+            type="text"
+            name="codigo"
+            defaultValue={producto.codigo ?? ''}
+            placeholder="Código del proveedor/fabricante (opcional)"
+            className={CAMPO}
+          />
         </div>
 
         <div>

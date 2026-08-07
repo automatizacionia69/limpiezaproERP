@@ -16,7 +16,9 @@ export default async function EditarProductoPage({
     await Promise.all([
       supabase
         .from('productos')
-        .select('id, nombre, codigo, unidad_id, categoria_id, zona_id, precio_venta, punto_reorden')
+        .select(
+          'id, nombre, codigo, sku, codigo_barras, marca, unidad_id, categoria_id, zona_id, precio_venta, punto_reorden'
+        )
         .eq('id', id)
         .single(),
       supabase.from('unidades_medida').select('id, nombre').order('nombre'),

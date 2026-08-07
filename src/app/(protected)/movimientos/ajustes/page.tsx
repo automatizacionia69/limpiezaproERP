@@ -33,7 +33,7 @@ export default async function AjustesPage() {
     user
       ? supabase.from('usuarios_perfil').select('nombre, rol').eq('id', user.id).single()
       : Promise.resolve({ data: null }),
-    supabase.from('productos').select('id, nombre, codigo, cantidad').order('nombre'),
+    supabase.from('productos').select('id, nombre, codigo, cantidad').eq('activo', true).order('nombre'),
     supabase
       .from('ajustes_cabecera')
       .select('id, numero, fecha, motivo, motivo_otro, estado, usuarios_perfil(nombre)')

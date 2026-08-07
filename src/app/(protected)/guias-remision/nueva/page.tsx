@@ -6,7 +6,11 @@ export default async function NuevaGuiaTrasladoPage() {
   await requierePermiso('guias_remision')
   const supabase = await createClient()
 
-  const { data: productos } = await supabase.from('productos').select('id, nombre, cantidad').order('nombre')
+  const { data: productos } = await supabase
+    .from('productos')
+    .select('id, nombre, cantidad')
+    .eq('activo', true)
+    .order('nombre')
 
   return (
     <div>

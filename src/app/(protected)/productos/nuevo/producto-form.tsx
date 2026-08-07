@@ -1,7 +1,7 @@
 'use client'
 
-import { useActionState, useState } from 'react'
-import { crearProducto, type EstadoFormulario } from '../actions'
+import { useActionState, useEffect, useState } from 'react'
+import { crearProducto, sugerirSku, type EstadoFormulario } from '../actions'
 import { Buscador } from '@/components/buscador'
 
 type Opcion = { id: number; nombre: string }
@@ -9,6 +9,7 @@ type Opcion = { id: number; nombre: string }
 const CAMPO =
   'mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-3 text-base text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100'
 const LABEL = 'block text-sm font-bold text-[#1e293b] dark:text-slate-100'
+const AYUDA = 'mt-1.5 text-xs font-medium text-[#94a3b8] dark:text-slate-500'
 
 export function ProductoForm({
   unidades,
@@ -22,6 +23,33 @@ export function ProductoForm({
   })
   const [unidadId, setUnidadId] = useState<number | ''>('')
   const [categoriaId, setCategoriaId] = useState<number | ''>('')
+  const [sku, setSku] = useState('')
+  // Deja de auto-sugerir en cuanto el usuario toca el campo a mano — la
+  // sugerencia es solo un punto de partida editable, nunca se le pisa lo
+  // que ya escribió.
+  const [skuTocado, setSkuTocado] = useState(false)
+
+  useEffect(() => {
+    if (skuTocado) return
+    let cancelado = false
+    sugerirSku(categoriaId ? Number(categoriaId) : null).then((sugerido) => {
+      if (!cancelado) setSku(sugerido)
+    })
+    return () => {
+      cancelado = true
+    }
+  }, [categoriaId, skuTocado])
+
+  useEffect(() => {
+    // Bajo alta concurrencia (varias personas creando en la misma categoría
+    // casi al mismo tiempo) dos sugerencias de SKU pueden coincidir. Si el
+    // guardado choca por SKU duplicado, se refresca la sugerencia sola en
+    // vez de dejar al usuario reintentando a ciegas con el mismo valor que
+    // ya falló.
+    if (estado.error?.includes('SKU')) {
+      setSkuTocado(false)
+    }
+  }, [estado.error])
 
   return (
     <form action={formAction} className="mt-6 space-y-5">
@@ -32,8 +60,36 @@ export function ProductoForm({
         </div>
 
         <div>
-          <label className={LABEL}>Código</label>
-          <input type="text" name="codigo" className={CAMPO} />
+          <label className={LABEL}>SKU *</label>
+          <input
+            type="text"
+            name="sku"
+            required
+            value={sku}
+            onChange={(e) => {
+              setSku(e.target.value)
+              setSkuTocado(true)
+            }}
+            placeholder="Se sugiere al elegir categoría"
+            className={`${CAMPO} uppercase`}
+          />
+          <p className={AYUDA}>Código interno único del ERP. Editable — la sugerencia es solo un punto de partida.</p>
+        </div>
+
+        <div>
+          <label className={LABEL}>Código de barras</label>
+          <input type="text" name="codigo_barras" inputMode="numeric" placeholder="EAN/UPC (opcional)" className={CAMPO} />
+          <p className={AYUDA}>8 a 14 dígitos. Déjalo vacío si el producto no tiene uno.</p>
+        </div>
+
+        <div>
+          <label className={LABEL}>Marca</label>
+          <input type="text" name="marca" placeholder="Opcional" className={CAMPO} />
+        </div>
+
+        <div>
+          <label className={LABEL}>Cód. fabricante</label>
+          <input type="text" name="codigo" placeholder="Código del proveedor/fabricante (opcional)" className={CAMPO} />
         </div>
 
         <div>
@@ -66,6 +122,7 @@ export function ProductoForm({
         <div>
           <label className={LABEL}>Precio de venta</label>
           <input type="number" step="0.01" min="0" name="precio_venta" className={CAMPO} />
+          <p className={AYUDA}>Incluye IGV (18%).</p>
         </div>
 
         <div>
