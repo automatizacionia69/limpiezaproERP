@@ -1,8 +1,8 @@
 'use client'
 
-import { useMemo, useState, useActionState } from 'react'
+import { useMemo, useState, useActionState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { crearCotizacion, type EstadoFormulario } from '../actions'
+import { crearCotizacion, actualizarCotizacion, enviarCorreoCotizacion, type EstadoFormulario } from '../actions'
 import {
   IGV_TASA,
   calcularImportes,
@@ -56,6 +56,22 @@ type Linea = {
   fecha_entrega: string
   unidad_nombre: string
 }
+export type CotizacionExistente = {
+  id: number
+  clienteId: number
+  fecha: string
+  fechaEntrega: string
+  diasCredito: string
+  medioPago: string
+  vendedorId: string
+  observacion: string
+  moneda: 'PEN' | 'USD'
+  documentoReferencia: string
+  vigenciaDias: number | null
+  descuentoTipo: DescuentoTipo
+  descuentoValor: number | ''
+  lineas: Linea[]
+}
 
 const DIAS_CREDITO = ['Contado', '7 días', '15 días', '30 días', '45 días', '60 días']
 const MEDIOS_PAGO = ['Transferencia', 'Efectivo', 'Yape', 'Plin']
@@ -66,7 +82,37 @@ const MONEDAS: { value: 'PEN' | 'USD'; label: string; simbolo: string }[] = [
 
 const CAMPO =
   'mt-1.5 w-full rounded-lg border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2 text-sm text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-100'
+// Igual que CAMPO pero sin `w-full` — para campos dentro de una fila flex
+// (ej. código de país + número) donde el ancho lo define el propio flex,
+// no el campo. Concatenar `w-16`/`flex-1` directo sobre CAMPO no sirve:
+// `w-full` seguiría presente en la clase y Tailwind resuelve el choque por
+// orden de la hoja de estilos generada, no por orden en el string.
+const CAMPO_SIN_ANCHO = CAMPO.replace('w-full ', '')
 const LABEL = 'block text-xs font-bold text-[#1e293b] dark:text-slate-100'
+
+function IconoWhatsApp({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 448 512" fill="currentColor" className={className}>
+      <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z" />
+    </svg>
+  )
+}
+
+function IconoCorreo({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+    </svg>
+  )
+}
 const CAMPO_LINEA =
   'w-full rounded-lg border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-2 py-2 text-xs text-[#1e293b] dark:text-slate-100 outline-none focus:border-sky-500'
 
@@ -77,6 +123,7 @@ export function NuevaCotizacionForm({
   unidadesMedida,
   usuarioActualId,
   configuracion,
+  cotizacionExistente,
 }: {
   clientes: Cliente[]
   productos: Producto[]
@@ -84,29 +131,42 @@ export function NuevaCotizacionForm({
   unidadesMedida: UnidadMedida[]
   usuarioActualId: string
   configuracion: Configuracion
+  /** Presente solo en /cotizaciones/[id]/editar — precarga el formulario y hace que Guardar actualice en vez de crear. */
+  cotizacionExistente?: CotizacionExistente
 }) {
   const router = useRouter()
-  const [estado, formAction] = useActionState<EstadoFormulario, FormData>(crearCotizacion, {
+  const accionFormulario = cotizacionExistente
+    ? (prevState: EstadoFormulario, formData: FormData) => actualizarCotizacion(cotizacionExistente.id, prevState, formData)
+    : crearCotizacion
+  const [estado, formAction] = useActionState<EstadoFormulario, FormData>(accionFormulario, {
     error: null,
   })
 
-  const [clienteId, setClienteId] = useState<number | ''>('')
-  const [fecha, setFecha] = useState(hoyPeruISO())
-  const [fechaEntrega, setFechaEntrega] = useState(hoyPeruISO())
-  const [diasCredito, setDiasCredito] = useState('Contado')
-  const [medioPago, setMedioPago] = useState('Transferencia')
-  const [vendedorId, setVendedorId] = useState(usuarioActualId)
-  const [observacion, setObservacion] = useState('')
-  const [moneda, setMoneda] = useState<'PEN' | 'USD'>('PEN')
-  const [documentoReferencia, setDocumentoReferencia] = useState('')
-  const [vigenciaDias, setVigenciaDias] = useState(15)
-  const [vigenciaActiva, setVigenciaActiva] = useState(true)
-  const [descuentoTipo, setDescuentoTipo] = useState<DescuentoTipo>('porcentaje')
-  const [descuentoValor, setDescuentoValor] = useState<number | ''>('')
-  const [lineas, setLineas] = useState<Linea[]>([])
+  const [clienteId, setClienteId] = useState<number | ''>(cotizacionExistente?.clienteId ?? '')
+  const [fecha, setFecha] = useState(cotizacionExistente?.fecha ?? hoyPeruISO())
+  const [fechaEntrega, setFechaEntrega] = useState(cotizacionExistente?.fechaEntrega ?? hoyPeruISO())
+  const [diasCredito, setDiasCredito] = useState(cotizacionExistente?.diasCredito ?? 'Contado')
+  const [medioPago, setMedioPago] = useState(cotizacionExistente?.medioPago ?? 'Transferencia')
+  const [vendedorId, setVendedorId] = useState(cotizacionExistente?.vendedorId ?? usuarioActualId)
+  const [observacion, setObservacion] = useState(cotizacionExistente?.observacion ?? '')
+  const [moneda, setMoneda] = useState<'PEN' | 'USD'>(cotizacionExistente?.moneda ?? 'PEN')
+  const [documentoReferencia, setDocumentoReferencia] = useState(cotizacionExistente?.documentoReferencia ?? '')
+  const [vigenciaDias, setVigenciaDias] = useState(cotizacionExistente?.vigenciaDias ?? 15)
+  const [vigenciaActiva, setVigenciaActiva] = useState(cotizacionExistente ? cotizacionExistente.vigenciaDias !== null : true)
+  const [descuentoTipo, setDescuentoTipo] = useState<DescuentoTipo>(cotizacionExistente?.descuentoTipo ?? 'porcentaje')
+  const [descuentoValor, setDescuentoValor] = useState<number | ''>(cotizacionExistente?.descuentoValor ?? '')
+  const [lineas, setLineas] = useState<Linea[]>(cotizacionExistente?.lineas ?? [])
   const [productoParaAgregar, setProductoParaAgregar] = useState<number | ''>('')
   const [vistaPreviaAbierta, setVistaPreviaAbierta] = useState(false)
   const [lineaCaracteristicas, setLineaCaracteristicas] = useState<number | null>(null)
+
+  const [exitoIdCargado, setExitoIdCargado] = useState<number | null>(null)
+  const [codigoPaisWhatsapp, setCodigoPaisWhatsapp] = useState('+51')
+  const [telefonoWhatsapp, setTelefonoWhatsapp] = useState('')
+  const [correoDestino, setCorreoDestino] = useState('')
+  const [correoEstado, setCorreoEstado] = useState<'idle' | 'enviado' | 'error'>('idle')
+  const [correoError, setCorreoError] = useState<string | null>(null)
+  const [enviandoCorreo, iniciarEnvioCorreo] = useTransition()
 
   function seleccionarCliente(id: number | string | '') {
     const nuevoId = Number(id) || ''
@@ -223,6 +283,51 @@ export function NuevaCotizacionForm({
         estado.exito.moneda === 'USD' ? '$' : 'S/'
       } ${estado.exito.total.toFixed(2)}.`
     : ''
+  const enlaceCotizacion =
+    estado.exito && typeof window !== 'undefined'
+      ? `${window.location.origin}/cotizaciones/${estado.exito.id}`
+      : ''
+  const mensajeConEnlace =
+    mensajeCompartirCotizacion && enlaceCotizacion
+      ? `${mensajeCompartirCotizacion}\n\nVer cotización: ${enlaceCotizacion}`
+      : mensajeCompartirCotizacion
+
+  // Cada vez que se registra una cotización nueva (cambia el id de éxito), se
+  // precargan el destino de correo y el teléfono con los datos del cliente —
+  // el código de país siempre vuelve a +51 por defecto, editable si hace
+  // falta. Se ajusta durante el render (no en un efecto) siguiendo el patrón
+  // recomendado por React para "resetear estado cuando cambia una prop".
+  if (estado.exito && estado.exito.id !== exitoIdCargado) {
+    setExitoIdCargado(estado.exito.id)
+    setCodigoPaisWhatsapp('+51')
+    setTelefonoWhatsapp(telefonoClienteDigitos)
+    setCorreoDestino(clienteSeleccionado?.email ?? '')
+    setCorreoEstado('idle')
+    setCorreoError(null)
+  }
+
+  function abrirWhatsApp() {
+    const digitos = `${codigoPaisWhatsapp.replace(/\D/g, '')}${telefonoWhatsapp.replace(/\D/g, '')}`
+    const url = `https://web.whatsapp.com/send?${
+      digitos ? `phone=${digitos}&` : ''
+    }text=${encodeURIComponent(mensajeConEnlace)}`
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
+
+  function manejarEnviarCorreo() {
+    if (!estado.exito) return
+    setCorreoEstado('idle')
+    setCorreoError(null)
+    iniciarEnvioCorreo(async () => {
+      try {
+        await enviarCorreoCotizacion(correoDestino, `Cotización ${estado.exito!.numero}`, mensajeConEnlace)
+        setCorreoEstado('enviado')
+      } catch (error) {
+        setCorreoError(error instanceof Error ? error.message : 'No se pudo enviar el correo.')
+        setCorreoEstado('error')
+      }
+    })
+  }
 
   const lineasDocumento = useMemo(
     () =>
@@ -264,7 +369,7 @@ export function NuevaCotizacionForm({
                 type="submit"
                 className="flex items-center gap-2 rounded-md bg-gradient-to-r from-sky-500 to-blue-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-sky-500/30 transition-all active:scale-95"
               >
-                💾 Guardar cotización
+                💾 {cotizacionExistente ? 'Guardar cambios' : 'Guardar cotización'}
               </button>
             </div>
           </div>
@@ -655,63 +760,143 @@ export function NuevaCotizacionForm({
         </form>
       </div>
 
-      <Modal abierto={!!estado.exito} onClose={() => router.push('/cotizaciones')} className="max-w-sm">
+      <Modal abierto={!!estado.exito} onClose={() => router.push('/cotizaciones')} className="max-w-md">
         {estado.exito && (
-          <div className="flex flex-col items-center text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/40">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-8 w-8 text-emerald-500">
-                <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+          <div className="flex flex-col">
+            <button
+              type="button"
+              onClick={() => router.push('/cotizaciones')}
+              title="Cerrar"
+              className="absolute right-4 top-4 z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-[#64748b] transition-all hover:bg-[#f1f5f9] active:scale-95 dark:text-slate-400 dark:hover:bg-slate-800"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
               </svg>
-            </div>
-            <p className="mt-4 text-lg font-extrabold text-emerald-600">Cotización registrada con éxito</p>
-            <p className="mt-1 text-sm font-bold text-[#1e293b] dark:text-slate-100">
-              Documento generado: {estado.exito.numero}
-            </p>
-            <p className="text-sm text-[#64748b] dark:text-slate-400">
-              Monto total: {estado.exito.moneda === 'USD' ? '$' : 'S/'} {estado.exito.total.toFixed(2)}
-            </p>
-
-            <div className="mt-5 flex w-full flex-col gap-2.5">
-              <a
-                href={`/cotizaciones/${estado.exito.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-md bg-gradient-to-r from-sky-500 to-blue-500 px-4 py-2.5 text-center text-sm font-bold text-white shadow-sm shadow-sky-500/30 transition-all active:scale-95"
-              >
-                📄 Ver / descargar PDF
-              </a>
-              <a
-                href={`mailto:${clienteSeleccionado?.email ?? ''}?subject=${encodeURIComponent(
-                  `Cotización ${estado.exito.numero}`
-                )}&body=${encodeURIComponent(mensajeCompartirCotizacion)}`}
-                className="rounded-md border-2 border-[#e2e8f0] px-4 py-2.5 text-center text-sm font-bold text-[#1e293b] transition-all hover:bg-[#f8fafc] active:scale-95 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800"
-              >
-                ✉️ Enviar por correo
-              </a>
-              <a
-                href={`https://web.whatsapp.com/send?${
-                  telefonoClienteDigitos ? `phone=${telefonoClienteDigitos}&` : ''
-                }text=${encodeURIComponent(mensajeCompartirCotizacion)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-md bg-emerald-500 px-4 py-2.5 text-center text-sm font-bold text-white shadow-sm transition-all hover:bg-emerald-600 active:scale-95"
-              >
-                🟢 Enviar por WhatsApp Web
-              </a>
-              <button
-                type="button"
-                onClick={() => router.push('/cotizaciones')}
-                className="rounded-md bg-red-50 px-4 py-2.5 text-sm font-bold text-red-600 transition-all hover:bg-red-100 active:scale-95 dark:bg-red-950/30 dark:hover:bg-red-950/50"
-              >
-                Cerrar
-              </button>
-            </div>
-            {!telefonoClienteDigitos && (
-              <p className="mt-2.5 text-[11px] font-medium text-[#94a3b8] dark:text-slate-500">
-                Este cliente no tiene teléfono guardado — en WhatsApp Web vas a tener que elegir el contacto a mano
-                (recuerda tener WhatsApp Web abierto y con la sesión iniciada).
+            </button>
+            <div className="-mx-6 -mt-6 flex flex-col items-center rounded-t-3xl bg-gradient-to-b from-emerald-50 to-white px-6 pb-5 pt-7 text-center dark:from-emerald-950/40 dark:to-[#141a2e]">
+              <div className="animar-entrada-check flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/50">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-8 w-8 text-emerald-500">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                </svg>
+              </div>
+              <p className="mt-4 text-lg font-extrabold text-emerald-600">
+                {cotizacionExistente ? 'Cotización actualizada con éxito' : 'Cotización registrada con éxito'}
               </p>
-            )}
+              <p className="mt-1 text-sm font-bold text-[#1e293b] dark:text-slate-100">
+                Documento generado: {estado.exito.numero}
+              </p>
+              <p className="text-sm text-[#64748b] dark:text-slate-400">
+                Monto total: {estado.exito.moneda === 'USD' ? '$' : 'S/'} {estado.exito.total.toFixed(2)}
+              </p>
+            </div>
+
+            <div className="mt-5 flex flex-col gap-3">
+              <div className="rounded-md border-2 border-[#e2e8f0] p-4 dark:border-slate-700">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sky-100 text-base dark:bg-sky-950/50">
+                    📄
+                  </span>
+                  <span className="text-sm font-bold text-[#1e293b] dark:text-slate-100">Ver / descargar PDF</span>
+                </div>
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  <a
+                    href={`/cotizaciones/${estado.exito.id}?formato=a4`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-md border-2 border-[#e2e8f0] py-2 text-center text-xs font-bold text-[#1e293b] transition-all hover:bg-[#f8fafc] active:scale-95 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800"
+                  >
+                    A4
+                  </a>
+                  <a
+                    href={`/cotizaciones/${estado.exito.id}?formato=ticket80`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-md border-2 border-[#e2e8f0] py-2 text-center text-xs font-bold text-[#1e293b] transition-all hover:bg-[#f8fafc] active:scale-95 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800"
+                  >
+                    Ticket 80mm
+                  </a>
+                  <a
+                    href={`/cotizaciones/${estado.exito.id}?formato=a5`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-md border-2 border-[#e2e8f0] py-2 text-center text-xs font-bold text-[#1e293b] transition-all hover:bg-[#f8fafc] active:scale-95 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800"
+                  >
+                    A5
+                  </a>
+                </div>
+              </div>
+
+              <div className="rounded-md border-2 border-[#e2e8f0] p-4 dark:border-slate-700">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-500 text-white">
+                    <IconoCorreo className="h-5 w-5" />
+                  </span>
+                  <span className="text-sm font-bold text-[#1e293b] dark:text-slate-100">Enviar por correo</span>
+                </div>
+                <div className="mt-3 flex flex-col gap-2">
+                  <input
+                    type="email"
+                    value={correoDestino}
+                    onChange={(e) => setCorreoDestino(e.target.value)}
+                    placeholder="correo@cliente.com"
+                    className={CAMPO}
+                  />
+                  <button
+                    type="button"
+                    onClick={manejarEnviarCorreo}
+                    disabled={enviandoCorreo}
+                    className="rounded-md bg-slate-700 px-4 py-2 text-sm font-bold text-white transition-all active:scale-95 disabled:opacity-60 dark:bg-slate-600"
+                  >
+                    {enviandoCorreo
+                      ? 'Enviando…'
+                      : correoEstado === 'enviado'
+                        ? '✓ Correo enviado'
+                        : 'Enviar correo'}
+                  </button>
+                  {correoEstado === 'error' && correoError && (
+                    <p className="text-xs font-medium text-red-600">{correoError}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-md border-2 border-[#e2e8f0] p-4 dark:border-slate-700">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400">
+                    <IconoWhatsApp className="h-5 w-5" />
+                  </span>
+                  <span className="text-sm font-bold text-[#1e293b] dark:text-slate-100">Enviar por WhatsApp</span>
+                </div>
+                <div className="mt-3 flex items-start gap-2">
+                  <input
+                    type="text"
+                    value={codigoPaisWhatsapp}
+                    onChange={(e) => setCodigoPaisWhatsapp(e.target.value)}
+                    placeholder="+51"
+                    className={`${CAMPO_SIN_ANCHO} w-14 shrink-0 text-center`}
+                  />
+                  <input
+                    type="text"
+                    value={telefonoWhatsapp}
+                    onChange={(e) => setTelefonoWhatsapp(e.target.value)}
+                    placeholder="Número del cliente"
+                    className={`${CAMPO_SIN_ANCHO} min-w-0 flex-1`}
+                  />
+                  <button
+                    type="button"
+                    onClick={abrirWhatsApp}
+                    title="Enviar por WhatsApp Web"
+                    className="mt-1.5 flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-md bg-emerald-500 text-white shadow-sm transition-all hover:bg-emerald-600 active:scale-95"
+                  >
+                    <IconoWhatsApp className="h-5 w-5" />
+                  </button>
+                </div>
+                <p className="mt-2 text-[11px] font-medium text-[#94a3b8] dark:text-slate-500">
+                  Se abrirá el chat en WhatsApp Web con el mensaje listo para enviar (recuerda tenerlo abierto y con
+                  la sesión iniciada). El PDF no se adjunta automáticamente — el link a la cotización va incluido en
+                  el mensaje.
+                </p>
+              </div>
+            </div>
           </div>
         )}
       </Modal>

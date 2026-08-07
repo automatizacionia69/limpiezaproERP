@@ -2,14 +2,28 @@
 
 import Link from 'next/link'
 import { useMemo, useState, useTransition } from 'react'
-import { eliminarCotizacion, convertirCotizacionAVenta } from './actions'
+import { eliminarCotizacion, crearFacturaDesdeCotizacion, duplicarCotizacion, obtenerVistaCotizacion } from './actions'
+import { Modal } from '@/components/modal'
+import { CotizacionDocumento } from '@/components/cotizacion-documento'
+import type { DatosDocumentoCotizacion } from '@/lib/cotizacion-documento-datos'
 
 type CotizacionRow = {
   id: number
   numero: string
   fecha: string
   total: number
+  estado: string
   clientes: { nombre: string } | null
+}
+
+const ESTADO_BADGE: Record<string, string> = {
+  pendiente: 'bg-amber-100 text-amber-700',
+  convertida: 'bg-teal-100 text-teal-700',
+}
+
+const ESTADO_LABELS: Record<string, string> = {
+  pendiente: 'Pendiente',
+  convertida: 'Convertida',
 }
 
 type Filtros = { cliente: string; numero: string; desde: string; hasta: string }
@@ -21,6 +35,45 @@ export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRo
   const [error, setError] = useState<string | null>(null)
   const [pendienteId, setPendienteId] = useState<number | null>(null)
   const [isPending, startTransition] = useTransition()
+
+  const [vistaFila, setVistaFila] = useState<CotizacionRow | null>(null)
+  const [vistaDatos, setVistaDatos] = useState<DatosDocumentoCotizacion | null>(null)
+  const [vistaCargando, setVistaCargando] = useState(false)
+  const [vistaError, setVistaError] = useState<string | null>(null)
+
+  function abrirVista(fila: CotizacionRow) {
+    setVistaFila(fila)
+    setVistaDatos(null)
+    setVistaError(null)
+    setVistaCargando(true)
+    obtenerVistaCotizacion(fila.id)
+      .then((datos) => setVistaDatos(datos))
+      .catch((e) => setVistaError(e instanceof Error ? e.message : 'No se pudo cargar la cotización.'))
+      .finally(() => setVistaCargando(false))
+  }
+
+  // Descarga/imprime sin abrir pestaña: un iframe invisible carga la página
+  // de impresión (que ya dispara sola el diálogo de imprimir/guardar vía
+  // AutoImprimir) y se destruye solo al terminar — así no queda una pestaña
+  // "cruda" del documento dando vueltas si el usuario cancela el diálogo.
+  function descargarPdf(id: number) {
+    const iframe = document.createElement('iframe')
+    iframe.style.position = 'fixed'
+    iframe.style.left = '-9999px'
+    iframe.style.top = '0'
+    iframe.style.width = '800px'
+    iframe.style.height = '600px'
+    iframe.style.border = '0'
+    iframe.src = `/cotizaciones/${id}?formato=a4`
+
+    const limpiar = () => iframe.remove()
+    iframe.addEventListener('load', () => {
+      iframe.contentWindow?.addEventListener('afterprint', limpiar)
+      // Salvavidas por si el navegador no dispara afterprint en el iframe.
+      setTimeout(limpiar, 60_000)
+    })
+    document.body.appendChild(iframe)
+  }
 
   function handleEliminar(id: number, numero: string) {
     if (!confirm(`¿Eliminar la cotización ${numero}? Esta acción no se puede deshacer.`)) return
@@ -37,16 +90,29 @@ export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRo
     })
   }
 
-  function handleConvertir(id: number, numero: string) {
-    if (!confirm(`¿Convertir la cotización ${numero} en una orden de venta? Se creará como "pendiente".`)) return
+  function handleCrearFactura(id: number, numero: string) {
+    if (!confirm(`¿Crear la factura/boleta de la cotización ${numero}?`)) return
     setError(null)
     setPendienteId(id)
     startTransition(async () => {
       try {
-        await convertirCotizacionAVenta(id)
+        await crearFacturaDesdeCotizacion(id)
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'No se pudo convertir la cotización.')
+        setError(e instanceof Error ? e.message : 'No se pudo crear la factura.')
       } finally {
+        setPendienteId(null)
+      }
+    })
+  }
+
+  function handleDuplicar(id: number) {
+    setError(null)
+    setPendienteId(id)
+    startTransition(async () => {
+      try {
+        await duplicarCotizacion(id)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'No se pudo duplicar la cotización.')
         setPendienteId(null)
       }
     })
@@ -162,6 +228,7 @@ export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRo
                   <th className="px-6 py-4 font-bold">Fecha</th>
                   <th className="px-6 py-4 font-bold">Cliente</th>
                   <th className="px-6 py-4 font-bold">Total</th>
+                  <th className="px-6 py-4 font-bold">Estado</th>
                   <th className="px-6 py-4 text-right font-bold">Acciones</th>
                 </tr>
               </thead>
@@ -174,32 +241,67 @@ export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRo
                     </td>
                     <td className="px-6 py-4">{c.clientes?.nombre ?? '—'}</td>
                     <td className="px-6 py-4 font-semibold">S/ {Number(c.total).toFixed(2)}</td>
+                    <td className="px-6 py-4">
+                      <span className={`rounded-full px-3 py-1 text-[11px] font-bold ${ESTADO_BADGE[c.estado] ?? 'bg-slate-100 text-slate-700'}`}>
+                        {ESTADO_LABELS[c.estado] ?? c.estado}
+                      </span>
+                    </td>
                     <td className="px-6 py-4 text-right whitespace-nowrap">
-                      <Link
-                        href={`/cotizaciones/${c.id}`}
+                      <button
+                        type="button"
+                        onClick={() => abrirVista(c)}
                         className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] dark:text-slate-400 transition-all hover:bg-sky-100 hover:text-sky-600"
-                        title="Ver / Descargar PDF"
+                        title="Ver"
                       >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
                           <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                         </svg>
-                      </Link>
+                      </button>
+                      {c.estado === 'pendiente' && (
+                        <Link
+                          href={`/cotizaciones/${c.id}/editar`}
+                          className="ml-1.5 inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] dark:text-slate-400 transition-all hover:bg-amber-100 hover:text-amber-600"
+                          title="Editar"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 18.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125"
+                            />
+                          </svg>
+                        </Link>
+                      )}
                       <button
                         type="button"
-                        onClick={() => handleConvertir(c.id, c.numero)}
+                        onClick={() => handleDuplicar(c.id)}
                         disabled={isPending && pendienteId === c.id}
-                        title="Convertir a Venta"
-                        className="ml-1.5 inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] dark:text-slate-400 transition-all hover:bg-teal-100 hover:text-teal-600 disabled:opacity-50"
+                        title="Duplicar"
+                        className="ml-1.5 inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] dark:text-slate-400 transition-all hover:bg-sky-100 hover:text-sky-600 disabled:opacity-50"
                       >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
                           <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
-                            d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                            d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3a2.25 2.25 0 0 0-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5A2.25 2.25 0 0 1 18 21.75H6A2.25 2.25 0 0 1 3.75 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184"
                           />
                         </svg>
                       </button>
+                      {c.estado === 'pendiente' && (
+                        <button
+                          type="button"
+                          onClick={() => handleCrearFactura(c.id, c.numero)}
+                          disabled={isPending && pendienteId === c.id}
+                          title="Crear Factura"
+                          className="ml-1.5 inline-flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] dark:text-slate-400 transition-all hover:bg-teal-100 hover:text-teal-600 disabled:opacity-50"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.5 8h7M8.5 11.5h7M8.5 15h4" />
+                          </svg>
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => handleEliminar(c.id, c.numero)}
@@ -223,6 +325,40 @@ export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRo
           </div>
         )}
       </div>
+
+      <Modal abierto={vistaFila !== null} onClose={() => setVistaFila(null)} className="max-w-4xl">
+        <div className="mb-4 flex items-center justify-between gap-4 pr-8">
+          <p className="text-sm font-bold text-[#1e293b] dark:text-slate-100">Vista previa</p>
+          {vistaFila !== null && (
+            <button
+              type="button"
+              onClick={() => descargarPdf(vistaFila.id)}
+              className="rounded-md border-2 border-[#e2e8f0] dark:border-slate-700 px-4 py-2 text-xs font-bold text-[#1e293b] dark:text-slate-100 transition-all hover:bg-[#f8fafc] active:scale-95 dark:hover:bg-slate-800"
+            >
+              Descargar PDF
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setVistaFila(null)}
+            title="Cerrar"
+            className="absolute right-4 top-4 flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-[#64748b] transition-all hover:bg-[#f1f5f9] active:scale-95 dark:text-slate-400 dark:hover:bg-slate-800"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        {vistaCargando && (
+          <p className="p-12 text-center text-sm font-medium text-[#64748b] dark:text-slate-400">Cargando…</p>
+        )}
+        {vistaError && (
+          <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {vistaError}
+          </p>
+        )}
+        {vistaDatos && <CotizacionDocumento {...vistaDatos} />}
+      </Modal>
     </div>
   )
 }

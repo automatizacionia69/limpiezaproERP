@@ -54,6 +54,7 @@ export function CotizacionDocumento({
   moneda,
   observaciones,
   vigenciaDias,
+  formato = 'a4',
 }: {
   numero: string
   empresa: string
@@ -86,11 +87,17 @@ export function CotizacionDocumento({
   moneda: 'PEN' | 'USD'
   observaciones: string | null
   vigenciaDias: number | null
+  /** A5 es media hoja A4 — se achica un poco el texto para que entre mejor en una sola página. */
+  formato?: 'a4' | 'a5'
 }) {
   const fechaFormateada = fecha ? new Date(`${fecha}T00:00:00`).toLocaleDateString('es-PE') : '—'
 
   return (
-    <div className="mx-auto max-w-4xl rounded-3xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] p-8 text-sm shadow-lg shadow-slate-500/5 print:max-w-none print:rounded-none print:border-0 print:p-0 print:shadow-none">
+    <div
+      className={`mx-auto max-w-4xl rounded-3xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] p-8 text-sm shadow-lg shadow-slate-500/5 print:max-w-none print:rounded-none print:border-0 print:p-0 print:shadow-none ${
+        formato === 'a5' ? 'print:text-[11px]' : ''
+      }`}
+    >
       <div className="flex items-start justify-between gap-6 border-b-2 border-[#1e293b] dark:border-slate-600 pb-4">
         <div className="flex items-start gap-3">
           <LogoEmpresa className="h-12 w-12 shrink-0 object-contain" fallback={null} />

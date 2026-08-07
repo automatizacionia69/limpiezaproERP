@@ -1,113 +1,79 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
 import { requierePermiso } from '@/lib/permisos'
+import { obtenerDatosDocumentoCotizacion } from '@/lib/cotizacion-documento-datos'
 import { DescargarPdfBoton } from './descargar-pdf-boton'
-import { ConvertirVentaBoton } from './convertir-venta-boton'
-import { CotizacionDocumento, type LineaDocumentoCotizacion } from '@/components/cotizacion-documento'
+import { AutoImprimir } from './auto-imprimir'
+import { CotizacionDocumento } from '@/components/cotizacion-documento'
+import { CotizacionTicket } from '@/components/cotizacion-ticket'
 
-const SIMBOLO_MONEDA: Record<string, string> = { PEN: 'S/', USD: '$' }
-
-type DetalleRow = {
-  id: number
-  cantidad: number
-  precio_unitario: number
-  caracteristicas: string | null
-  unidad_nombre: string | null
-  productos: { nombre: string; codigo: string | null; unidades_medida: { nombre: string } | null } | null
+// Tamaño de página física para @page en impresión — no se puede condicionar
+// con clases de Tailwind (@page es un at-rule de nivel de documento, no se
+// puede scopear a un contenedor), así que se arma como texto y se inyecta
+// en un <style> según el `?formato=` de la URL.
+const PAGINA_IMPRESION: Record<string, string> = {
+  a4: '@page { size: A4; margin: 12mm; }',
+  a5: '@page { size: A5; margin: 8mm; }',
+  ticket80: '@page { size: 80mm auto; margin: 3mm; }',
 }
 
 export default async function CotizacionPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ formato?: string }>
 }) {
   await requierePermiso('cotizaciones')
   const { id } = await params
-  const supabase = await createClient()
+  const { formato: formatoParam } = await searchParams
+  const formato = formatoParam === 'a5' || formatoParam === 'ticket80' ? formatoParam : 'a4'
 
-  const [{ data: cotizacion }, { data: detalles }, { data: configuracion }] = await Promise.all([
-    supabase
-      .from('cotizaciones')
-      .select(
-        'id, numero, fecha, dias_credito, medio_pago, subtotal, igv, total, observacion, moneda, fecha_entrega, documento_referencia, vigencia_dias, descuento_tipo, descuento_valor, descuento_monto, clientes(nombre, documento, direccion), vendedor:vendedor_id(nombre)'
-      )
-      .eq('id', id)
-      .single(),
-    supabase
-      .from('detalle_cotizacion')
-      .select('id, cantidad, precio_unitario, caracteristicas, unidad_nombre, productos(nombre, codigo, unidades_medida(nombre))')
-      .eq('cotizacion_id', id)
-      .returns<DetalleRow[]>(),
-    supabase
-      .from('configuracion')
-      .select('empresa, ruc, direccion, telefono, email, titular, yape, cuenta_bcp_soles, cci_bcp, cuenta_bbva_soles, cci_bbva')
-      .eq('id', 1)
-      .single(),
-  ])
-
-  if (!cotizacion) {
+  const datos = await obtenerDatosDocumentoCotizacion(id)
+  if (!datos) {
     notFound()
   }
 
-  const cliente = Array.isArray(cotizacion.clientes) ? cotizacion.clientes[0] : cotizacion.clientes
-  const vendedor = Array.isArray(cotizacion.vendedor) ? cotizacion.vendedor[0] : cotizacion.vendedor
-  const simbolo = SIMBOLO_MONEDA[cotizacion.moneda] ?? 'S/'
-
-  const lineas: LineaDocumentoCotizacion[] = (detalles ?? []).map((d) => ({
-    codigo: d.productos?.codigo ?? null,
-    nombre: d.productos?.nombre ?? '—',
-    unidad: d.unidad_nombre ?? d.productos?.unidades_medida?.nombre ?? null,
-    cantidad: Number(d.cantidad),
-    precioUnitario: Number(d.precio_unitario),
-    caracteristicas: d.caracteristicas,
-  }))
-
   return (
     <div>
+      <style>{PAGINA_IMPRESION[formato]}</style>
+      <AutoImprimir activo={!!formatoParam} />
+
       <div className="mb-6 flex items-center justify-between print:hidden">
         <Link href="/cotizaciones" className="text-sm font-bold text-[#64748b] dark:text-slate-400 hover:text-sky-600">
           ← Volver a Cotizaciones
         </Link>
         <div className="flex gap-3">
-          <ConvertirVentaBoton id={cotizacion.id} numero={cotizacion.numero} />
           <DescargarPdfBoton />
         </div>
       </div>
 
-      <CotizacionDocumento
-        numero={cotizacion.numero}
-        empresa={configuracion?.empresa ?? 'Distribuidora LimpiezaPro'}
-        titular={configuracion?.titular ?? null}
-        ruc={configuracion?.ruc ?? null}
-        direccion={configuracion?.direccion ?? null}
-        telefono={configuracion?.telefono ?? null}
-        email={configuracion?.email ?? null}
-        yape={configuracion?.yape ?? null}
-        cuentaBcpSoles={configuracion?.cuenta_bcp_soles ?? null}
-        cciBcp={configuracion?.cci_bcp ?? null}
-        cuentaBbvaSoles={configuracion?.cuenta_bbva_soles ?? null}
-        cciBbva={configuracion?.cci_bbva ?? null}
-        fecha={cotizacion.fecha}
-        fechaEntrega={cotizacion.fecha_entrega}
-        documentoReferencia={cotizacion.documento_referencia}
-        condicionVenta={cotizacion.dias_credito}
-        cliente={cliente?.nombre ?? '—'}
-        documentoCliente={cliente?.documento ?? null}
-        direccionCliente={cliente?.direccion ?? null}
-        vendedor={vendedor?.nombre ?? '—'}
-        lineas={lineas}
-        subtotal={Number(cotizacion.subtotal)}
-        igv={Number(cotizacion.igv)}
-        descuentoMonto={Number(cotizacion.descuento_monto ?? 0)}
-        descuentoTipo={cotizacion.descuento_tipo}
-        descuentoValor={Number(cotizacion.descuento_valor ?? 0)}
-        total={Number(cotizacion.total)}
-        simbolo={simbolo}
-        moneda={cotizacion.moneda === 'USD' ? 'USD' : 'PEN'}
-        observaciones={cotizacion.observacion}
-        vigenciaDias={cotizacion.vigencia_dias}
-      />
+      {formato === 'ticket80' ? (
+        <CotizacionTicket
+          numero={datos.numero}
+          empresa={datos.empresa}
+          ruc={datos.ruc}
+          telefono={datos.telefono}
+          fecha={datos.fecha}
+          condicionVenta={datos.condicionVenta}
+          cliente={datos.cliente}
+          documentoCliente={datos.documentoCliente}
+          vendedor={datos.vendedor}
+          lineas={datos.lineas}
+          subtotal={datos.subtotal}
+          igv={datos.igv}
+          descuentoMonto={datos.descuentoMonto}
+          descuentoTipo={datos.descuentoTipo}
+          descuentoValor={datos.descuentoValor}
+          total={datos.total}
+          simbolo={datos.simbolo}
+          moneda={datos.moneda}
+          yape={datos.yape}
+          vigenciaDias={datos.vigenciaDias}
+        />
+      ) : (
+        <CotizacionDocumento {...datos} formato={formato} />
+      )}
     </div>
   )
 }
