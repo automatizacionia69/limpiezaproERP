@@ -20,7 +20,7 @@ export default async function MovimientosPage() {
   const supabase = await createClient()
 
   const [{ data: productos }, { data: movimientos }] = await Promise.all([
-    supabase.from('productos').select('id, nombre').order('nombre'),
+    supabase.from('productos').select('id, nombre').eq('activo', true).order('nombre'),
     supabase
       .from('kardex_valorizado')
       .select(

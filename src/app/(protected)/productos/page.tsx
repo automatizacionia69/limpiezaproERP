@@ -6,6 +6,10 @@ type ProductoRow = {
   id: number
   nombre: string
   codigo: string | null
+  sku: string
+  codigo_barras: string | null
+  marca: string | null
+  activo: boolean
   cantidad: number
   costo: number
   precio_venta: number | null
@@ -20,7 +24,7 @@ export default async function ProductosPage() {
   const { data: productos } = await supabase
     .from('productos')
     .select(
-      'id, nombre, codigo, cantidad, costo, precio_venta, punto_reorden, categorias(nombre), unidades_medida(nombre)'
+      'id, nombre, codigo, sku, codigo_barras, marca, activo, cantidad, costo, precio_venta, punto_reorden, categorias(nombre), unidades_medida(nombre)'
     )
     .order('nombre')
     .returns<ProductoRow[]>()

@@ -12,7 +12,9 @@ export default async function ConfiguracionPage() {
   const [{ data: configuracion }, { data: perfil }] = await Promise.all([
     supabase
       .from('configuracion')
-      .select('empresa, ruc, direccion, telefono, email, moneda, titular, yape, cuenta_bcp_soles, cci_bcp, cuenta_bbva_soles, cci_bbva')
+      .select(
+        'empresa, ruc, direccion, telefono, email, moneda, titular, yape, cuenta_bcp_soles, cci_bcp, cuenta_bbva_soles, cci_bbva, usa_lote_vencimiento'
+      )
       .eq('id', 1)
       .single(),
     user
@@ -46,6 +48,7 @@ export default async function ConfiguracionPage() {
               cci_bcp: null,
               cuenta_bbva_soles: null,
               cci_bbva: null,
+              usa_lote_vencimiento: false,
             }
           }
           puedeEditar={puedeEditar}
