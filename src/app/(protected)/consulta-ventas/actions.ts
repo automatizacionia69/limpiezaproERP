@@ -6,6 +6,7 @@ import { tienePermiso } from '@/lib/permisos'
 import { MOTIVOS_NOTA_CREDITO } from '@/lib/motivos'
 import { calcularImportes } from '@/lib/cotizaciones'
 import { enviarComprobanteANubefact } from '@/lib/nubefact-envio'
+import { AFECTACION_IGV_DEFAULT } from '@/lib/afectacion-igv'
 
 export type EstadoFormulario = { error: string | null }
 
@@ -24,7 +25,7 @@ export async function reintentarEnvioNubefact(comprobanteId: number) {
   }
 }
 
-type LineaDevolucion = { producto_id: number; cantidad: number; precio_unitario: number }
+type LineaDevolucion = { producto_id: number; cantidad: number; precio_unitario: number; tipo_afectacion_igv: string }
 
 /**
  * Agrupa por producto las lineas que llegan del formulario.
@@ -151,17 +152,24 @@ export async function anularComprobante(
 
     const { data: vendidos } = await supabase
       .from('detalle_venta')
-      .select('producto_id, cantidad, precio_unitario')
+      .select('producto_id, cantidad, precio_unitario, tipo_afectacion_igv')
       .eq('orden_id', comprobante.orden_venta_id)
 
     // Lo vendido por producto, consolidando las lineas repetidas del mismo
     // producto y guardando el precio promedio ponderado realmente facturado.
-    const vendidoPorProducto = new Map<number, { cantidad: number; importe: number }>()
+    // El tipo_afectacion_igv es el mismo para todas las filas de un mismo
+    // producto en esta orden (se fotografio una sola vez al crear la orden).
+    const vendidoPorProducto = new Map<number, { cantidad: number; importe: number; tipoAfectacionIgv: string }>()
     for (const d of vendidos ?? []) {
-      const previo = vendidoPorProducto.get(d.producto_id) ?? { cantidad: 0, importe: 0 }
+      const previo = vendidoPorProducto.get(d.producto_id) ?? {
+        cantidad: 0,
+        importe: 0,
+        tipoAfectacionIgv: d.tipo_afectacion_igv || AFECTACION_IGV_DEFAULT,
+      }
       vendidoPorProducto.set(d.producto_id, {
         cantidad: previo.cantidad + Number(d.cantidad),
         importe: previo.importe + Number(d.cantidad) * Number(d.precio_unitario),
+        tipoAfectacionIgv: previo.tipoAfectacionIgv,
       })
     }
 
@@ -200,6 +208,7 @@ export async function anularComprobante(
         producto_id: productoId,
         cantidad,
         precio_unitario: vendido.importe / vendido.cantidad,
+        tipo_afectacion_igv: vendido.tipoAfectacionIgv,
       })
     }
 
@@ -266,6 +275,7 @@ export async function anularComprobante(
             producto_id: d.producto_id,
             cantidad: Number(d.cantidad),
             precio_unitario: 0,
+            tipo_afectacion_igv: AFECTACION_IGV_DEFAULT,
           }))
         )].map(([producto_id, cantidad]) => ({ producto_id, cantidad })),
         `Anulación ${comprobante.numero} (Nota de Crédito)`

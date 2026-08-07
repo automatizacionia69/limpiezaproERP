@@ -11,6 +11,7 @@ type LineaVenta = {
   cantidadVendida: number
   precioUnitario: number
   cantidadDisponible: number
+  tipoAfectacionIgv: string
 }
 
 const CAMPO =
@@ -67,6 +68,7 @@ export function AnularComprobanteForm({
           lineasSeleccionadas.map((l) => ({
             cantidad: l.cantidad,
             precio_unitario: l.precioUnitario,
+            tipo_afectacion_igv: l.tipoAfectacionIgv,
           }))
         ).total
       : Number(montoManual || 0)
@@ -78,6 +80,7 @@ export function AnularComprobanteForm({
       producto_id: l.producto_id,
       cantidad: l.cantidad,
       precio_unitario: l.precioUnitario,
+      tipo_afectacion_igv: l.tipoAfectacionIgv,
     }))
   )
 

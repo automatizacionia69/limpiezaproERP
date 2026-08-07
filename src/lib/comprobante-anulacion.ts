@@ -5,6 +5,7 @@ type DetalleRow = {
   producto_id: number
   cantidad: number
   precio_unitario: number
+  tipo_afectacion_igv: string
   productos: { nombre: string } | null
 }
 
@@ -29,7 +30,7 @@ export async function obtenerDatosParaAnular(supabase: SupabaseClient, comproban
   const [{ data: detalles }, { data: notasCredito }, { data: notasDebito }] = await Promise.all([
     supabase
       .from('detalle_venta')
-      .select('id, producto_id, cantidad, precio_unitario, productos(nombre)')
+      .select('id, producto_id, cantidad, precio_unitario, tipo_afectacion_igv, productos(nombre)')
       .eq('orden_id', comprobante.orden_venta_id)
       .returns<DetalleRow[]>(),
     supabase.from('notas_credito').select('id, monto').eq('comprobante_id', comprobante.id),
@@ -55,13 +56,14 @@ export async function obtenerDatosParaAnular(supabase: SupabaseClient, comproban
   // Se consolidan las lineas por producto: dos filas del mismo producto
   // indexaban la misma casilla del formulario y la nota se emitia por el
   // doble, reingresando el doble de stock.
-  const vendidoPorProducto = new Map<number, { nombre: string; cantidad: number; importe: number }>()
+  const vendidoPorProducto = new Map<number, { nombre: string; cantidad: number; importe: number; tipoAfectacionIgv: string }>()
   for (const d of detalles ?? []) {
     const previo = vendidoPorProducto.get(d.producto_id)
     vendidoPorProducto.set(d.producto_id, {
       nombre: previo?.nombre ?? d.productos?.nombre ?? `Producto #${d.producto_id}`,
       cantidad: (previo?.cantidad ?? 0) + Number(d.cantidad),
       importe: (previo?.importe ?? 0) + Number(d.cantidad) * Number(d.precio_unitario),
+      tipoAfectacionIgv: previo?.tipoAfectacionIgv ?? d.tipo_afectacion_igv,
     })
   }
 
@@ -71,6 +73,7 @@ export async function obtenerDatosParaAnular(supabase: SupabaseClient, comproban
     cantidadVendida: v.cantidad,
     precioUnitario: v.cantidad > 0 ? v.importe / v.cantidad : 0,
     cantidadDisponible: v.cantidad - (yaDevueltoPorProducto.get(productoId) ?? 0),
+    tipoAfectacionIgv: v.tipoAfectacionIgv,
   }))
 
   return { comprobante, cliente, saldoActual, lineasParaAnular }
