@@ -26,13 +26,32 @@ ahora mismo si algún producto exonerado/inafecto llegara a facturarse.
 
 ## Decisiones de diseño
 
-### 1. Catálogo de afectación IGV: constante en código, catálogo SUNAT completo
+### 1. Catálogo de afectación IGV: constante en código, subconjunto curado de 5 códigos
 
-Nuevo archivo `src/lib/afectacion-igv.ts` con el catálogo oficial SUNAT N.°
-07 completo (~18 códigos: `10`–`17` Gravado, `20`–`21` Exonerado, `30`–`36`
-Inafecto, `40` Exportación), mismo patrón que otros catálogos fijos del
-proyecto (`MEDIOS_PAGO`, `MONEDAS` en `nueva-cotizacion-form.tsx`) — no una
-tabla nueva en Supabase.
+**Revisado 2026-08-07** — decisión inicial era el catálogo SUNAT completo
+(~18 códigos); se descartó después de aclarar con el usuario qué significa
+cada grupo y cómo funciona una "facturación gratuita" en la ley peruana
+(un regalo/retiro de bienes SÍ genera IGV igual, salvo casos muy
+específicos que no aplican a este negocio). El catálogo completo tenía
+código para exportación/IVAP/muestras médicas/convenio colectivo que este
+negocio nunca va a usar, y le faltaba visibilidad a los dos que sí importan
+para regalos/promociones (bonificación y retiro por donación). Se queda un
+subconjunto curado de 5 códigos, todos reales para este negocio:
+
+| Código | Etiqueta | ¿Afecto a IGV? | Cuándo se usa |
+|---|---|---|---|
+| `10` | Gravado – Operación Onerosa | Sí (18%) | Default — venta normal, casi todo el inventario |
+| `12` | Gravado – Retiro por donación | Sí (18%) | Regalo/donación pura de un producto (sin venta asociada) — igual genera IGV sobre el valor de mercado, la empresa lo asume |
+| `15` | Gravado – Bonificaciones | Sí (18%) | Producto gratis ligado a una venta real (ej. "llévate 1 más por cada 10") |
+| `20` | Exonerado – Operación Onerosa | No (0%) | Producto específicamente exonerado por ley (Apéndice I/II Ley del IGV) |
+| `30` | Inafecto – Operación Onerosa | No (0%) | Operación fuera del alcance del IGV por naturaleza |
+
+Nuevo archivo `src/lib/afectacion-igv.ts` con este catálogo curado, mismo
+patrón que otros catálogos fijos del proyecto (`MEDIOS_PAGO`, `MONEDAS` en
+`nueva-cotizacion-form.tsx`) — no una tabla nueva en Supabase. Si más
+adelante el negocio necesita un código que no está en esta lista (ej.
+empieza a exportar), se agrega al array — es una constante, no requiere
+migración de esquema.
 
 ```ts
 export type AfectacionIgv = {
@@ -40,15 +59,15 @@ export type AfectacionIgv = {
   etiqueta: string       // ej. 'Gravado – Operación Onerosa'
   afectoIgv: boolean     // true = se extrae 18%, false = no aporta IGV
 }
-export const AFECTACIONES_IGV: AfectacionIgv[] = [ /* los ~18 códigos */ ]
+export const AFECTACIONES_IGV: AfectacionIgv[] = [
+  { codigo: '10', etiqueta: 'Gravado – Operación Onerosa', afectoIgv: true },
+  { codigo: '12', etiqueta: 'Gravado – Retiro por donación', afectoIgv: true },
+  { codigo: '15', etiqueta: 'Gravado – Bonificaciones', afectoIgv: true },
+  { codigo: '20', etiqueta: 'Exonerado – Operación Onerosa', afectoIgv: false },
+  { codigo: '30', etiqueta: 'Inafecto – Operación Onerosa', afectoIgv: false },
+]
 export const AFECTACION_IGV_DEFAULT = '10' // Gravado – Operación Onerosa
 ```
-
-**Por qué el catálogo completo y no una versión simplificada de 3
-opciones:** decisión explícita del usuario — prefiere fidelidad al
-catálogo real de SUNAT aunque la mayoría de códigos no se usen nunca en
-este negocio, antes que una versión recortada que después quede corta si
-el negocio cambia.
 
 ### 2. Columna nueva en `productos`, con snapshot en cada línea de detalle
 
@@ -161,8 +180,10 @@ Contexto.
 ## Fuera de alcance (explícito)
 
 - **Foto de producto** — proyecto aparte, spec propio más adelante.
-- Simplificar el catálogo a 3 opciones — se descartó, el usuario pidió el
-  catálogo SUNAT completo.
+- Catálogo SUNAT completo (~18 códigos) — se descartó a favor del
+  subconjunto curado de 5 (ver Decisión 1). Códigos como exportación, IVAP,
+  muestras médicas o retiro por convenio colectivo no aplican a este
+  negocio; si algún día aplican, se agregan al array cuando haga falta.
 - Cambiar cómo Compras calcula sus importes más allá de agregar la columna
   `tipo_afectacion_igv` a `detalle_compra` para mantener el esquema
   consistente — Compras no tiene el mismo concepto de documento final con
