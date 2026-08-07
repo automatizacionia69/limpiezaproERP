@@ -23,6 +23,9 @@ export function CotizacionTicket({
   lineas,
   subtotal,
   igv,
+  opGravada,
+  opExonerada,
+  opInafecta,
   descuentoMonto,
   descuentoTipo,
   descuentoValor,
@@ -44,6 +47,9 @@ export function CotizacionTicket({
   lineas: LineaDocumentoCotizacion[]
   subtotal: number
   igv: number
+  opGravada: number
+  opExonerada: number
+  opInafecta: number
   descuentoMonto: number
   descuentoTipo: DescuentoTipo | null
   descuentoValor: number
@@ -90,18 +96,55 @@ export function CotizacionTicket({
 
       <div className="my-2 border-t border-dashed border-[#1e293b] dark:border-slate-500" />
 
-      <p className="flex justify-between">
-        <span>Sub total</span>
-        <span>
-          {simbolo} {subtotal.toFixed(2)}
-        </span>
-      </p>
-      <p className="flex justify-between">
-        <span>IGV (18%)</span>
-        <span>
-          {simbolo} {igv.toFixed(2)}
-        </span>
-      </p>
+      {(opExonerada > 0 || opInafecta > 0) ? (
+        <>
+          {opGravada > 0 && (
+            <p className="flex justify-between">
+              <span>Op. Gravada</span>
+              <span>
+                {simbolo} {opGravada.toFixed(2)}
+              </span>
+            </p>
+          )}
+          {opExonerada > 0 && (
+            <p className="flex justify-between">
+              <span>Op. Exonerada</span>
+              <span>
+                {simbolo} {opExonerada.toFixed(2)}
+              </span>
+            </p>
+          )}
+          {opInafecta > 0 && (
+            <p className="flex justify-between">
+              <span>Op. Inafecta</span>
+              <span>
+                {simbolo} {opInafecta.toFixed(2)}
+              </span>
+            </p>
+          )}
+          <p className="flex justify-between">
+            <span>IGV (18%)</span>
+            <span>
+              {simbolo} {igv.toFixed(2)}
+            </span>
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="flex justify-between">
+            <span>Sub total</span>
+            <span>
+              {simbolo} {subtotal.toFixed(2)}
+            </span>
+          </p>
+          <p className="flex justify-between">
+            <span>IGV (18%)</span>
+            <span>
+              {simbolo} {igv.toFixed(2)}
+            </span>
+          </p>
+        </>
+      )}
       {descuentoMonto > 0 && (
         <p className="flex justify-between">
           <span>Descuento{descuentoTipo === 'porcentaje' ? ` (${descuentoValor}%)` : ''}</span>

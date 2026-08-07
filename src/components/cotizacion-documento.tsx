@@ -46,6 +46,9 @@ export function CotizacionDocumento({
   lineas,
   subtotal,
   igv,
+  opGravada,
+  opExonerada,
+  opInafecta,
   descuentoMonto,
   descuentoTipo,
   descuentoValor,
@@ -79,6 +82,9 @@ export function CotizacionDocumento({
   lineas: LineaDocumentoCotizacion[]
   subtotal: number
   igv: number
+  opGravada: number
+  opExonerada: number
+  opInafecta: number
   descuentoMonto: number
   descuentoTipo: DescuentoTipo | null
   descuentoValor: number
@@ -220,14 +226,43 @@ export function CotizacionDocumento({
           )}
         </div>
         <div className="space-y-1.5 rounded-xl border border-[#e2e8f0] dark:border-slate-700 p-3">
-          <p className="flex justify-between text-xs">
-            <span className="text-[#64748b] dark:text-slate-400">Sub total</span>
-            <span className="font-semibold text-[#1e293b] dark:text-slate-100">{simbolo} {subtotal.toFixed(2)}</span>
-          </p>
-          <p className="flex justify-between text-xs">
-            <span className="text-[#64748b] dark:text-slate-400">IGV (18%)</span>
-            <span className="font-semibold text-[#1e293b] dark:text-slate-100">{simbolo} {igv.toFixed(2)}</span>
-          </p>
+          {(opExonerada > 0 || opInafecta > 0) ? (
+            <>
+              {opGravada > 0 && (
+                <p className="flex justify-between text-xs">
+                  <span className="text-[#64748b] dark:text-slate-400">Op. Gravada</span>
+                  <span className="font-semibold text-[#1e293b] dark:text-slate-100">{simbolo} {opGravada.toFixed(2)}</span>
+                </p>
+              )}
+              {opExonerada > 0 && (
+                <p className="flex justify-between text-xs">
+                  <span className="text-[#64748b] dark:text-slate-400">Op. Exonerada</span>
+                  <span className="font-semibold text-[#1e293b] dark:text-slate-100">{simbolo} {opExonerada.toFixed(2)}</span>
+                </p>
+              )}
+              {opInafecta > 0 && (
+                <p className="flex justify-between text-xs">
+                  <span className="text-[#64748b] dark:text-slate-400">Op. Inafecta</span>
+                  <span className="font-semibold text-[#1e293b] dark:text-slate-100">{simbolo} {opInafecta.toFixed(2)}</span>
+                </p>
+              )}
+              <p className="flex justify-between text-xs">
+                <span className="text-[#64748b] dark:text-slate-400">IGV (18%)</span>
+                <span className="font-semibold text-[#1e293b] dark:text-slate-100">{simbolo} {igv.toFixed(2)}</span>
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="flex justify-between text-xs">
+                <span className="text-[#64748b] dark:text-slate-400">Sub total</span>
+                <span className="font-semibold text-[#1e293b] dark:text-slate-100">{simbolo} {subtotal.toFixed(2)}</span>
+              </p>
+              <p className="flex justify-between text-xs">
+                <span className="text-[#64748b] dark:text-slate-400">IGV (18%)</span>
+                <span className="font-semibold text-[#1e293b] dark:text-slate-100">{simbolo} {igv.toFixed(2)}</span>
+              </p>
+            </>
+          )}
           {descuentoMonto > 0 && (
             <p className="flex justify-between text-xs text-red-600">
               <span>Descuento{descuentoTipo === 'porcentaje' ? ` (${descuentoValor}%)` : ''}</span>
