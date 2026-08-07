@@ -111,6 +111,7 @@ export function Buscador({
         <input
           ref={inputRef}
           type="text"
+          autoComplete="off"
           disabled={disabled}
           value={abierto ? texto : (seleccionado?.nombre ?? '')}
           onChange={(e) => {

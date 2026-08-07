@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useActionState, useRef, useState } from 'react'
 import { editarProducto } from '../../actions'
 import type { EstadoFormulario } from '../../actions'
 import { Buscador } from '@/components/buscador'
@@ -42,6 +42,16 @@ export function EditarProductoForm({
   const [unidadId, setUnidadId] = useState<number | ''>(producto.unidad_id)
   const [categoriaId, setCategoriaId] = useState<number | ''>(producto.categoria_id ?? '')
   const [zonaId, setZonaId] = useState<number | ''>(producto.zona_id ?? '')
+  const marcaRef = useRef<HTMLInputElement>(null)
+
+  // Ver el mismo comentario en producto-form.tsx: una pistola lectora manda
+  // un Enter al terminar de escanear, que sin esto enviaría el formulario.
+  function manejarEnterEscaner(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== 'Enter') return
+    e.preventDefault()
+    e.currentTarget.value = e.currentTarget.value.trim()
+    marcaRef.current?.focus()
+  }
 
   return (
     <form action={formAction} className="mt-6 space-y-5">
@@ -50,7 +60,7 @@ export function EditarProductoForm({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className="sm:col-span-2 lg:col-span-3">
           <label className={LABEL}>Nombre *</label>
-          <input type="text" name="nombre" required defaultValue={producto.nombre} className={CAMPO} />
+          <input type="text" name="nombre" required autoComplete="off" defaultValue={producto.nombre} className={CAMPO} />
         </div>
 
         <div>
@@ -59,6 +69,7 @@ export function EditarProductoForm({
             type="text"
             name="sku"
             required
+            autoComplete="off"
             defaultValue={producto.sku}
             className={`${CAMPO} uppercase`}
           />
@@ -73,15 +84,17 @@ export function EditarProductoForm({
             type="text"
             name="codigo_barras"
             inputMode="numeric"
+            autoComplete="off"
             defaultValue={producto.codigo_barras ?? ''}
-            placeholder="EAN/UPC (opcional)"
+            onKeyDown={manejarEnterEscaner}
+            placeholder="EAN/UPC (opcional) — o escanéalo aquí"
             className={CAMPO}
           />
         </div>
 
         <div>
           <label className={LABEL}>Marca</label>
-          <input type="text" name="marca" defaultValue={producto.marca ?? ''} placeholder="Opcional" className={CAMPO} />
+          <input ref={marcaRef} type="text" name="marca" autoComplete="off" defaultValue={producto.marca ?? ''} placeholder="Opcional" className={CAMPO} />
         </div>
 
         <div>
@@ -89,6 +102,7 @@ export function EditarProductoForm({
           <input
             type="text"
             name="codigo"
+            autoComplete="off"
             defaultValue={producto.codigo ?? ''}
             placeholder="Código del proveedor/fabricante (opcional)"
             className={CAMPO}

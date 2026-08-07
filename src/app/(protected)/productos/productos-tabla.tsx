@@ -215,6 +215,7 @@ export function ProductosTabla({ productos }: { productos: ProductoRow[] }) {
               </svg>
               <input
                 type="text"
+                autoComplete="off"
                 value={texto}
                 onChange={(e) => setTexto(e.target.value)}
                 placeholder={placeholderActual}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect, useState } from 'react'
+import { useActionState, useEffect, useRef, useState } from 'react'
 import { crearProducto, sugerirSku, type EstadoFormulario } from '../actions'
 import { Buscador } from '@/components/buscador'
 
@@ -28,6 +28,19 @@ export function ProductoForm({
   // sugerencia es solo un punto de partida editable, nunca se le pisa lo
   // que ya escribió.
   const [skuTocado, setSkuTocado] = useState(false)
+  const marcaRef = useRef<HTMLInputElement>(null)
+
+  // Una pistola lectora de código de barras es, para el navegador, un
+  // teclado: "escribe" los dígitos y al terminar manda un Enter. Sin esto,
+  // ese Enter enviaría el formulario entero a medio llenar. Se intercepta
+  // acá, se recorta espacios que algunos lectores agregan, y se pasa el
+  // foco a Marca para seguir el flujo sin tocar el mouse.
+  function manejarEnterEscaner(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== 'Enter') return
+    e.preventDefault()
+    e.currentTarget.value = e.currentTarget.value.trim()
+    marcaRef.current?.focus()
+  }
 
   useEffect(() => {
     if (skuTocado) return
@@ -56,7 +69,7 @@ export function ProductoForm({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className="sm:col-span-2 lg:col-span-3">
           <label className={LABEL}>Nombre *</label>
-          <input type="text" name="nombre" required className={CAMPO} />
+          <input type="text" name="nombre" required autoComplete="off" className={CAMPO} />
         </div>
 
         <div>
@@ -65,6 +78,7 @@ export function ProductoForm({
             type="text"
             name="sku"
             required
+            autoComplete="off"
             value={sku}
             onChange={(e) => {
               setSku(e.target.value)
@@ -78,18 +92,26 @@ export function ProductoForm({
 
         <div>
           <label className={LABEL}>Código de barras</label>
-          <input type="text" name="codigo_barras" inputMode="numeric" placeholder="EAN/UPC (opcional)" className={CAMPO} />
-          <p className={AYUDA}>8 a 14 dígitos. Déjalo vacío si el producto no tiene uno.</p>
+          <input
+            type="text"
+            name="codigo_barras"
+            inputMode="numeric"
+            autoComplete="off"
+            onKeyDown={manejarEnterEscaner}
+            placeholder="EAN/UPC (opcional) — o escanéalo aquí"
+            className={CAMPO}
+          />
+          <p className={AYUDA}>8 a 14 dígitos. Puedes escribirlo o escanearlo con la pistola lectora.</p>
         </div>
 
         <div>
           <label className={LABEL}>Marca</label>
-          <input type="text" name="marca" placeholder="Opcional" className={CAMPO} />
+          <input ref={marcaRef} type="text" name="marca" autoComplete="off" placeholder="Opcional" className={CAMPO} />
         </div>
 
         <div>
           <label className={LABEL}>Cód. fabricante</label>
-          <input type="text" name="codigo" placeholder="Código del proveedor/fabricante (opcional)" className={CAMPO} />
+          <input type="text" name="codigo" autoComplete="off" placeholder="Código del proveedor/fabricante (opcional)" className={CAMPO} />
         </div>
 
         <div>
