@@ -44,6 +44,11 @@ export function EditarProductoForm({
   const [unidadId, setUnidadId] = useState<number | ''>(producto.unidad_id)
   const [categoriaId, setCategoriaId] = useState<number | ''>(producto.categoria_id ?? '')
   const [zonaId, setZonaId] = useState<number | ''>(producto.zona_id ?? '')
+  const [sku, setSku] = useState(producto.sku)
+  // A diferencia de Agregar producto, acá "Automático" no re-sugiere nada —
+  // el SKU ya existe y puede estar impreso/referenciado en otros documentos.
+  // Solo lo bloquea para evitar tocarlo sin querer; "Manual" lo habilita.
+  const [modoSku, setModoSku] = useState<'automatico' | 'manual'>('automatico')
   const marcaRef = useRef<HTMLInputElement>(null)
 
   // Ver el mismo comentario en producto-form.tsx: una pistola lectora manda
@@ -66,17 +71,50 @@ export function EditarProductoForm({
         </div>
 
         <div>
-          <label className={LABEL}>SKU *</label>
+          <div className="flex items-center justify-between gap-2">
+            <label className={LABEL}>SKU *</label>
+            <div className="inline-flex rounded-lg bg-[#f1f5f9] dark:bg-slate-800 p-0.5 text-[11px] font-bold">
+              <button
+                type="button"
+                onClick={() => setModoSku('automatico')}
+                className={`rounded-md px-2.5 py-1 transition-all ${
+                  modoSku === 'automatico'
+                    ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                    : 'text-[#64748b] dark:text-slate-400'
+                }`}
+              >
+                Automático
+              </button>
+              <button
+                type="button"
+                onClick={() => setModoSku('manual')}
+                className={`rounded-md px-2.5 py-1 transition-all ${
+                  modoSku === 'manual'
+                    ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                    : 'text-[#64748b] dark:text-slate-400'
+                }`}
+              >
+                Manual
+              </button>
+            </div>
+          </div>
+          {/* Un input disabled no se incluye en el FormData al enviar — el valor
+              real viaja en este oculto (siempre habilitado); el visible es solo
+              para mostrar/editar y puede quedar disabled en modo automático. */}
+          <input type="hidden" name="sku" value={sku} />
           <input
             type="text"
-            name="sku"
             required
             autoComplete="off"
-            defaultValue={producto.sku}
-            className={`${CAMPO} uppercase`}
+            disabled={modoSku === 'automatico'}
+            value={sku}
+            onChange={(e) => setSku(e.target.value)}
+            className={`${CAMPO} uppercase disabled:cursor-not-allowed disabled:bg-[#f8fafc] disabled:opacity-70 dark:disabled:bg-slate-800/40`}
           />
           <p className="mt-1.5 text-xs font-medium text-[#94a3b8] dark:text-slate-500">
-            Código interno único del ERP.
+            {modoSku === 'automatico'
+              ? 'Bloqueado para evitar cambios accidentales — pasa a "Manual" para editarlo.'
+              : 'Código interno único del ERP.'}
           </p>
         </div>
 

@@ -112,9 +112,13 @@ export function ProductoForm({
               </button>
             </div>
           </div>
+          {/* Un input disabled no se incluye en el FormData al enviar el formulario —
+              por eso el valor real viaja en este input oculto (siempre habilitado),
+              y el visible (que sí puede quedar disabled en modo automático) es solo
+              para mostrar/editar. */}
+          <input type="hidden" name="sku" value={sku} />
           <input
             type="text"
-            name="sku"
             required
             autoComplete="off"
             disabled={modoSku === 'automatico'}
