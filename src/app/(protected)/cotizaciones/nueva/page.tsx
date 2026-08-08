@@ -8,6 +8,7 @@ type ProductoRow = {
   codigo: string | null
   cantidad: number
   precio_venta: number | null
+  tipo_afectacion_igv: string
   unidades_medida: { nombre: string } | null
 }
 
@@ -28,7 +29,7 @@ export default async function NuevaCotizacionPage() {
         .order('nombre'),
       supabase
         .from('productos')
-        .select('id, nombre, codigo, cantidad, precio_venta, unidades_medida(nombre)')
+        .select('id, nombre, codigo, cantidad, precio_venta, tipo_afectacion_igv, unidades_medida(nombre)')
         .eq('activo', true)
         .order('nombre')
         .returns<ProductoRow[]>(),

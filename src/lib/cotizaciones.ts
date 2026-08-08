@@ -1,9 +1,18 @@
+// src/lib/cotizaciones.ts
+import { afectacionPorCodigo } from './afectacion-igv'
+
 export const IGV_TASA = 0.18
 
 export interface ImportesDocumento {
   subtotal: number
   igv: number
   total: number
+  /** Base gravada (sin IGV) — solo las líneas Gravado (10/12/15). */
+  opGravada: number
+  /** Suma de líneas Exonerado (20) — no aportan IGV. */
+  opExonerada: number
+  /** Suma de líneas Inafecto (30) — no aportan IGV. */
+  opInafecta: number
 }
 
 /** Redondea a céntimos evitando el arrastre binario de los flotantes. */
@@ -13,42 +22,50 @@ function aCentimos(valor: number): number {
 
 /**
  * Única fuente de verdad para los importes de cualquier documento de venta
- * (cotización, orden de venta, comprobante).
+ * (cotización, orden de venta, comprobante, nota de crédito).
  *
  * Convención del proyecto (cambiada 2026-08-04): `precio_unitario` es SIEMPRE
- * el precio final CON IGV incluido — el mismo número que ve y paga el
- * cliente. El IGV se extrae hacia atrás, nunca se suma encima. Esto también
- * hace que `precio_unitario` signifique lo mismo en el ERP y en el JSON de
- * NUBEFACT (`src/lib/nubefact.ts`), que ya usa "con IGV" para ese campo.
+ * el precio final CON IGV incluido para líneas Gravado — el mismo número
+ * que ve y paga el cliente. El IGV se extrae hacia atrás, nunca se suma
+ * encima.
  *
- * Antes (hasta 2026-08-04) la convención era la opuesta —neto, IGV sumado
- * encima— y de hecho esa inconsistencia entre pantallas ya había causado un
- * bug real en producción: la cotización COT-00004 se envió por S/ 7 640.50 y
- * su factura F006-000002 quedó grabada por S/ 6 475.00 porque cada pantalla
- * calculaba distinto. Todo cálculo de importes tiene que pasar por acá para
- * que no vuelva a divergir.
- *
- * OJO datos en vuelo: cotizaciones/órdenes que ya estaban 'pendiente' (sin
- * facturar) antes de este cambio tienen su precio_unitario guardado bajo la
- * convención VIEJA (neto) — al reabrirlas después de este cambio, el total
- * que se les cobrará será menor al que se les cotizó verbalmente (ya no se
- * les suma el 18% encima). Los comprobantes ya EMITIDOS no se ven afectados
- * (sus totales quedaron grabados al momento de emitir, no se recalculan).
+ * Agregado 2026-08-07: cada línea trae su propio `tipo_afectacion_igv`
+ * (código SUNAT curado, ver src/lib/afectacion-igv.ts). Las líneas Gravado
+ * extraen el 18% como siempre; las líneas Exonerado/Inafecto no aportan
+ * IGV — su `precio_unitario` es el valor final tal cual, sin nada que
+ * extraer. El caso 100%-Gravado (el normal, casi siempre) da EXACTAMENTE
+ * el mismo resultado que la versión anterior de esta función — no tocar
+ * esa invariante sin correr la prueba de regresión del plan.
  */
-function importesDesdeTotal(total: number): ImportesDocumento {
-  const totalRedondeado = aCentimos(total)
-  const subtotal = aCentimos(totalRedondeado / (1 + IGV_TASA))
-
-  // igv se deriva de total - subtotal (ya redondeados) para que
-  // subtotal + igv === total exactamente, sin centimos huerfanos.
-  return { subtotal, igv: aCentimos(totalRedondeado - subtotal), total: totalRedondeado }
+function importesDesdeGrupos(gravadaBruta: number, exoneradaBruta: number, inafectaBruta: number): ImportesDocumento {
+  const gravadaRedondeada = aCentimos(gravadaBruta)
+  const opGravada = aCentimos(gravadaRedondeada / (1 + IGV_TASA))
+  // igv se deriva de gravadaRedondeada - opGravada (ya redondeados) para que
+  // opGravada + igv === gravadaRedondeada exactamente, sin centimos huerfanos.
+  const igv = aCentimos(gravadaRedondeada - opGravada)
+  const opExonerada = aCentimos(exoneradaBruta)
+  const opInafecta = aCentimos(inafectaBruta)
+  const subtotal = aCentimos(opGravada + opExonerada + opInafecta)
+  const total = aCentimos(subtotal + igv)
+  return { subtotal, igv, total, opGravada, opExonerada, opInafecta }
 }
 
 export function calcularImportes(
-  lineas: { cantidad: number; precio_unitario: number }[]
+  lineas: { cantidad: number; precio_unitario: number; tipo_afectacion_igv: string }[]
 ): ImportesDocumento {
-  const total = lineas.reduce((acc, l) => acc + l.cantidad * l.precio_unitario, 0)
-  return importesDesdeTotal(total)
+  let gravadaBruta = 0
+  let exoneradaBruta = 0
+  let inafectaBruta = 0
+
+  for (const l of lineas) {
+    const monto = l.cantidad * l.precio_unitario
+    const afectacion = afectacionPorCodigo(l.tipo_afectacion_igv)
+    if (afectacion.grupo === 'exonerado') exoneradaBruta += monto
+    else if (afectacion.grupo === 'inafecto') inafectaBruta += monto
+    else gravadaBruta += monto
+  }
+
+  return importesDesdeGrupos(gravadaBruta, exoneradaBruta, inafectaBruta)
 }
 
 export type DescuentoTipo = 'porcentaje' | 'monto'
@@ -68,8 +85,25 @@ export function calcularDescuento(
   return Math.min(aCentimos(bruto), total)
 }
 
-/** Aplica un descuento ya calculado (ver `calcularDescuento`) sobre los
- * importes brutos y vuelve a derivar subtotal/IGV desde el total resultante. */
+/**
+ * Aplica un descuento ya calculado (ver `calcularDescuento`) sobre los
+ * importes brutos. Reparto PROPORCIONAL entre los 3 grupos según su peso
+ * en el total bruto (decisión confirmada con el usuario con un ejemplo
+ * numérico: S/118 gravado + S/50 exonerado, descuento 10% → factor 0.9
+ * aplicado a ambos grupos por igual, cada uno re-deriva su propio IGV
+ * después). Evita que un descuento grande sobre un documento mixto deje
+ * el IGV inconsistente.
+ */
 export function aplicarDescuento(importesBrutos: ImportesDocumento, descuento: number): ImportesDocumento {
-  return importesDesdeTotal(importesBrutos.total - descuento)
+  if (descuento <= 0) return importesBrutos
+
+  const gravadaBruta = importesBrutos.opGravada + importesBrutos.igv
+  const exoneradaBruta = importesBrutos.opExonerada
+  const inafectaBruta = importesBrutos.opInafecta
+  const totalBruto = gravadaBruta + exoneradaBruta + inafectaBruta
+
+  if (totalBruto <= 0) return importesBrutos
+
+  const factor = Math.max(0, totalBruto - descuento) / totalBruto
+  return importesDesdeGrupos(gravadaBruta * factor, exoneradaBruta * factor, inafectaBruta * factor)
 }

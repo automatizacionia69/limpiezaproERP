@@ -8,6 +8,8 @@
 // nada — este módulo solo extrae el IGV hacia atrás para construir
 // "valor_unitario" (que en NUBEFACT sí es sin IGV).
 
+import { afectacionPorCodigo } from './afectacion-igv'
+
 const IGV_TASA = 0.18
 
 function aCentimos(valor: number): number {
@@ -41,6 +43,8 @@ export type LineaNubefact = {
   cantidad: number
   /** Precio CON IGV — la misma convención de precio_unitario del ERP. */
   precioUnitario: number
+  /** Código del catálogo curado (src/lib/afectacion-igv.ts) — determina tipo_de_igv en NUBEFACT. */
+  tipoAfectacionIgv: string
 }
 
 /**
@@ -108,12 +112,29 @@ export type RespuestaNubefactComprobante = {
 
 export type ResultadoNubefact<T> = { ok: true; data: T } | { ok: false; error: string }
 
+/**
+ * Mapea el código curado del ERP al `tipo_de_igv` que espera NUBEFACT.
+ * Solo se distinguen los 2 casos con 0% de IGV (Exonerado/Inafecto) —
+ * Gravado/Bonificación/Donación (10/12/15) siguen siendo "1" porque las 3
+ * cargan 18% de IGV igual, la diferencia entre ellas es contable/interna,
+ * no cambia lo que NUBEFACT necesita para calcular el impuesto.
+ */
+function tipoDeIgvNubefact(tipoAfectacionIgv: string): number {
+  const afectacion = afectacionPorCodigo(tipoAfectacionIgv)
+  if (afectacion.grupo === 'exonerado') return 2
+  if (afectacion.grupo === 'inafecto') return 3
+  return 1
+}
+
 function construirItems(lineas: LineaNubefact[]): ItemNubefact[] {
   return lineas.map((l) => {
+    const afectacion = afectacionPorCodigo(l.tipoAfectacionIgv)
     const precioUnitario = aCentimos(l.precioUnitario)
-    const valorUnitario = aCentimos(precioUnitario / (1 + IGV_TASA))
+    // Gravado: el precio trae IGV incluido, se extrae hacia atras. No-gravado
+    // (Exonerado/Inafecto): el precio YA es el valor final, sin nada que extraer.
+    const valorUnitario = afectacion.afectoIgv ? aCentimos(precioUnitario / (1 + IGV_TASA)) : precioUnitario
     const subtotal = aCentimos(l.cantidad * valorUnitario)
-    const igv = aCentimos(subtotal * IGV_TASA)
+    const igv = afectacion.afectoIgv ? aCentimos(subtotal * IGV_TASA) : 0
     return {
       unidad_de_medida: unidadSunat(l.unidadErp),
       codigo: l.codigo ?? '',
@@ -122,7 +143,7 @@ function construirItems(lineas: LineaNubefact[]): ItemNubefact[] {
       valor_unitario: valorUnitario,
       precio_unitario: precioUnitario,
       subtotal,
-      tipo_de_igv: 1, // Gravado - Operación Onerosa (venta normal con IGV)
+      tipo_de_igv: tipoDeIgvNubefact(l.tipoAfectacionIgv),
       igv,
       total: aCentimos(subtotal + igv),
     }
@@ -165,9 +186,17 @@ export async function generarComprobanteNubefact(
   input: GenerarComprobanteInput
 ): Promise<ResultadoNubefact<RespuestaNubefactComprobante>> {
   const items = construirItems(input.lineas)
-  const totalGravada = aCentimos(items.reduce((acc, i) => acc + i.subtotal, 0))
+  const totalGravada = aCentimos(
+    items.filter((i) => i.tipo_de_igv === 1).reduce((acc, i) => acc + i.subtotal, 0)
+  )
+  const totalExonerada = aCentimos(
+    items.filter((i) => i.tipo_de_igv === 2).reduce((acc, i) => acc + i.subtotal, 0)
+  )
+  const totalInafecta = aCentimos(
+    items.filter((i) => i.tipo_de_igv === 3).reduce((acc, i) => acc + i.subtotal, 0)
+  )
   const totalIgv = aCentimos(items.reduce((acc, i) => acc + i.igv, 0))
-  const total = aCentimos(totalGravada + totalIgv)
+  const total = aCentimos(totalGravada + totalExonerada + totalInafecta + totalIgv)
 
   return llamarNubefact<RespuestaNubefactComprobante>({
     operacion: 'generar_comprobante',
@@ -184,6 +213,8 @@ export async function generarComprobanteNubefact(
     moneda: 1, // Soles
     porcentaje_de_igv: IGV_TASA * 100,
     total_gravada: totalGravada,
+    total_exonerada: totalExonerada,
+    total_inafecta: totalInafecta,
     total_igv: totalIgv,
     total,
     enviar_automaticamente_a_la_sunat: input.enviarAutomaticamenteASunat ?? true,

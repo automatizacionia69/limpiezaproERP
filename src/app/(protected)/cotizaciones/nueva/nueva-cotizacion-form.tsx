@@ -15,6 +15,7 @@ import { hoyPeruISO, haceNDiasPeruISO, sumarDiasISO } from '@/lib/fecha'
 import { Modal } from '@/components/modal'
 import { CotizacionDocumento } from '@/components/cotizacion-documento'
 import { EditorTextoBasico } from '@/components/editor-texto-basico'
+import { AFECTACION_IGV_DEFAULT, afectacionPorCodigo } from '@/lib/afectacion-igv'
 
 type Cliente = {
   id: number
@@ -31,6 +32,7 @@ type Producto = {
   codigo: string | null
   cantidad: number
   precio_venta: number | null
+  tipo_afectacion_igv: string
   unidades_medida: { nombre: string } | null
 }
 type Vendedor = { id: string; nombre: string }
@@ -55,6 +57,7 @@ type Linea = {
   caracteristicas: string
   fecha_entrega: string
   unidad_nombre: string
+  tipo_afectacion_igv: string
 }
 export type CotizacionExistente = {
   id: number
@@ -191,6 +194,7 @@ export function NuevaCotizacionForm({
           producto_id: Number(productoId) || '',
           precio_unitario: producto?.precio_venta ?? l.precio_unitario,
           unidad_nombre: producto?.unidades_medida?.nombre ?? l.unidad_nombre,
+          tipo_afectacion_igv: producto?.tipo_afectacion_igv ?? l.tipo_afectacion_igv,
         }
       })
     )
@@ -221,6 +225,7 @@ export function NuevaCotizacionForm({
         caracteristicas: '',
         fecha_entrega: hoyPeruISO(),
         unidad_nombre: producto?.unidades_medida?.nombre ?? '',
+        tipo_afectacion_igv: producto?.tipo_afectacion_igv ?? AFECTACION_IGV_DEFAULT,
       },
     ])
     setProductoParaAgregar('')
@@ -246,6 +251,7 @@ export function NuevaCotizacionForm({
         lineasValidas.map((l) => ({
           cantidad: Number(l.cantidad),
           precio_unitario: Number(l.precio_unitario) || 0,
+          tipo_afectacion_igv: l.tipo_afectacion_igv,
         }))
       ),
     [lineasValidas]
@@ -254,10 +260,11 @@ export function NuevaCotizacionForm({
     () => calcularDescuento(importesBrutos.total, descuentoTipo, Number(descuentoValor) || 0),
     [importesBrutos.total, descuentoTipo, descuentoValor]
   )
-  const { subtotal, igv, total } = useMemo(
+  const importesFinales = useMemo(
     () => aplicarDescuento(importesBrutos, descuentoMonto),
     [importesBrutos, descuentoMonto]
   )
+  const { subtotal, igv, total, opGravada, opExonerada, opInafecta } = importesFinales
 
   const lineasJson = JSON.stringify(
     lineasValidas.map((l) => ({
@@ -267,6 +274,7 @@ export function NuevaCotizacionForm({
       caracteristicas: l.caracteristicas || null,
       fecha_entrega: l.fecha_entrega || null,
       unidad_nombre: l.unidad_nombre || null,
+      tipo_afectacion_igv: l.tipo_afectacion_igv || AFECTACION_IGV_DEFAULT,
     }))
   )
 
@@ -582,7 +590,9 @@ export function NuevaCotizacionForm({
                 <tbody>
                   {lineas.map((l, i) => {
                     const producto = productos.find((p) => p.id === l.producto_id)
-                    const vuv = (Number(l.precio_unitario) || 0) / (1 + IGV_TASA)
+                    const vuv = afectacionPorCodigo(l.tipo_afectacion_igv).afectoIgv
+                      ? (Number(l.precio_unitario) || 0) / (1 + IGV_TASA)
+                      : Number(l.precio_unitario) || 0
                     const totalLinea = (Number(l.cantidad) || 0) * (Number(l.precio_unitario) || 0)
                     return (
                       <tr key={i} className="align-top">
@@ -979,6 +989,9 @@ export function NuevaCotizacionForm({
           lineas={lineasDocumento}
           subtotal={subtotal}
           igv={igv}
+          opGravada={opGravada}
+          opExonerada={opExonerada}
+          opInafecta={opInafecta}
           descuentoMonto={descuentoMonto}
           descuentoTipo={descuentoTipo}
           descuentoValor={Number(descuentoValor) || 0}

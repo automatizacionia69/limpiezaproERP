@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { requierePermiso } from '@/lib/permisos'
 import { hoyPeruISO, haceUnMesPeruISO } from '@/lib/fecha'
 import { IGV_TASA } from '@/lib/cotizaciones'
+import { afectacionPorCodigo } from '@/lib/afectacion-igv'
 import { TIPO_COMPROBANTE_LABELS } from '@/lib/motivos'
 import { DescargarExcelBoton } from '@/components/descargar-excel-boton'
 
@@ -23,6 +24,7 @@ type DetalleRow = {
   producto_id: number
   cantidad: number
   precio_unitario: number
+  tipo_afectacion_igv: string
   productos: {
     nombre: string
     unidades_medida: { nombre: string } | { nombre: string }[] | null
@@ -31,7 +33,13 @@ type DetalleRow = {
 }
 
 type NotaCreditoRow = { id: number; numero: string; anula_operacion: boolean; creado_en: string; comprobante_id: number }
-type DetalleNcRow = { nota_credito_id: number; producto_id: number; cantidad: number; precio_unitario: number }
+type DetalleNcRow = {
+  nota_credito_id: number
+  producto_id: number
+  cantidad: number
+  precio_unitario: number
+  tipo_afectacion_igv: string
+}
 
 type Fila = {
   fecha: string
@@ -82,7 +90,7 @@ export default async function ReporteVentasPorProductoPage({
     ordenIds.length > 0
       ? supabase
           .from('detalle_venta')
-          .select('orden_id, producto_id, cantidad, precio_unitario, productos(nombre, unidades_medida(nombre), categorias(nombre))')
+          .select('orden_id, producto_id, cantidad, precio_unitario, tipo_afectacion_igv, productos(nombre, unidades_medida(nombre), categorias(nombre))')
           .in('orden_id', ordenIds)
           .returns<DetalleRow[]>()
       : Promise.resolve({ data: [] as DetalleRow[] }),
@@ -100,7 +108,7 @@ export default async function ReporteVentasPorProductoPage({
     idsNotasItem.length > 0
       ? await supabase
           .from('detalle_nota_credito')
-          .select('nota_credito_id, producto_id, cantidad, precio_unitario')
+          .select('nota_credito_id, producto_id, cantidad, precio_unitario, tipo_afectacion_igv')
           .in('nota_credito_id', idsNotasItem)
           .returns<DetalleNcRow[]>()
       : { data: [] as DetalleNcRow[] }
@@ -134,10 +142,12 @@ export default async function ReporteVentasPorProductoPage({
     tipoLabel: string,
     numero: string,
     serie: string,
-    fecha: string
+    fecha: string,
+    tipoAfectacionIgv: string
   ): Fila {
     const info = infoPorComprobante.get(c.id)!
-    const precioSinIgv = precioUnitario / (1 + IGV_TASA)
+    const afectoIgv = afectacionPorCodigo(tipoAfectacionIgv).afectoIgv
+    const precioSinIgv = afectoIgv ? precioUnitario / (1 + IGV_TASA) : precioUnitario
     const subtotalLinea = cantidad * precioSinIgv
     const totalLinea = cantidad * precioUnitario
     const igvLinea = totalLinea - subtotalLinea
@@ -177,7 +187,8 @@ export default async function ReporteVentasPorProductoPage({
         TIPO_COMPROBANTE_LABELS[c.tipo] ?? c.tipo,
         c.numero,
         c.serie,
-        c.fecha_emision
+        c.fecha_emision,
+        d.tipo_afectacion_igv
       )
     })
   })
@@ -208,7 +219,8 @@ export default async function ReporteVentasPorProductoPage({
           'Nota de crédito',
           n.numero,
           n.numero.split('-')[0],
-          fecha
+          fecha,
+          d.tipo_afectacion_igv
         )
       })
     }
@@ -228,7 +240,8 @@ export default async function ReporteVentasPorProductoPage({
         'Nota de crédito',
         n.numero,
         n.numero.split('-')[0],
-        fecha
+        fecha,
+        dn.tipo_afectacion_igv
       )
     })
   })

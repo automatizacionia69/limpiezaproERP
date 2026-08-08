@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { requierePermiso } from '@/lib/permisos'
 import { hoyPeruISO, haceUnMesPeruISO } from '@/lib/fecha'
-import { IGV_TASA } from '@/lib/cotizaciones'
+import { IGV_TASA, calcularImportes } from '@/lib/cotizaciones'
 import { TIPO_COMPROBANTE_LABELS } from '@/lib/motivos'
 import { DescargarExcelBoton } from '@/components/descargar-excel-boton'
 
@@ -28,6 +28,15 @@ type NotaRow = {
   monto: number
   creado_en: string
   comprobante_id: number
+}
+
+type NotaCreditoRow = NotaRow & { anula_operacion: boolean }
+
+type DetalleNcRow = {
+  nota_credito_id: number
+  cantidad: number
+  precio_unitario: number
+  tipo_afectacion_igv: string
 }
 
 type Fila = {
@@ -80,10 +89,10 @@ export default async function ReporteVentasPorClientePage({
     comprobanteIds.length > 0
       ? supabase
           .from('notas_credito')
-          .select('id, numero, monto, creado_en, comprobante_id')
+          .select('id, numero, monto, creado_en, comprobante_id, anula_operacion')
           .in('comprobante_id', comprobanteIds)
-          .returns<NotaRow[]>()
-      : Promise.resolve({ data: [] as NotaRow[] }),
+          .returns<NotaCreditoRow[]>()
+      : Promise.resolve({ data: [] as NotaCreditoRow[] }),
     comprobanteIds.length > 0
       ? supabase
           .from('notas_debito')
@@ -92,6 +101,35 @@ export default async function ReporteVentasPorClientePage({
           .returns<NotaRow[]>()
       : Promise.resolve({ data: [] as NotaRow[] }),
   ])
+
+  // Desglose real de Subtotal/IGV para notas de credito por item — las que
+  // anulan la operacion completa (anula_operacion=true) no tienen filas en
+  // detalle_nota_credito, para esas se usa directo el subtotal/igv ya
+  // correcto del comprobante que anulan (ver mas abajo).
+  const idsNotasItem = (notasCredito ?? []).filter((n) => !n.anula_operacion).map((n) => n.id)
+  const { data: detallesNc } =
+    idsNotasItem.length > 0
+      ? await supabase
+          .from('detalle_nota_credito')
+          .select('nota_credito_id, cantidad, precio_unitario, tipo_afectacion_igv')
+          .in('nota_credito_id', idsNotasItem)
+          .returns<DetalleNcRow[]>()
+      : { data: [] as DetalleNcRow[] }
+
+  const desglosePorNotaCredito = new Map<number, { opGravada: number; opExonerada: number; opInafecta: number; igv: number }>()
+  for (const nId of idsNotasItem) {
+    const lineas = (detallesNc ?? []).filter((d) => d.nota_credito_id === nId)
+    desglosePorNotaCredito.set(nId, calcularImportes(lineas.map((l) => ({
+      cantidad: Number(l.cantidad),
+      precio_unitario: Number(l.precio_unitario),
+      tipo_afectacion_igv: l.tipo_afectacion_igv,
+    }))))
+  }
+
+  const comprobantePorId = new Map<number, ComprobanteRow>()
+  for (const c of comprobantes ?? []) {
+    comprobantePorId.set(c.id, c)
+  }
 
   const unidadesPorOrden = new Map<number, number>()
   const itemsPorOrden = new Map<number, number>()
@@ -133,8 +171,25 @@ export default async function ReporteVentasPorClientePage({
 
   const filasNotasCredito: Fila[] = (notasCredito ?? []).map((n) => {
     const info = infoPorComprobante.get(n.comprobante_id)
-    const sinIgv = Number(n.monto) / (1 + IGV_TASA)
-    const igv = Number(n.monto) - sinIgv
+    // Anula la operacion completa: copia el total del comprobante, que ya
+    // trae su propio subtotal/igv calculados por linea correctamente.
+    // Item por item: se usa el desglose real de sus propias lineas.
+    // Si ninguno de los dos aplica (dato viejo/inconsistente), cae al
+    // calculo plano de siempre como ultimo recurso.
+    const comprobante = comprobantePorId.get(n.comprobante_id)
+    const desglose = desglosePorNotaCredito.get(n.id)
+    let sinIgv: number
+    let igv: number
+    if (n.anula_operacion && comprobante) {
+      sinIgv = Number(comprobante.subtotal)
+      igv = Number(comprobante.igv)
+    } else if (desglose) {
+      sinIgv = desglose.opGravada + desglose.opExonerada + desglose.opInafecta
+      igv = desglose.igv
+    } else {
+      sinIgv = Number(n.monto) / (1 + IGV_TASA)
+      igv = Number(n.monto) - sinIgv
+    }
     return {
       fecha: n.creado_en.slice(0, 10),
       tipo: 'Nota de crédito',

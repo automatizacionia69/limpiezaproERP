@@ -5,12 +5,13 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { tienePermiso } from '@/lib/permisos'
 import { calcularImportes } from '@/lib/cotizaciones'
+import { AFECTACIONES_IGV, AFECTACION_IGV_DEFAULT } from '@/lib/afectacion-igv'
 import { enviarComprobanteANubefact } from '@/lib/nubefact-envio'
 import { fechaDocumentoFueraDeRango } from '@/lib/fecha'
 
 export type EstadoFormulario = { error: string | null }
 
-type Linea = { producto_id: number; cantidad: number; precio_unitario: number }
+type Linea = { producto_id: number; cantidad: number; precio_unitario: number; tipo_afectacion_igv: string }
 
 export async function crearOrdenVenta(
   _prevState: EstadoFormulario,
@@ -43,6 +44,13 @@ export async function crearOrdenVenta(
     return { error: 'El precio unitario no puede ser negativo.' }
   }
 
+  lineas = lineas.map((l) => ({
+    ...l,
+    tipo_afectacion_igv: AFECTACIONES_IGV.some((a) => a.codigo === l.tipo_afectacion_igv)
+      ? l.tipo_afectacion_igv
+      : AFECTACION_IGV_DEFAULT,
+  }))
+
   const supabase = await createClient()
   const {
     data: { user },
@@ -73,6 +81,7 @@ export async function crearOrdenVenta(
       producto_id: l.producto_id,
       cantidad: l.cantidad,
       precio_unitario: l.precio_unitario,
+      tipo_afectacion_igv: l.tipo_afectacion_igv,
     }))
   )
 
@@ -133,6 +142,13 @@ export async function emitirComprobante(
   if (lineas.some((l) => !Number.isInteger(l.cantidad))) {
     return { error: 'La cantidad de cada producto debe ser un número entero.' }
   }
+
+  lineas = lineas.map((l) => ({
+    ...l,
+    tipo_afectacion_igv: AFECTACIONES_IGV.some((a) => a.codigo === l.tipo_afectacion_igv)
+      ? l.tipo_afectacion_igv
+      : AFECTACION_IGV_DEFAULT,
+  }))
 
   const supabase = await createClient()
   const {
@@ -207,6 +223,7 @@ export async function emitirComprobante(
       producto_id: l.producto_id,
       cantidad: l.cantidad,
       precio_unitario: l.precio_unitario,
+      tipo_afectacion_igv: l.tipo_afectacion_igv,
     }))
   )
   if (errorDetalle) {

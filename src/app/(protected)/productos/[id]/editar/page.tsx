@@ -17,7 +17,7 @@ export default async function EditarProductoPage({
       supabase
         .from('productos')
         .select(
-          'id, nombre, codigo, sku, codigo_barras, marca, unidad_id, categoria_id, zona_id, precio_venta, punto_reorden'
+          'id, nombre, codigo, sku, codigo_barras, marca, unidad_id, categoria_id, zona_id, precio_venta, punto_reorden, tipo_afectacion_igv'
         )
         .eq('id', id)
         .single(),

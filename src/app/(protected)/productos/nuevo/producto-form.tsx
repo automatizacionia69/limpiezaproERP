@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from 'react'
 import { crearProducto, sugerirSku, type EstadoFormulario } from '../actions'
 import { Buscador } from '@/components/buscador'
+import { AFECTACIONES_IGV, AFECTACION_IGV_DEFAULT } from '@/lib/afectacion-igv'
 
 type Opcion = { id: number; nombre: string }
 
@@ -90,6 +91,22 @@ export function ProductoForm({
         <div>
           <label className={LABEL}>Cód. fabricante</label>
           <input type="text" name="codigo" placeholder="Código del proveedor/fabricante (opcional)" className={CAMPO} />
+        </div>
+
+        <div>
+          <label className={LABEL}>Tipo de afectación IGV *</label>
+          <select
+            name="tipo_afectacion_igv"
+            required
+            defaultValue={AFECTACION_IGV_DEFAULT}
+            className={CAMPO}
+          >
+            {AFECTACIONES_IGV.map((a) => (
+              <option key={a.codigo} value={a.codigo} className="text-[#1e293b] dark:text-slate-100">
+                {a.etiqueta}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>

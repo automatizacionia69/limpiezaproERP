@@ -7,7 +7,7 @@ export default async function NuevaVentaPage() {
   const supabase = await createClient()
   const [{ data: clientes }, { data: productos }] = await Promise.all([
     supabase.from('clientes').select('id, nombre').eq('activo', true).order('nombre'),
-    supabase.from('productos').select('id, nombre, cantidad, precio_venta').eq('activo', true).order('nombre'),
+    supabase.from('productos').select('id, nombre, cantidad, precio_venta, tipo_afectacion_igv').eq('activo', true).order('nombre'),
   ])
 
   return (

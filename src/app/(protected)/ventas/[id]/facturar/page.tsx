@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { requierePermiso } from '@/lib/permisos'
 import { EmitirComprobanteForm } from './emitir-form'
 
-type DetalleRow = { producto_id: number; cantidad: number; precio_unitario: number }
+type DetalleRow = { producto_id: number; cantidad: number; precio_unitario: number; tipo_afectacion_igv: string }
 
 export default async function FacturarOrdenPage({
   params,
@@ -22,9 +22,9 @@ export default async function FacturarOrdenPage({
   const [{ data: orden }, { data: detalles }, { data: clientes }, { data: productos }, { data: vendedores }, { data: configuracion }] =
     await Promise.all([
       supabase.from('ordenes_venta').select('id, numero, estado, cliente_id, dias_credito').eq('id', id).single(),
-      supabase.from('detalle_venta').select('producto_id, cantidad, precio_unitario').eq('orden_id', id).returns<DetalleRow[]>(),
+      supabase.from('detalle_venta').select('producto_id, cantidad, precio_unitario, tipo_afectacion_igv').eq('orden_id', id).returns<DetalleRow[]>(),
       supabase.from('clientes').select('id, nombre, documento').eq('activo', true).order('nombre'),
-      supabase.from('productos').select('id, nombre, cantidad, precio_venta').order('nombre'),
+      supabase.from('productos').select('id, nombre, cantidad, precio_venta, tipo_afectacion_igv').order('nombre'),
       supabase.from('usuarios_perfil').select('id, nombre').order('nombre'),
       supabase.from('configuracion').select('empresa').eq('id', 1).single(),
     ])

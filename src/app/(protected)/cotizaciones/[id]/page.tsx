@@ -62,6 +62,9 @@ export default async function CotizacionPage({
           lineas={datos.lineas}
           subtotal={datos.subtotal}
           igv={datos.igv}
+          opGravada={datos.opGravada}
+          opExonerada={datos.opExonerada}
+          opInafecta={datos.opInafecta}
           descuentoMonto={datos.descuentoMonto}
           descuentoTipo={datos.descuentoTipo}
           descuentoValor={datos.descuentoValor}

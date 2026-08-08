@@ -3,14 +3,15 @@
 import { useActionState, useMemo, useState } from 'react'
 import { crearOrdenVenta, type EstadoFormulario } from '../actions'
 import { IGV_TASA, calcularImportes } from '@/lib/cotizaciones'
+import { AFECTACION_IGV_DEFAULT } from '@/lib/afectacion-igv'
 import { Buscador } from '@/components/buscador'
 
 type Cliente = { id: number; nombre: string }
-type Producto = { id: number; nombre: string; cantidad: number; precio_venta: number | null }
-type Linea = { producto_id: number | ''; cantidad: number | ''; precio_unitario: number | '' }
+type Producto = { id: number; nombre: string; cantidad: number; precio_venta: number | null; tipo_afectacion_igv: string }
+type Linea = { producto_id: number | ''; cantidad: number | ''; precio_unitario: number | ''; tipo_afectacion_igv: string }
 
 function lineaVacia(): Linea {
-  return { producto_id: '', cantidad: '', precio_unitario: '' }
+  return { producto_id: '', cantidad: '', precio_unitario: '', tipo_afectacion_igv: AFECTACION_IGV_DEFAULT }
 }
 
 const CAMPO =
@@ -50,6 +51,7 @@ export function NuevaVentaForm({
           ...l,
           producto_id: Number(productoId) || '',
           precio_unitario: producto?.precio_venta ?? l.precio_unitario,
+          tipo_afectacion_igv: producto?.tipo_afectacion_igv ?? l.tipo_afectacion_igv,
         }
       })
     )
@@ -72,6 +74,7 @@ export function NuevaVentaForm({
           .map((l) => ({
             cantidad: Number(l.cantidad),
             precio_unitario: Number(l.precio_unitario) || 0,
+            tipo_afectacion_igv: l.tipo_afectacion_igv,
           }))
       ),
     [lineas]
@@ -84,6 +87,7 @@ export function NuevaVentaForm({
         producto_id: Number(l.producto_id),
         cantidad: Number(l.cantidad),
         precio_unitario: Number(l.precio_unitario) || 0,
+        tipo_afectacion_igv: l.tipo_afectacion_igv,
       }))
   )
 
