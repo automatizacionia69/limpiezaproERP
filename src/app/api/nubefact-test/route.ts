@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
         cantidad: 1,
         // 590 con IGV = 500 neto + 90 IGV, igual que el ejemplo del manual.
         precioUnitario: 590,
+        tipoAfectacionIgv: '10', // Gravado – Operación Onerosa (mismo caso que probaba antes)
       },
     ],
   })

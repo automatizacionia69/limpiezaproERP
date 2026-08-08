@@ -12,6 +12,7 @@ type ProductoLinea = {
 type DetalleRow = {
   cantidad: number
   precio_unitario: number
+  tipo_afectacion_igv: string
   productos: ProductoLinea | null
 }
 
@@ -51,7 +52,7 @@ export async function enviarComprobanteANubefact(
       .single(),
     supabase
       .from('detalle_venta')
-      .select('cantidad, precio_unitario, productos(nombre, codigo, unidades_medida(nombre))')
+      .select('cantidad, precio_unitario, tipo_afectacion_igv, productos(nombre, codigo, unidades_medida(nombre))')
       .eq('orden_id', comprobante.orden_venta_id)
       .returns<DetalleRow[]>(),
   ])
@@ -76,6 +77,7 @@ export async function enviarComprobanteANubefact(
       unidadErp: l.productos?.unidades_medida?.nombre ?? 'und',
       cantidad: l.cantidad,
       precioUnitario: l.precio_unitario,
+      tipoAfectacionIgv: l.tipo_afectacion_igv,
     })),
   })
 
