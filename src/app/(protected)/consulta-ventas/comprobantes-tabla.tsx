@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { TIPO_COMPROBANTE_LABELS } from '@/lib/motivos'
 import { ComprobanteModal } from './comprobante-modal'
+import { hoyPeruISO } from '@/lib/fecha'
 
 export type FilaMovimiento = {
   id: number
@@ -83,6 +84,12 @@ export function ComprobantesTabla({ movimientos }: { movimientos: FilaMovimiento
     setAplicado(FILTROS_VACIOS)
   }
 
+  function filtrarHoy() {
+    const hoy = hoyPeruISO()
+    setBorrador((b) => ({ ...b, desde: hoy, hasta: hoy }))
+    setAplicado((a) => ({ ...a, desde: hoy, hasta: hoy }))
+  }
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -158,6 +165,13 @@ export function ComprobantesTabla({ movimientos }: { movimientos: FilaMovimiento
             className="mt-1 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2.5 text-sm font-medium text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-lime-500 focus:ring-4 focus:ring-lime-100"
           />
         </div>
+        <button
+          type="button"
+          onClick={filtrarHoy}
+          className="mt-5 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-2.5 text-sm font-bold text-lime-600 transition-all hover:bg-lime-50 active:scale-95 dark:hover:bg-slate-800"
+        >
+          Hoy
+        </button>
         <button
           type="submit"
           className="rounded-md bg-lime-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm shadow-lime-500/30 transition-all hover:bg-lime-700 active:scale-95"

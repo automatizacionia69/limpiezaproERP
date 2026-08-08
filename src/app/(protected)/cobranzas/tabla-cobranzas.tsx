@@ -5,6 +5,7 @@ import { useMemo, useState, useTransition } from 'react'
 import { marcarCobrada } from './actions'
 import { DescargarExcelBoton } from '@/components/descargar-excel-boton'
 import type { FilaCobranza } from '@/lib/cobranzas'
+import { hoyPeruISO } from '@/lib/fecha'
 
 const TIPO_LABELS: Record<string, string> = {
   factura: 'Factura',
@@ -69,6 +70,12 @@ export function TablaCobranzas({ filas }: { filas: FilaCobranza[] }) {
   function limpiar() {
     setBorrador(FILTROS_VACIOS)
     setAplicado(FILTROS_VACIOS)
+  }
+
+  function filtrarHoy() {
+    const hoy = hoyPeruISO()
+    setBorrador((b) => ({ ...b, desde: hoy, hasta: hoy }))
+    setAplicado((a) => ({ ...a, desde: hoy, hasta: hoy }))
   }
 
   const filasVencidas = filas.filter((f) => f.estado === 'vencida')
@@ -143,6 +150,14 @@ export function TablaCobranzas({ filas }: { filas: FilaCobranza[] }) {
             className="mt-1 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2.5 text-sm font-medium text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
           />
         </div>
+        <button
+          type="button"
+          onClick={filtrarHoy}
+          title="Vence hoy"
+          className="mt-5 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-2.5 text-sm font-bold text-indigo-600 transition-all hover:bg-indigo-50 active:scale-95 dark:hover:bg-slate-800"
+        >
+          Hoy
+        </button>
         <button
           type="submit"
           className="rounded-md bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm shadow-indigo-500/30 transition-all hover:bg-indigo-700 active:scale-95"

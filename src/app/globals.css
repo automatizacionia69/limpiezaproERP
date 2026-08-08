@@ -49,6 +49,45 @@ input[type='number']::-webkit-outer-spin-button {
   margin: 0;
 }
 
+/* Scrollbar delgado y redondeado en todo el ERP — el nativo de Windows/Chrome
+   se ve grueso y con flechas cuadradas arriba/abajo, no combina con el resto
+   del diseño (bordes redondeados, sin ángulos duros). Aplica a cualquier
+   contenedor con scroll: sidebar, modales, tablas con overflow-x, etc. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+:root.dark * {
+  scrollbar-color: #334155 transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+}
+::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+:root.dark ::-webkit-scrollbar-thumb {
+  background-color: #334155;
+}
+:root.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: #475569;
+}
+
 /* Entrada del check de éxito (modales de "registrado con éxito"): una sola
    vez al aparecer, nunca en hover — no debe contradecir el rediseño de
    botones sin animación de hover del resto del ERP. */

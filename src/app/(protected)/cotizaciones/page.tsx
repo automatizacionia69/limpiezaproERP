@@ -10,6 +10,7 @@ type CotizacionRow = {
   total: number
   estado: string
   clientes: { nombre: string } | null
+  vendedor: { nombre: string } | null
 }
 
 export default async function CotizacionesPage() {
@@ -17,7 +18,7 @@ export default async function CotizacionesPage() {
   const supabase = await createClient()
   const { data: cotizaciones } = await supabase
     .from('cotizaciones')
-    .select('id, numero, fecha, total, estado, clientes(nombre)')
+    .select('id, numero, fecha, total, estado, clientes(nombre), vendedor:vendedor_id(nombre)')
     .order('numero', { ascending: false })
     .returns<CotizacionRow[]>()
 

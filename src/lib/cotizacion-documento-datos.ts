@@ -33,6 +33,8 @@ export type DatosDocumentoCotizacion = {
   cliente: string
   documentoCliente: string | null
   direccionCliente: string | null
+  telefonoCliente: string | null
+  emailCliente: string | null
   vendedor: string
   lineas: LineaDocumentoCotizacion[]
   subtotal: number
@@ -59,7 +61,7 @@ export async function obtenerDatosDocumentoCotizacion(id: string | number): Prom
     supabase
       .from('cotizaciones')
       .select(
-        'id, numero, fecha, dias_credito, medio_pago, subtotal, igv, total, observacion, moneda, fecha_entrega, documento_referencia, vigencia_dias, descuento_tipo, descuento_valor, descuento_monto, clientes(nombre, documento, direccion), vendedor:vendedor_id(nombre)'
+        'id, numero, fecha, dias_credito, medio_pago, subtotal, igv, total, observacion, moneda, fecha_entrega, documento_referencia, vigencia_dias, descuento_tipo, descuento_valor, descuento_monto, clientes(nombre, documento, direccion, telefono, email), vendedor:vendedor_id(nombre)'
       )
       .eq('id', id)
       .single(),
@@ -112,6 +114,8 @@ export async function obtenerDatosDocumentoCotizacion(id: string | number): Prom
     cliente: cliente?.nombre ?? '—',
     documentoCliente: cliente?.documento ?? null,
     direccionCliente: cliente?.direccion ?? null,
+    telefonoCliente: cliente?.telefono ?? null,
+    emailCliente: cliente?.email ?? null,
     vendedor: vendedor?.nombre ?? '—',
     lineas,
     subtotal: Number(cotizacion.subtotal),

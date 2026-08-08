@@ -2,10 +2,68 @@
 
 import Link from 'next/link'
 import { useMemo, useState, useTransition } from 'react'
-import { eliminarCotizacion, crearFacturaDesdeCotizacion, duplicarCotizacion, obtenerVistaCotizacion } from './actions'
+import {
+  eliminarCotizacion,
+  crearFacturaDesdeCotizacion,
+  duplicarCotizacion,
+  obtenerVistaCotizacion,
+  enviarCorreoCotizacion,
+} from './actions'
 import { Modal } from '@/components/modal'
 import { CotizacionDocumento } from '@/components/cotizacion-documento'
 import type { DatosDocumentoCotizacion } from '@/lib/cotizacion-documento-datos'
+import { hoyPeruISO } from '@/lib/fecha'
+
+const CAMPO =
+  'w-full rounded-lg border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2 text-sm text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-100'
+// Igual que CAMPO pero sin `w-full` — para el código de país + número de
+// WhatsApp en fila, donde el ancho lo define el propio flex (`w-14`/`flex-1`).
+const CAMPO_SIN_ANCHO = CAMPO.replace('w-full ', '')
+
+function IconoImprimir({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M7 8.5V3.5h10v5" />
+      <rect x="3" y="8.5" width="18" height="7.5" rx="2" />
+      <circle cx="16.75" cy="11.25" r="0.6" fill="currentColor" stroke="none" />
+      <circle cx="14.75" cy="11.25" r="0.6" fill="currentColor" stroke="none" />
+      <path d="M7 13.5h10v7H7z" />
+      <path d="M9 16h6M9 18h6M9 20h4" />
+    </svg>
+  )
+}
+
+function IconoWhatsApp({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 448 512" fill="currentColor" className={className}>
+      <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z" />
+    </svg>
+  )
+}
+
+function IconoCorreo({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+    </svg>
+  )
+}
 
 type CotizacionRow = {
   id: number
@@ -14,6 +72,7 @@ type CotizacionRow = {
   total: number
   estado: string
   clientes: { nombre: string } | null
+  vendedor: { nombre: string } | null
 }
 
 const ESTADO_BADGE: Record<string, string> = {
@@ -23,11 +82,11 @@ const ESTADO_BADGE: Record<string, string> = {
 
 const ESTADO_LABELS: Record<string, string> = {
   pendiente: 'Pendiente',
-  convertida: 'Convertida',
+  convertida: 'Enviada',
 }
 
-type Filtros = { cliente: string; numero: string; desde: string; hasta: string }
-const FILTROS_VACIOS: Filtros = { cliente: '', numero: '', desde: '', hasta: '' }
+type Filtros = { cliente: string; numero: string; desde: string; hasta: string; estado: string; vendedor: string }
+const FILTROS_VACIOS: Filtros = { cliente: '', numero: '', desde: '', hasta: '', estado: '', vendedor: '' }
 
 export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRow[] }) {
   const [borrador, setBorrador] = useState<Filtros>(FILTROS_VACIOS)
@@ -41,15 +100,69 @@ export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRo
   const [vistaCargando, setVistaCargando] = useState(false)
   const [vistaError, setVistaError] = useState<string | null>(null)
 
+  const [codigoPaisWhatsapp, setCodigoPaisWhatsapp] = useState('+51')
+  const [telefonoWhatsapp, setTelefonoWhatsapp] = useState('')
+  const [correoDestino, setCorreoDestino] = useState('')
+  const [correoEstado, setCorreoEstado] = useState<'idle' | 'enviado' | 'error'>('idle')
+  const [correoError, setCorreoError] = useState<string | null>(null)
+  const [enviandoCorreo, iniciarEnvioCorreo] = useTransition()
+  const [popoverAbierto, setPopoverAbierto] = useState<'correo' | 'whatsapp' | null>(null)
+
   function abrirVista(fila: CotizacionRow) {
     setVistaFila(fila)
     setVistaDatos(null)
     setVistaError(null)
     setVistaCargando(true)
+    setPopoverAbierto(null)
+    setCodigoPaisWhatsapp('+51')
+    setTelefonoWhatsapp('')
+    setCorreoDestino('')
+    setCorreoEstado('idle')
+    setCorreoError(null)
     obtenerVistaCotizacion(fila.id)
-      .then((datos) => setVistaDatos(datos))
+      .then((datos) => {
+        setVistaDatos(datos)
+        setTelefonoWhatsapp(datos.telefonoCliente?.replace(/\D/g, '') ?? '')
+        setCorreoDestino(datos.emailCliente ?? '')
+      })
       .catch((e) => setVistaError(e instanceof Error ? e.message : 'No se pudo cargar la cotización.'))
       .finally(() => setVistaCargando(false))
+  }
+
+  const mensajeCompartirCotizacion =
+    vistaFila && vistaDatos
+      ? `Hola${vistaDatos.cliente && vistaDatos.cliente !== '—' ? ' ' + vistaDatos.cliente : ''}, te comparto la cotización ${vistaFila.numero} por un total de ${
+          vistaDatos.simbolo
+        } ${vistaDatos.total.toFixed(2)}.`
+      : ''
+  const enlaceCotizacion =
+    vistaFila && typeof window !== 'undefined' ? `${window.location.origin}/cotizaciones/${vistaFila.id}` : ''
+  const mensajeConEnlace =
+    mensajeCompartirCotizacion && enlaceCotizacion
+      ? `${mensajeCompartirCotizacion}\n\nVer cotización: ${enlaceCotizacion}`
+      : mensajeCompartirCotizacion
+
+  function abrirWhatsApp() {
+    const digitos = `${codigoPaisWhatsapp.replace(/\D/g, '')}${telefonoWhatsapp.replace(/\D/g, '')}`
+    const url = `https://web.whatsapp.com/send?${
+      digitos ? `phone=${digitos}&` : ''
+    }text=${encodeURIComponent(mensajeConEnlace)}`
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
+
+  function manejarEnviarCorreo() {
+    if (!vistaFila) return
+    setCorreoEstado('idle')
+    setCorreoError(null)
+    iniciarEnvioCorreo(async () => {
+      try {
+        await enviarCorreoCotizacion(correoDestino, `Cotización ${vistaFila.numero}`, mensajeConEnlace)
+        setCorreoEstado('enviado')
+      } catch (error) {
+        setCorreoError(error instanceof Error ? error.message : 'No se pudo enviar el correo.')
+        setCorreoEstado('error')
+      }
+    })
   }
 
   // Descarga/imprime sin abrir pestaña: un iframe invisible carga la página
@@ -118,6 +231,11 @@ export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRo
     })
   }
 
+  const vendedoresUnicos = useMemo(() => {
+    const nombres = new Set(cotizaciones.map((c) => c.vendedor?.nombre).filter((n): n is string => Boolean(n)))
+    return Array.from(nombres).sort()
+  }, [cotizaciones])
+
   const filtradas = useMemo(() => {
     const cliente = aplicado.cliente.trim().toLowerCase()
     const numero = aplicado.numero.trim().toLowerCase()
@@ -126,7 +244,9 @@ export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRo
       const coincideNumero = !numero || c.numero.toLowerCase().includes(numero)
       const coincideDesde = !aplicado.desde || c.fecha >= aplicado.desde
       const coincideHasta = !aplicado.hasta || c.fecha <= aplicado.hasta
-      return coincideCliente && coincideNumero && coincideDesde && coincideHasta
+      const coincideEstado = !aplicado.estado || c.estado === aplicado.estado
+      const coincideVendedor = !aplicado.vendedor || c.vendedor?.nombre === aplicado.vendedor
+      return coincideCliente && coincideNumero && coincideDesde && coincideHasta && coincideEstado && coincideVendedor
     })
   }, [cotizaciones, aplicado])
 
@@ -140,6 +260,12 @@ export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRo
   function limpiar() {
     setBorrador(FILTROS_VACIOS)
     setAplicado(FILTROS_VACIOS)
+  }
+
+  function filtrarHoy() {
+    const hoy = hoyPeruISO()
+    setBorrador((b) => ({ ...b, desde: hoy, hasta: hoy }))
+    setAplicado((a) => ({ ...a, desde: hoy, hasta: hoy }))
   }
 
   return (
@@ -183,6 +309,42 @@ export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRo
             className="mt-1 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2.5 text-sm font-medium text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
           />
         </div>
+        <button
+          type="button"
+          onClick={filtrarHoy}
+          className="mt-5 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-2.5 text-sm font-bold text-sky-600 transition-all hover:bg-sky-50 active:scale-95 dark:hover:bg-slate-800"
+        >
+          Hoy
+        </button>
+        <div>
+          <label className="block text-xs font-bold text-[#64748b] dark:text-slate-400">Estado</label>
+          <select
+            value={borrador.estado}
+            onChange={(e) => setBorrador((b) => ({ ...b, estado: e.target.value }))}
+            className="mt-1 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2.5 text-sm font-medium text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+          >
+            <option value="">Todos</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="convertida">Enviada</option>
+          </select>
+        </div>
+        {vendedoresUnicos.length > 0 && (
+          <div>
+            <label className="block text-xs font-bold text-[#64748b] dark:text-slate-400">Vendedor</label>
+            <select
+              value={borrador.vendedor}
+              onChange={(e) => setBorrador((b) => ({ ...b, vendedor: e.target.value }))}
+              className="mt-1 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2.5 text-sm font-medium text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-sky-500 focus:ring-4 focus:ring-sky-100"
+            >
+              <option value="">Todos</option>
+              {vendedoresUnicos.map((v) => (
+                <option key={v} value={v}>
+                  {v}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <button
           type="submit"
           className="rounded-md bg-sky-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm shadow-sky-500/30 transition-all hover:bg-sky-700 active:scale-95"
@@ -330,13 +492,39 @@ export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRo
         <div className="mb-4 flex items-center justify-between gap-4 pr-8">
           <p className="text-sm font-bold text-[#1e293b] dark:text-slate-100">Vista previa</p>
           {vistaFila !== null && (
-            <button
-              type="button"
-              onClick={() => descargarPdf(vistaFila.id)}
-              className="rounded-md border-2 border-[#e2e8f0] dark:border-slate-700 px-4 py-2 text-xs font-bold text-[#1e293b] dark:text-slate-100 transition-all hover:bg-[#f8fafc] active:scale-95 dark:hover:bg-slate-800"
-            >
-              Descargar PDF
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => descargarPdf(vistaFila.id)}
+                className="rounded-md border-2 border-[#e2e8f0] dark:border-slate-700 px-4 py-2 text-xs font-bold text-[#1e293b] dark:text-slate-100 transition-all hover:bg-[#f8fafc] active:scale-95 dark:hover:bg-slate-800"
+              >
+                Descargar PDF
+              </button>
+              <button
+                type="button"
+                onClick={() => descargarPdf(vistaFila.id)}
+                title="Imprimir"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-sky-500 text-white transition-all hover:bg-sky-600 active:scale-95"
+              >
+                <IconoImprimir className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setPopoverAbierto((p) => (p === 'correo' ? null : 'correo'))}
+                title="Enviar por correo"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-sky-500 text-white transition-all hover:bg-sky-600 active:scale-95"
+              >
+                <IconoCorreo className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setPopoverAbierto((p) => (p === 'whatsapp' ? null : 'whatsapp'))}
+                title="Enviar por WhatsApp"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-emerald-500 text-white transition-all hover:bg-emerald-600 active:scale-95"
+              >
+                <IconoWhatsApp className="h-4 w-4" />
+              </button>
+            </div>
           )}
           <button
             type="button"
@@ -349,6 +537,76 @@ export function CotizacionesTabla({ cotizaciones }: { cotizaciones: CotizacionRo
             </svg>
           </button>
         </div>
+
+        {popoverAbierto === 'correo' && (
+          <div className="absolute right-4 top-16 z-20 w-72 rounded-md border-2 border-[#e2e8f0] bg-white p-4 shadow-2xl dark:border-slate-700 dark:bg-[#141a2e]">
+            <div className="mb-3 flex items-center gap-2">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-500 text-white">
+                <IconoCorreo className="h-4 w-4" />
+              </span>
+              <span className="text-sm font-bold text-[#1e293b] dark:text-slate-100">Enviar por correo</span>
+            </div>
+            <input
+              type="email"
+              value={correoDestino}
+              onChange={(e) => setCorreoDestino(e.target.value)}
+              placeholder="correo@cliente.com"
+              className={CAMPO}
+            />
+            <button
+              type="button"
+              onClick={manejarEnviarCorreo}
+              disabled={enviandoCorreo}
+              className="mt-2 w-full rounded-md bg-sky-500 px-4 py-2 text-sm font-bold text-white transition-all hover:bg-sky-600 active:scale-95 disabled:opacity-60"
+            >
+              {enviandoCorreo ? 'Enviando…' : correoEstado === 'enviado' ? '✓ Correo enviado' : 'Enviar correo'}
+            </button>
+            {correoEstado === 'error' && correoError && (
+              <p className="mt-2 text-xs font-medium text-red-600">{correoError}</p>
+            )}
+          </div>
+        )}
+
+        {popoverAbierto === 'whatsapp' && (
+          <div className="absolute right-4 top-16 z-20 w-72 rounded-md border-2 border-[#e2e8f0] bg-white p-4 shadow-2xl dark:border-slate-700 dark:bg-[#141a2e]">
+            <div className="mb-3 flex items-center gap-2">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400">
+                <IconoWhatsApp className="h-4 w-4" />
+              </span>
+              <span className="text-sm font-bold text-[#1e293b] dark:text-slate-100">Enviar por WhatsApp</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <input
+                type="text"
+                value={codigoPaisWhatsapp}
+                onChange={(e) => setCodigoPaisWhatsapp(e.target.value)}
+                placeholder="+51"
+                className={`${CAMPO_SIN_ANCHO} w-14 shrink-0 text-center`}
+              />
+              <input
+                type="text"
+                value={telefonoWhatsapp}
+                onChange={(e) => setTelefonoWhatsapp(e.target.value)}
+                placeholder="Número del cliente"
+                className={`${CAMPO_SIN_ANCHO} min-w-0 flex-1`}
+              />
+              <button
+                type="button"
+                onClick={abrirWhatsApp}
+                title="Enviar por WhatsApp Web"
+                className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-md bg-emerald-500 text-white shadow-sm transition-all hover:bg-emerald-600 active:scale-95"
+              >
+                <IconoWhatsApp className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="mt-2 text-[11px] font-medium text-[#94a3b8] dark:text-slate-500">
+              Se abrirá el chat en WhatsApp Web con el mensaje listo para enviar (recuerda tenerlo abierto y con la
+              sesión iniciada). El PDF no se adjunta automáticamente — el link a la cotización va incluido en el
+              mensaje.
+            </p>
+          </div>
+        )}
+
         {vistaCargando && (
           <p className="p-12 text-center text-sm font-medium text-[#64748b] dark:text-slate-400">Cargando…</p>
         )}

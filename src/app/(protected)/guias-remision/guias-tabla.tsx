@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
+import { hoyPeruISO } from '@/lib/fecha'
 
 type GuiaRow = {
   id: number
@@ -53,6 +54,12 @@ export function GuiasTabla({ guias }: { guias: GuiaRow[] }) {
     setAplicado(FILTROS_VACIOS)
   }
 
+  function filtrarHoy() {
+    const hoy = hoyPeruISO()
+    setBorrador((b) => ({ ...b, desde: hoy, hasta: hoy }))
+    setAplicado((a) => ({ ...a, desde: hoy, hasta: hoy }))
+  }
+
   return (
     <div>
       <form
@@ -97,6 +104,13 @@ export function GuiasTabla({ guias }: { guias: GuiaRow[] }) {
             className="mt-1 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2.5 text-sm font-medium text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-fuchsia-500 focus:ring-4 focus:ring-fuchsia-100"
           />
         </div>
+        <button
+          type="button"
+          onClick={filtrarHoy}
+          className="mt-5 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-2.5 text-sm font-bold text-fuchsia-600 transition-all hover:bg-fuchsia-50 active:scale-95 dark:hover:bg-slate-800"
+        >
+          Hoy
+        </button>
         <button
           type="submit"
           className="rounded-md bg-fuchsia-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm shadow-fuchsia-500/30 transition-all hover:bg-fuchsia-700 active:scale-95"

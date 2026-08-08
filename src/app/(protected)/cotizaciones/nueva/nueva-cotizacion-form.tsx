@@ -509,9 +509,14 @@ export function NuevaCotizacionForm({
                 type="number"
                 name="vigencia_dias"
                 min={1}
+                step={1}
+                inputMode="numeric"
                 disabled={!vigenciaActiva}
                 value={vigenciaDias}
-                onChange={(e) => setVigenciaDias(Number(e.target.value) || 15)}
+                onKeyDown={(e) => {
+                  if (['.', ',', 'e', 'E', '+', '-'].includes(e.key)) e.preventDefault()
+                }}
+                onChange={(e) => setVigenciaDias(Math.max(1, Math.round(Number(e.target.value))) || 15)}
                 className={`${CAMPO} disabled:cursor-not-allowed disabled:opacity-50`}
               />
               {vigenciaActiva && fecha ? (
@@ -981,7 +986,7 @@ export function NuevaCotizacionForm({
           simbolo={simbolo}
           moneda={moneda}
           observaciones={observacion}
-          vigenciaDias={Number(vigenciaDias) || 15}
+          vigenciaDias={vigenciaActiva ? Number(vigenciaDias) || 15 : null}
         />
       </Modal>
     </>

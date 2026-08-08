@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useMemo, useState, useTransition } from 'react'
 import { anularOrdenVenta } from './actions'
+import { hoyPeruISO } from '@/lib/fecha'
 
 const ESTADO_BADGE: Record<string, string> = {
   pendiente: 'bg-amber-100 text-amber-700',
@@ -81,6 +82,12 @@ export function VentasTabla({ ordenes }: { ordenes: OrdenRow[] }) {
     setAplicado(FILTROS_VACIOS)
   }
 
+  function filtrarHoy() {
+    const hoy = hoyPeruISO()
+    setBorrador((b) => ({ ...b, desde: hoy, hasta: hoy }))
+    setAplicado((a) => ({ ...a, desde: hoy, hasta: hoy }))
+  }
+
   return (
     <div>
       {error && (
@@ -128,6 +135,13 @@ export function VentasTabla({ ordenes }: { ordenes: OrdenRow[] }) {
             className="mt-1 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2.5 text-sm font-medium text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
           />
         </div>
+        <button
+          type="button"
+          onClick={filtrarHoy}
+          className="mt-5 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-2.5 text-sm font-bold text-teal-600 transition-all hover:bg-teal-50 active:scale-95 dark:hover:bg-slate-800"
+        >
+          Hoy
+        </button>
         <button
           type="submit"
           className="rounded-md bg-teal-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm shadow-teal-500/30 transition-all hover:bg-teal-700 active:scale-95"

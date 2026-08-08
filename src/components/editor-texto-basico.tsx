@@ -4,6 +4,13 @@ import { useEffect, useRef, useState, type KeyboardEvent, type ClipboardEvent } 
 
 const PATRON_COLOR = /^\[color=(#[0-9a-fA-F]{6})\]/
 
+const COLORES_OBSERVACION = [
+  { nombre: 'Azul', hex: '#0ea5e9' },
+  { nombre: 'Rojo', hex: '#ef4444' },
+  { nombre: 'Verde', hex: '#10b981' },
+  { nombre: 'Morado', hex: '#8b5cf6' },
+]
+
 /**
  * Carácter ancla invisible: al presionar B/I/U/color sin nada seleccionado
  * (ej. "quiero que lo que escriba de ahora en adelante salga en negrita",
@@ -161,7 +168,20 @@ export function EditorTextoBasico({
   const editorRef = useRef<HTMLDivElement>(null)
   const ultimoEmitido = useRef<string>('')
   const rangoGuardado = useRef<Range | null>(null)
-  const [formatoActivo, setFormatoActivo] = useState({ bold: false, italic: false, underline: false })
+  const [mostrarColores, setMostrarColores] = useState(false)
+  const coloresRef = useRef<HTMLDivElement>(null)
+
+  // Cierra el desplegable de colores al hacer clic afuera.
+  useEffect(() => {
+    if (!mostrarColores) return
+    function alClickearAfuera(e: MouseEvent) {
+      if (coloresRef.current && !coloresRef.current.contains(e.target as Node)) {
+        setMostrarColores(false)
+      }
+    }
+    document.addEventListener('mousedown', alClickearAfuera)
+    return () => document.removeEventListener('mousedown', alClickearAfuera)
+  }, [mostrarColores])
 
   // Sincroniza el DOM cuando `valor` cambia desde afuera (carga inicial, o
   // se cambió de línea en el modal de Características) — nunca cuando el
@@ -193,27 +213,6 @@ export function EditorTextoBasico({
     }
     ultimoEmitido.current = nuevo
     onChange(nuevo)
-    actualizarFormatoActivo()
-  }
-
-  /** Refleja en los botones B/I/U si el cursor está parado dentro de ese formato (como Word). */
-  function actualizarFormatoActivo() {
-    const sel = window.getSelection()
-    const editor = editorRef.current
-    if (!sel || sel.rangeCount === 0 || !editor) {
-      setFormatoActivo({ bold: false, italic: false, underline: false })
-      return
-    }
-    const rango = sel.getRangeAt(0)
-    if (!editor.contains(rango.commonAncestorContainer)) {
-      setFormatoActivo({ bold: false, italic: false, underline: false })
-      return
-    }
-    setFormatoActivo({
-      bold: elementoFormatoActivo(rango, 'STRONG', editor) !== null,
-      italic: elementoFormatoActivo(rango, 'EM', editor) !== null,
-      underline: elementoFormatoActivo(rango, 'U', editor) !== null,
-    })
   }
 
   function guardarSeleccionActual() {
@@ -224,7 +223,6 @@ export function EditorTextoBasico({
     if (editor.contains(rango.commonAncestorContainer)) {
       rangoGuardado.current = rango.cloneRange()
     }
-    actualizarFormatoActivo()
   }
 
   function restaurarSeleccion() {
@@ -236,27 +234,6 @@ export function EditorTextoBasico({
     const sel = window.getSelection()
     sel?.removeAllRanges()
     sel?.addRange(rango)
-  }
-
-  /** Busca el ancestro más cercano (dentro del editor) con esa etiqueta. */
-  function elementoFormatoActivo(rango: Range, tagName: string, editor: HTMLElement): HTMLElement | null {
-    let nodo: Node | null = rango.commonAncestorContainer
-    if (nodo.nodeType === Node.TEXT_NODE) nodo = nodo.parentNode
-    while (nodo && nodo instanceof HTMLElement && nodo !== editor) {
-      if (nodo.tagName === tagName) return nodo
-      nodo = nodo.parentNode
-    }
-    return null
-  }
-
-  /** True si la selección cubre, como mínimo, todo el contenido de `el`. */
-  function seleccionCubreElemento(rango: Range, el: HTMLElement): boolean {
-    const rangoEl = document.createRange()
-    rangoEl.selectNodeContents(el)
-    return (
-      rango.compareBoundaryPoints(Range.START_TO_START, rangoEl) <= 0 &&
-      rango.compareBoundaryPoints(Range.END_TO_END, rangoEl) >= 0
-    )
   }
 
   /**
@@ -283,79 +260,6 @@ export function EditorTextoBasico({
     rangoGuardado.current = nuevoRango.cloneRange()
 
     emitirCambio()
-  }
-
-  function quitarEnvoltura(el: HTMLElement, sel: Selection) {
-    const hijos = Array.from(el.childNodes)
-    el.replaceWith(...hijos)
-    if (hijos.length > 0) {
-      const nuevoRango = document.createRange()
-      nuevoRango.setStartBefore(hijos[0])
-      nuevoRango.setEndAfter(hijos[hijos.length - 1])
-      sel.removeAllRanges()
-      sel.addRange(nuevoRango)
-      rangoGuardado.current = nuevoRango.cloneRange()
-    } else {
-      // No quedaba nada real adentro (solo el ancla invisible que ya se fue
-      // con `el`): el cursor se queda donde estaba el elemento.
-      rangoGuardado.current = sel.rangeCount > 0 ? sel.getRangeAt(0).cloneRange() : null
-    }
-    emitirCambio()
-  }
-
-  function moverCursorDespuesDe(el: HTMLElement, sel: Selection) {
-    const nuevoRango = document.createRange()
-    nuevoRango.setStartAfter(el)
-    nuevoRango.collapse(true)
-    sel.removeAllRanges()
-    sel.addRange(nuevoRango)
-    rangoGuardado.current = nuevoRango.cloneRange()
-  }
-
-  /**
-   * Envuelve la selección con la etiqueta, o la quita si ya estaba activa
-   * (toggle, ej. seleccionar texto en negrita y volver a apretar B). Con el
-   * cursor solo (sin selección): si el formato recién se había activado y
-   * todavía no se escribió nada, lo cancela; si ya hay texto con ese
-   * formato, solo saca el cursor afuera para seguir escribiendo sin ese
-   * estilo, sin tocar lo ya escrito — igual que Word/Excel.
-   */
-  function alternarFormato(tagName: string, crearElemento: () => HTMLElement) {
-    restaurarSeleccion()
-    const sel = window.getSelection()
-    const editor = editorRef.current
-    if (!sel || sel.rangeCount === 0 || !editor) return
-    const rango = sel.getRangeAt(0)
-    if (!editor.contains(rango.commonAncestorContainer)) return
-
-    const activo = elementoFormatoActivo(rango, tagName, editor)
-
-    if (!rango.collapsed) {
-      if (activo && seleccionCubreElemento(rango, activo)) {
-        quitarEnvoltura(activo, sel)
-        return
-      }
-      insertarEnvoltura(rango, sel, crearElemento)
-      return
-    }
-
-    if (activo) {
-      const contenido = (activo.textContent ?? '').split(ESPACIO_INVISIBLE).join('')
-      if (contenido === '') {
-        quitarEnvoltura(activo, sel)
-      } else {
-        moverCursorDespuesDe(activo, sel)
-      }
-      return
-    }
-
-    insertarEnvoltura(rango, sel, crearElemento)
-  }
-
-  function aplicarFormato(tipo: 'bold' | 'italic' | 'underline') {
-    if (tipo === 'bold') alternarFormato('STRONG', () => document.createElement('strong'))
-    else if (tipo === 'italic') alternarFormato('EM', () => document.createElement('em'))
-    else alternarFormato('U', () => document.createElement('u'))
   }
 
   function aplicarColor(color: string) {
@@ -396,62 +300,36 @@ export function EditorTextoBasico({
   return (
     <div>
       <div className="flex items-center gap-2">
-        <div className="flex overflow-hidden rounded-lg border-2 border-[#e2e8f0] dark:border-slate-700">
+        <div ref={coloresRef} className="relative">
           <button
             type="button"
             onMouseDown={(e) => e.preventDefault()}
-            onClick={() => aplicarFormato('bold')}
-            title="Negrita"
-            aria-pressed={formatoActivo.bold}
-            className={`px-2.5 py-1 text-xs font-extrabold transition-all ${
-              formatoActivo.bold
-                ? 'bg-sky-500 text-white hover:bg-sky-600'
-                : 'text-[#1e293b] hover:bg-[#f1f5f9] dark:text-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            B
-          </button>
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => aplicarFormato('italic')}
-            title="Cursiva"
-            aria-pressed={formatoActivo.italic}
-            className={`border-l-2 border-[#e2e8f0] px-2.5 py-1 text-xs font-bold italic transition-all dark:border-slate-700 ${
-              formatoActivo.italic
-                ? 'bg-sky-500 text-white hover:bg-sky-600'
-                : 'text-[#1e293b] hover:bg-[#f1f5f9] dark:text-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            I
-          </button>
-          <button
-            type="button"
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => aplicarFormato('underline')}
-            title="Subrayado"
-            aria-pressed={formatoActivo.underline}
-            className={`border-l-2 border-[#e2e8f0] px-2.5 py-1 text-xs font-bold underline transition-all dark:border-slate-700 ${
-              formatoActivo.underline
-                ? 'bg-sky-500 text-white hover:bg-sky-600'
-                : 'text-[#1e293b] hover:bg-[#f1f5f9] dark:text-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            U
-          </button>
-          <label
+            onClick={() => setMostrarColores((v) => !v)}
             title="Color de letra"
-            className="relative flex cursor-pointer items-center border-l-2 border-[#e2e8f0] px-2.5 transition-all hover:bg-[#f1f5f9] dark:border-slate-700 dark:hover:bg-slate-800"
+            className="flex items-center gap-1.5 rounded-lg border-2 border-[#e2e8f0] px-2.5 py-1.5 text-xs font-bold text-[#1e293b] transition-all hover:bg-[#f1f5f9] dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800"
           >
-            <span className="text-xs font-bold text-[#1e293b] dark:text-slate-100">A</span>
-            <span className="ml-1 block h-2.5 w-2.5 rounded-full bg-gradient-to-r from-red-500 via-lime-500 to-sky-500" />
-            <input
-              type="color"
-              onMouseDown={guardarSeleccionActual}
-              onChange={(e) => aplicarColor(e.target.value)}
-              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-            />
-          </label>
+            A
+            <span className="block h-2.5 w-2.5 rounded-full bg-gradient-to-r from-sky-500 via-red-500 to-violet-500" />
+          </button>
+          {mostrarColores && (
+            <div className="absolute left-0 top-full z-20 mt-1.5 flex gap-1 rounded-lg border-2 border-[#e2e8f0] bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-[#141a2e]">
+              {COLORES_OBSERVACION.map((c) => (
+                <button
+                  key={c.hex}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    aplicarColor(c.hex)
+                    setMostrarColores(false)
+                  }}
+                  title={c.nombre}
+                  className="flex h-7 w-7 items-center justify-center rounded-md transition-all hover:bg-[#f1f5f9] dark:hover:bg-slate-800"
+                >
+                  <span className="block h-3.5 w-3.5 rounded-full" style={{ backgroundColor: c.hex }} />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         {maxLength && (
           <span className="text-[11px] font-medium text-[#94a3b8] dark:text-slate-500">
