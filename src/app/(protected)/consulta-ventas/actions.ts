@@ -250,6 +250,7 @@ export async function anularComprobante(
         producto_id: l.producto_id,
         cantidad: l.cantidad,
         precio_unitario: l.precio_unitario,
+        tipo_afectacion_igv: l.tipo_afectacion_igv,
       }))
     )
     if (errorDetalleNc) {

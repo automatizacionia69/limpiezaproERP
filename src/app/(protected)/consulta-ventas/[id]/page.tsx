@@ -6,12 +6,14 @@ import { TIPO_COMPROBANTE_LABELS, calcularFechaVencimiento } from '@/lib/motivos
 import { ImprimirBoton } from '@/components/imprimir-boton'
 import { LogoEmpresa } from '@/components/logo-empresa'
 import { ReenviarNubefactBoton } from './reenviar-nubefact-boton'
+import { calcularImportes } from '@/lib/cotizaciones'
 
 type DetalleRow = {
   id: number
   producto_id: number
   cantidad: number
   precio_unitario: number
+  tipo_afectacion_igv: string
   productos: { nombre: string } | null
 }
 
@@ -62,7 +64,7 @@ export default async function ComprobantePage({
     await Promise.all([
       supabase
         .from('detalle_venta')
-        .select('id, producto_id, cantidad, precio_unitario, productos(nombre)')
+        .select('id, producto_id, cantidad, precio_unitario, tipo_afectacion_igv, productos(nombre)')
         .eq('orden_id', comprobante.orden_venta_id)
         .returns<DetalleRow[]>(),
       supabase
@@ -79,6 +81,14 @@ export default async function ComprobantePage({
         .returns<NotaDebitoRow[]>(),
       supabase.from('configuracion').select('empresa, ruc, direccion, telefono').eq('id', 1).single(),
     ])
+
+  const { opGravada, opExonerada, opInafecta } = calcularImportes(
+    (detalles ?? []).map((d) => ({
+      cantidad: Number(d.cantidad),
+      precio_unitario: Number(d.precio_unitario),
+      tipo_afectacion_igv: d.tipo_afectacion_igv,
+    }))
+  )
 
   const totalNotasCredito = (notasCredito ?? []).reduce((acc, n) => acc + Number(n.monto), 0)
   const totalNotasDebito = (notasDebito ?? []).reduce((acc, n) => acc + Number(n.monto), 0)
@@ -191,14 +201,43 @@ export default async function ComprobantePage({
 
         <div className="mt-6 flex justify-end">
           <div className="w-64 space-y-1.5 rounded-xl border border-[#e2e8f0] dark:border-slate-700 p-4">
-            <p className="flex justify-between text-sm text-[#64748b] dark:text-slate-400">
-              <span>Op. gravada</span>
-              <span className="font-semibold text-[#1e293b] dark:text-slate-100">S/ {Number(comprobante.subtotal).toFixed(2)}</span>
-            </p>
-            <p className="flex justify-between text-sm text-[#64748b] dark:text-slate-400">
-              <span>IGV (18%)</span>
-              <span className="font-semibold text-[#1e293b] dark:text-slate-100">S/ {Number(comprobante.igv).toFixed(2)}</span>
-            </p>
+            {(opExonerada > 0 || opInafecta > 0) ? (
+              <>
+                {opGravada > 0 && (
+                  <p className="flex justify-between text-sm text-[#64748b] dark:text-slate-400">
+                    <span>Op. gravada</span>
+                    <span className="font-semibold text-[#1e293b] dark:text-slate-100">S/ {opGravada.toFixed(2)}</span>
+                  </p>
+                )}
+                {opExonerada > 0 && (
+                  <p className="flex justify-between text-sm text-[#64748b] dark:text-slate-400">
+                    <span>Op. exonerada</span>
+                    <span className="font-semibold text-[#1e293b] dark:text-slate-100">S/ {opExonerada.toFixed(2)}</span>
+                  </p>
+                )}
+                {opInafecta > 0 && (
+                  <p className="flex justify-between text-sm text-[#64748b] dark:text-slate-400">
+                    <span>Op. inafecta</span>
+                    <span className="font-semibold text-[#1e293b] dark:text-slate-100">S/ {opInafecta.toFixed(2)}</span>
+                  </p>
+                )}
+                <p className="flex justify-between text-sm text-[#64748b] dark:text-slate-400">
+                  <span>IGV (18%)</span>
+                  <span className="font-semibold text-[#1e293b] dark:text-slate-100">S/ {Number(comprobante.igv).toFixed(2)}</span>
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="flex justify-between text-sm text-[#64748b] dark:text-slate-400">
+                  <span>Op. gravada</span>
+                  <span className="font-semibold text-[#1e293b] dark:text-slate-100">S/ {Number(comprobante.subtotal).toFixed(2)}</span>
+                </p>
+                <p className="flex justify-between text-sm text-[#64748b] dark:text-slate-400">
+                  <span>IGV (18%)</span>
+                  <span className="font-semibold text-[#1e293b] dark:text-slate-100">S/ {Number(comprobante.igv).toFixed(2)}</span>
+                </p>
+              </>
+            )}
             <p className="flex justify-between border-t-2 border-[#1e293b] dark:border-slate-600 pt-2 text-lg font-extrabold text-[#1e293b] dark:text-slate-100">
               <span>Importe total</span>
               <span>S/ {Number(comprobante.total).toFixed(2)}</span>

@@ -15,7 +15,7 @@ import { hoyPeruISO, haceNDiasPeruISO, sumarDiasISO } from '@/lib/fecha'
 import { Modal } from '@/components/modal'
 import { CotizacionDocumento } from '@/components/cotizacion-documento'
 import { EditorTextoBasico } from '@/components/editor-texto-basico'
-import { AFECTACION_IGV_DEFAULT } from '@/lib/afectacion-igv'
+import { AFECTACION_IGV_DEFAULT, afectacionPorCodigo } from '@/lib/afectacion-igv'
 
 type Cliente = {
   id: number
@@ -585,7 +585,9 @@ export function NuevaCotizacionForm({
                 <tbody>
                   {lineas.map((l, i) => {
                     const producto = productos.find((p) => p.id === l.producto_id)
-                    const vuv = (Number(l.precio_unitario) || 0) / (1 + IGV_TASA)
+                    const vuv = afectacionPorCodigo(l.tipo_afectacion_igv).afectoIgv
+                      ? (Number(l.precio_unitario) || 0) / (1 + IGV_TASA)
+                      : Number(l.precio_unitario) || 0
                     const totalLinea = (Number(l.cantidad) || 0) * (Number(l.precio_unitario) || 0)
                     return (
                       <tr key={i} className="align-top">
