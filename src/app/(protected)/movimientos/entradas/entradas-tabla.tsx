@@ -1,8 +1,8 @@
 'use client'
 
-import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { MOTIVOS, DOCUMENTOS_GRUPOS } from './constantes'
+import { DetalleEntradaModal } from './detalle-entrada-modal'
 
 const MOTIVO_LABELS: Record<string, string> = Object.fromEntries(MOTIVOS.map((m) => [m.valor, m.label]))
 const DOCUMENTO_LABELS: Record<string, string> = Object.fromEntries(
@@ -33,6 +33,7 @@ export type EntradaCabeceraRow = {
 
 export function EntradasTabla({ entradas }: { entradas: EntradaCabeceraRow[] }) {
   const [filtro, setFiltro] = useState('')
+  const [verId, setVerId] = useState<number | null>(null)
 
   const filtradas = useMemo(() => {
     const q = filtro.trim().toLowerCase()
@@ -120,13 +121,14 @@ export function EntradasTabla({ entradas }: { entradas: EntradaCabeceraRow[] }) 
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <Link
-                        href={`/movimientos/entradas/${e.id}`}
+                      <button
+                        type="button"
+                        onClick={() => setVerId(e.id)}
                         title="Ver entrada"
                         className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-bold text-emerald-600 transition-colors hover:bg-emerald-100 dark:hover:bg-emerald-950/40"
                       >
                         👁️ Ver
-                      </Link>
+                      </button>
                     </td>
                   </tr>
                 )
@@ -135,6 +137,8 @@ export function EntradasTabla({ entradas }: { entradas: EntradaCabeceraRow[] }) 
           </table>
         </div>
       )}
+
+      <DetalleEntradaModal entradaId={verId} onCerrar={() => setVerId(null)} />
     </div>
   )
 }

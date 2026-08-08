@@ -3,9 +3,79 @@
 import { createClient } from '@/lib/supabase/server'
 import { tienePermiso } from '@/lib/permisos'
 import { sugerirSku } from '../../productos/actions'
+import { validarCamposCodigo, mensajeErrorGuardado } from '@/lib/productos-validacion'
 
 export type ProductoCreado = { id: number; nombre: string }
 export type ResultadoCrearProducto = { producto: ProductoCreado } | { error: string }
+
+export type DatosProductoRapido = {
+  nombre: string
+  sku: string
+  codigoBarras: string
+  marca: string
+  unidadId: number | ''
+  categoriaId: number | ''
+  puntoReorden: string
+}
+
+/**
+ * Alta rápida de producto desde el flujo manual de Compras ("+ Crear
+ * producto nuevo" en el buscador de una línea). A diferencia de
+ * `crearProductoRapido` (usada por el flujo automático de lectura de
+ * facturas por IA), esta pide los mismos campos y aplica exactamente las
+ * mismas validaciones que el alta completa en Productos → Nuevo
+ * (`crearProducto`), pero sin `redirect()`: devuelve el producto creado
+ * para que la compra en curso pueda seguir sin perder contexto. cantidad y
+ * costo quedan en 0 — igual que el alta completa — el stock/costo real se
+ * fija recién cuando la orden se marca "Recibida" (aplicar_movimiento()).
+ * precio_venta queda sin definir acá a propósito: en este contexto lo que
+ * importa es cuánto se paga (precio de compra, capturado aparte en el
+ * modal para precargar la línea de la orden), no a cuánto se va a vender —
+ * eso se define después, en Productos.
+ */
+export async function crearProductoDesdeCompra(datos: DatosProductoRapido): Promise<ResultadoCrearProducto> {
+  if (!(await tienePermiso('compras'))) {
+    return { error: 'No tienes permiso para esta acción.' }
+  }
+
+  const nombre = datos.nombre.trim()
+  if (!nombre) {
+    return { error: 'El nombre es obligatorio.' }
+  }
+  if (!datos.unidadId) {
+    return { error: 'La unidad es obligatoria.' }
+  }
+
+  const campos = validarCamposCodigo(datos.sku, datos.codigoBarras)
+  if ('error' in campos) {
+    return { error: campos.error }
+  }
+
+  const supabase = await createClient()
+
+  const { data: producto, error } = await supabase
+    .from('productos')
+    .insert({
+      nombre,
+      unidad_id: Number(datos.unidadId),
+      sku: campos.sku,
+      codigo_barras: campos.codigoBarras,
+      marca: datos.marca.trim() || null,
+      categoria_id: datos.categoriaId ? Number(datos.categoriaId) : null,
+      punto_reorden: datos.puntoReorden ? Number(datos.puntoReorden) : 0,
+      activo: true,
+      cantidad: 0,
+      costo: 0,
+    })
+    .select('id, nombre')
+    .single()
+
+  if (error || !producto) {
+    return { error: mensajeErrorGuardado(error ?? { message: 'No se pudo crear el producto.' }) }
+  }
+
+  return { producto }
+}
 
 export async function crearProductoRapido(nombre: string, costo: number): Promise<ResultadoCrearProducto> {
   if (!(await tienePermiso('compras'))) {

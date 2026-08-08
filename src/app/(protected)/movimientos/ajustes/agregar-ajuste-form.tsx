@@ -9,12 +9,12 @@ import { MOTIVOS_AJUSTE } from './constantes'
 type Producto = { id: number; nombre: string; codigo: string | null; cantidad: number }
 
 const CAMPO_BASE =
-  'w-full rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-3 text-base text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-amber-500 focus:ring-4 focus:ring-amber-100 disabled:cursor-not-allowed disabled:bg-[#f8fafc] disabled:text-[#94a3b8] dark:disabled:bg-slate-800/40 dark:disabled:text-slate-500'
+  'w-full rounded-lg border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2 text-sm text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-amber-500 focus:ring-4 focus:ring-amber-100 disabled:cursor-not-allowed disabled:bg-[#f8fafc] disabled:text-[#94a3b8] dark:disabled:bg-slate-800/40 dark:disabled:text-slate-500'
 const CAMPO = `mt-1.5 ${CAMPO_BASE}`
 // El icono nativo del <input type="date"> sale minúsculo por defecto — lo
 // agrandamos y le damos más "hitbox" de clic (igual en Entradas/Salidas).
 const CAMPO_FECHA = `${CAMPO} [&::-webkit-calendar-picker-indicator]:scale-150 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:mr-1.5`
-const LABEL = 'block text-sm font-bold text-[#1e293b] dark:text-slate-100'
+const LABEL = 'block text-xs font-bold text-[#1e293b] dark:text-slate-100'
 const ERROR = 'mt-1.5 text-xs font-semibold text-red-600'
 
 type Errores = Partial<Record<'fecha' | 'motivo' | 'motivoOtro' | 'items', string>>

@@ -99,3 +99,98 @@ export async function crearAjuste(
   revalidatePath('/dashboard')
   redirect('/movimientos/ajustes')
 }
+
+export type ItemDetalleAjuste = {
+  id: number
+  cantidad: number
+  efecto_cantidad: number
+  costo_unitario: number | null
+  producto_nombre: string | null
+  producto_codigo: string | null
+}
+
+export type DetalleAjuste = {
+  id: number
+  numero: string
+  fecha: string
+  motivo: string
+  motivo_otro: string | null
+  observaciones: string | null
+  estado: string
+  creado_en: string
+  usuario_nombre: string | null
+  items: ItemDetalleAjuste[]
+}
+
+/** Detalle de un ajuste para el popup "Ver" de la tabla — misma consulta que antes vivía en /movimientos/ajustes/[id]. */
+export async function obtenerDetalleAjuste(id: number): Promise<{ detalle: DetalleAjuste } | { error: string }> {
+  if (!(await tienePermiso('movimientos'))) {
+    return { error: 'No tienes permiso para esta acción.' }
+  }
+
+  const supabase = await createClient()
+
+  type CabeceraRaw = {
+    id: number
+    numero: string
+    fecha: string
+    motivo: string
+    motivo_otro: string | null
+    observaciones: string | null
+    estado: string
+    creado_en: string
+    usuarios_perfil: { nombre: string } | { nombre: string }[] | null
+  }
+  type ItemRaw = {
+    id: number
+    cantidad: number
+    efecto_cantidad: number
+    costo_unitario: number | null
+    productos: { nombre: string; codigo: string | null } | { nombre: string; codigo: string | null }[] | null
+  }
+
+  const [{ data: cabecera }, { data: items }] = await Promise.all([
+    supabase
+      .from('ajustes_cabecera')
+      .select('id, numero, fecha, motivo, motivo_otro, observaciones, estado, creado_en, usuarios_perfil(nombre)')
+      .eq('id', id)
+      .maybeSingle<CabeceraRaw>(),
+    supabase
+      .from('movimientos')
+      .select('id, cantidad, efecto_cantidad, costo_unitario, productos(nombre, codigo)')
+      .eq('ajuste_cabecera_id', id)
+      .order('id')
+      .returns<ItemRaw[]>(),
+  ])
+
+  if (!cabecera) {
+    return { error: 'No se encontró el ajuste.' }
+  }
+
+  const usuario = Array.isArray(cabecera.usuarios_perfil) ? cabecera.usuarios_perfil[0] : cabecera.usuarios_perfil
+
+  return {
+    detalle: {
+      id: cabecera.id,
+      numero: cabecera.numero,
+      fecha: cabecera.fecha,
+      motivo: cabecera.motivo,
+      motivo_otro: cabecera.motivo_otro,
+      observaciones: cabecera.observaciones,
+      estado: cabecera.estado,
+      creado_en: cabecera.creado_en,
+      usuario_nombre: usuario?.nombre ?? null,
+      items: (items ?? []).map((it) => {
+        const producto = Array.isArray(it.productos) ? it.productos[0] : it.productos
+        return {
+          id: it.id,
+          cantidad: it.cantidad,
+          efecto_cantidad: it.efecto_cantidad,
+          costo_unitario: it.costo_unitario,
+          producto_nombre: producto?.nombre ?? null,
+          producto_codigo: producto?.codigo ?? null,
+        }
+      }),
+    },
+  }
+}

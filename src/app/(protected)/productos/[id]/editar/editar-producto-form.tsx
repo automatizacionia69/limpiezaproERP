@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useActionState, useRef, useState } from 'react'
 import { editarProducto } from '../../actions'
 import type { EstadoFormulario } from '../../actions'
 import { Buscador } from '@/components/buscador'
@@ -24,8 +24,8 @@ type Producto = {
 }
 
 const CAMPO =
-  'mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-3 text-base text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100'
-const LABEL = 'block text-sm font-bold text-[#1e293b] dark:text-slate-100'
+  'mt-1.5 w-full rounded-lg border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2 text-sm text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100'
+const LABEL = 'block text-xs font-bold text-[#1e293b] dark:text-slate-100'
 
 export function EditarProductoForm({
   producto,
@@ -44,6 +44,16 @@ export function EditarProductoForm({
   const [unidadId, setUnidadId] = useState<number | ''>(producto.unidad_id)
   const [categoriaId, setCategoriaId] = useState<number | ''>(producto.categoria_id ?? '')
   const [zonaId, setZonaId] = useState<number | ''>(producto.zona_id ?? '')
+  const marcaRef = useRef<HTMLInputElement>(null)
+
+  // Ver el mismo comentario en producto-form.tsx: una pistola lectora manda
+  // un Enter al terminar de escanear, que sin esto enviaría el formulario.
+  function manejarEnterEscaner(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== 'Enter') return
+    e.preventDefault()
+    e.currentTarget.value = e.currentTarget.value.trim()
+    marcaRef.current?.focus()
+  }
 
   return (
     <form action={formAction} className="mt-6 space-y-5">
@@ -52,7 +62,7 @@ export function EditarProductoForm({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className="sm:col-span-2 lg:col-span-3">
           <label className={LABEL}>Nombre *</label>
-          <input type="text" name="nombre" required defaultValue={producto.nombre} className={CAMPO} />
+          <input type="text" name="nombre" required autoComplete="off" defaultValue={producto.nombre} className={CAMPO} />
         </div>
 
         <div>
@@ -61,6 +71,7 @@ export function EditarProductoForm({
             type="text"
             name="sku"
             required
+            autoComplete="off"
             defaultValue={producto.sku}
             className={`${CAMPO} uppercase`}
           />
@@ -75,15 +86,17 @@ export function EditarProductoForm({
             type="text"
             name="codigo_barras"
             inputMode="numeric"
+            autoComplete="off"
             defaultValue={producto.codigo_barras ?? ''}
-            placeholder="EAN/UPC (opcional)"
+            onKeyDown={manejarEnterEscaner}
+            placeholder="EAN/UPC (opcional) — o escanéalo aquí"
             className={CAMPO}
           />
         </div>
 
         <div>
           <label className={LABEL}>Marca</label>
-          <input type="text" name="marca" defaultValue={producto.marca ?? ''} placeholder="Opcional" className={CAMPO} />
+          <input ref={marcaRef} type="text" name="marca" autoComplete="off" defaultValue={producto.marca ?? ''} placeholder="Opcional" className={CAMPO} />
         </div>
 
         <div>
@@ -91,6 +104,7 @@ export function EditarProductoForm({
           <input
             type="text"
             name="codigo"
+            autoComplete="off"
             defaultValue={producto.codigo ?? ''}
             placeholder="Código del proveedor/fabricante (opcional)"
             className={CAMPO}
@@ -120,9 +134,10 @@ export function EditarProductoForm({
               opciones={unidades}
               valor={unidadId}
               onChange={(id) => setUnidadId(Number(id) || '')}
-              placeholder="Escribe para buscar una unidad..."
+              placeholder="Elige una unidad..."
               name="unidad_id"
               required
+              mostrarTodo
             />
           </div>
         </div>
