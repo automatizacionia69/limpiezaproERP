@@ -18,8 +18,8 @@ type Cliente = {
 type Vendedor = { id: string; nombre: string }
 
 const CAMPO =
-  'mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-3 text-base text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-orange-500 focus:ring-4 focus:ring-orange-100'
-const LABEL = 'block text-sm font-bold text-[#1e293b] dark:text-slate-100'
+  'mt-1.5 w-full rounded-lg border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2 text-sm text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-orange-500 focus:ring-4 focus:ring-orange-100'
+const LABEL = 'block text-xs font-bold text-[#1e293b] dark:text-slate-100'
 
 export function EditarClienteForm({ cliente, vendedores }: { cliente: Cliente; vendedores: Vendedor[] }) {
   const [estado, formAction] = useActionState<EstadoFormulario, FormData>(editarCliente, {
@@ -69,13 +69,13 @@ export function EditarClienteForm({ cliente, vendedores }: { cliente: Cliente; v
               onChange={(e) => setDocumento(e.target.value)}
               maxLength={11}
               placeholder="DNI (8 dígitos) o RUC (11 dígitos)"
-              className="flex-1 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-3 text-base text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
+              className="flex-1 rounded-lg border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2 text-sm text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-orange-500 focus:ring-4 focus:ring-orange-100"
             />
             <button
               type="button"
               onClick={buscarDocumento}
               disabled={buscando || (documento.length !== 8 && documento.length !== 11)}
-              className="shrink-0 rounded-xl bg-orange-50 px-5 py-3 text-sm font-bold text-orange-600 transition-all hover:bg-orange-100 disabled:opacity-40"
+              className="shrink-0 rounded-lg bg-orange-50 px-4 py-2 text-sm font-bold text-orange-600 transition-all hover:bg-orange-100 disabled:opacity-40"
             >
               {buscando ? 'Buscando…' : '🔍 Buscar'}
             </button>

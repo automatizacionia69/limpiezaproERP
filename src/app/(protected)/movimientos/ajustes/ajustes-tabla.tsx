@@ -1,8 +1,8 @@
 'use client'
 
-import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { MOTIVOS_AJUSTE } from './constantes'
+import { DetalleAjusteModal } from './detalle-ajuste-modal'
 
 const MOTIVO_LABELS: Record<string, string> = Object.fromEntries(MOTIVOS_AJUSTE.map((m) => [m.valor, m.label]))
 
@@ -25,6 +25,7 @@ export type AjusteCabeceraRow = {
 
 export function AjustesTabla({ ajustes }: { ajustes: AjusteCabeceraRow[] }) {
   const [filtro, setFiltro] = useState('')
+  const [verId, setVerId] = useState<number | null>(null)
 
   const filtradas = useMemo(() => {
     const q = filtro.trim().toLowerCase()
@@ -110,13 +111,14 @@ export function AjustesTabla({ ajustes }: { ajustes: AjusteCabeceraRow[] }) {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <Link
-                      href={`/movimientos/ajustes/${e.id}`}
+                    <button
+                      type="button"
+                      onClick={() => setVerId(e.id)}
                       title="Ver ajuste"
                       className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-bold text-amber-600 transition-colors hover:bg-amber-100 dark:hover:bg-amber-950/40"
                     >
                       👁️ Ver
-                    </Link>
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -124,6 +126,8 @@ export function AjustesTabla({ ajustes }: { ajustes: AjusteCabeceraRow[] }) {
           </table>
         </div>
       )}
+
+      <DetalleAjusteModal ajusteId={verId} onCerrar={() => setVerId(null)} />
     </div>
   )
 }

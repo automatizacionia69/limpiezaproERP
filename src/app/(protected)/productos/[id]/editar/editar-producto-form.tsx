@@ -22,8 +22,8 @@ type Producto = {
 }
 
 const CAMPO =
-  'mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-3 text-base text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100'
-const LABEL = 'block text-sm font-bold text-[#1e293b] dark:text-slate-100'
+  'mt-1.5 w-full rounded-lg border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2 text-sm text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100'
+const LABEL = 'block text-xs font-bold text-[#1e293b] dark:text-slate-100'
 
 export function EditarProductoForm({
   producto,
@@ -116,9 +116,10 @@ export function EditarProductoForm({
               opciones={unidades}
               valor={unidadId}
               onChange={(id) => setUnidadId(Number(id) || '')}
-              placeholder="Escribe para buscar una unidad..."
+              placeholder="Elige una unidad..."
               name="unidad_id"
               required
+              mostrarTodo
             />
           </div>
         </div>

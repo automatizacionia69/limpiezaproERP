@@ -4,7 +4,7 @@ import { useActionState, useState } from 'react'
 import { subirLogo, type EstadoLogo } from './actions'
 import { LOGO_URL } from '@/lib/logo'
 
-const LABEL = 'block text-sm font-bold text-[#1e293b] dark:text-slate-100'
+const LABEL = 'block text-xs font-bold text-[#1e293b] dark:text-slate-100'
 
 export function LogoUploader({ puedeEditar }: { puedeEditar: boolean }) {
   const [estado, formAction] = useActionState<EstadoLogo, FormData>(subirLogo, { error: null })

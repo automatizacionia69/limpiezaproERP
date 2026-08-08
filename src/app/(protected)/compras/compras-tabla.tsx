@@ -2,6 +2,8 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { recibirOrdenCompra, anularOrdenCompra } from './actions'
+import { hoyPeruISO } from '@/lib/fecha'
+import { DetalleCompraModal } from './detalle-compra-modal'
 
 const ESTADO_BADGE: Record<string, string> = {
   pendiente: 'bg-amber-100 text-amber-700',
@@ -48,6 +50,7 @@ export function ComprasTabla({ ordenes }: { ordenes: OrdenRow[] }) {
   const [aplicado, setAplicado] = useState<Filtros>(FILTROS_VACIOS)
   const [error, setError] = useState<string | null>(null)
   const [pendienteId, setPendienteId] = useState<number | null>(null)
+  const [verId, setVerId] = useState<number | null>(null)
   const [isPending, startTransition] = useTransition()
 
   function handleRecibir(id: number, numero: string) {
@@ -148,6 +151,7 @@ export function ComprasTabla({ ordenes }: { ordenes: OrdenRow[] }) {
           <input
             type="date"
             value={borrador.hasta}
+            max={hoyPeruISO()}
             onChange={(e) => setBorrador((b) => ({ ...b, hasta: e.target.value }))}
             className="mt-1 rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2.5 text-sm font-medium text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-pink-500 focus:ring-4 focus:ring-pink-100"
           />
@@ -213,13 +217,28 @@ export function ComprasTabla({ ordenes }: { ordenes: OrdenRow[] }) {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => setVerId(o.id)}
+                        title="Ver detalle de la orden"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 transition-all hover:bg-pink-100 hover:text-pink-600 active:scale-95 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-pink-950/40 dark:hover:text-pink-400"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z"
+                          />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                        </svg>
+                      </button>
                       {o.estado === 'pendiente' && (
                         <>
                           <button
                             type="button"
                             onClick={() => handleRecibir(o.id, o.numero)}
                             disabled={isPending && pendienteId === o.id}
-                            className="rounded-md bg-emerald-500 px-4 py-2 text-[12px] font-bold text-white shadow-sm shadow-emerald-500/30 transition-all hover:bg-emerald-600 disabled:opacity-50 active:scale-95"
+                            className="ml-2 rounded-md bg-emerald-500 px-4 py-2 text-[12px] font-bold text-white shadow-sm shadow-emerald-500/30 transition-all hover:bg-emerald-600 disabled:opacity-50 active:scale-95"
                           >
                             Recibir
                           </button>
@@ -241,6 +260,8 @@ export function ComprasTabla({ ordenes }: { ordenes: OrdenRow[] }) {
           </div>
         )}
       </div>
+
+      <DetalleCompraModal ordenId={verId} onCerrar={() => setVerId(null)} />
     </div>
   )
 }

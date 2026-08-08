@@ -5,12 +5,16 @@ import { crearOrdenCompra, type EstadoFormulario } from '../actions'
 import { Buscador } from '@/components/buscador'
 import { SubirDocumentoCompra } from './subir-documento-compra'
 import type { DatosExtraidos } from './analizar-documento'
-import { crearProductoRapido } from './crear-producto-rapido'
+import { crearProductoRapido, type ProductoCreado } from './crear-producto-rapido'
+import { CrearProductoModal } from './crear-producto-modal'
+import { CrearProveedorModal } from './crear-proveedor-modal'
+import type { ProveedorCreado } from './crear-proveedor-rapido'
 import { IGV_TASA, calcularImportes } from '@/lib/cotizaciones'
 import { hoyPeruISO, haceNDiasPeruISO } from '@/lib/fecha'
 
 type Proveedor = { id: number; nombre: string }
 type Producto = { id: number; nombre: string }
+type Opcion = { id: number; nombre: string }
 type Linea = {
   producto_id: number | ''
   cantidad: number | ''
@@ -51,20 +55,33 @@ const TIPOS_DOCUMENTO = [
 ] as const
 
 const CAMPO =
-  'mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-3 text-base text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-pink-500 focus:ring-4 focus:ring-pink-100'
-const LABEL = 'block text-sm font-bold text-[#1e293b] dark:text-slate-100'
+  'mt-1.5 w-full rounded-lg border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2 text-sm text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-pink-500 focus:ring-4 focus:ring-pink-100'
+const LABEL = 'block text-xs font-bold text-[#1e293b] dark:text-slate-100'
 
 export function NuevaCompraForm({
+  usuarioNombre,
+  usuarioRol,
   proveedores,
   productos,
+  unidades,
+  categorias,
 }: {
+  usuarioNombre: string
+  usuarioRol: string
   proveedores: Proveedor[]
   productos: Producto[]
+  unidades: Opcion[]
+  categorias: Opcion[]
 }) {
   const [estado, formAction] = useActionState<EstadoFormulario, FormData>(crearOrdenCompra, {
     error: null,
   })
+  const [catalogoProveedores, setCatalogoProveedores] = useState<Proveedor[]>(proveedores)
   const [proveedorId, setProveedorId] = useState<number | ''>('')
+  // Igual que con productos: índice del disparador no aplica acá (solo hay un
+  // campo de proveedor, no una lista de líneas) — con un booleano alcanza.
+  const [creandoProveedor, setCreandoProveedor] = useState(false)
+  const [nombreProveedorBuscado, setNombreProveedorBuscado] = useState('')
   const [fechaRegistro, setFechaRegistro] = useState(hoyPeruISO())
   const [tipoDocumento, setTipoDocumento] = useState<(typeof TIPOS_DOCUMENTO)[number]['valor']>('factura')
   const [documentoSerie, setDocumentoSerie] = useState('')
@@ -73,6 +90,11 @@ export function NuevaCompraForm({
   const [totalDetectadoIA, setTotalDetectadoIA] = useState<number | null>(null)
   const [catalogo, setCatalogo] = useState<Producto[]>(productos)
   const [productosCreados, setProductosCreados] = useState<string[]>([])
+  // Índice de la línea que abrió "+ Crear producto nuevo" (null = modal cerrado),
+  // y el texto que el usuario ya había escrito en el buscador de esa línea, para
+  // precargarlo como nombre sugerido del alta rápida.
+  const [lineaCreando, setLineaCreando] = useState<number | null>(null)
+  const [nombreBuscado, setNombreBuscado] = useState('')
 
   async function aplicarExtraccion(datos: DatosExtraidos) {
     if (datos.tipo_documento) setTipoDocumento(datos.tipo_documento)
@@ -130,6 +152,24 @@ export function NuevaCompraForm({
     )
   }
 
+  function productoCreadoDesdeLinea(producto: ProductoCreado, costoUnitario: number | null) {
+    setCatalogo((prev) => [...prev, producto])
+    if (lineaCreando !== null) {
+      const i = lineaCreando
+      actualizarProductoLinea(i, producto.id)
+      if (costoUnitario !== null) {
+        setLineas((prev) => prev.map((l, idx) => (idx === i ? { ...l, costo_unitario: costoUnitario } : l)))
+      }
+    }
+    setLineaCreando(null)
+  }
+
+  function proveedorCreado(proveedor: ProveedorCreado) {
+    setCatalogoProveedores((prev) => [...prev, proveedor])
+    setProveedorId(proveedor.id)
+    setCreandoProveedor(false)
+  }
+
   function agregarLinea() {
     setLineas((prev) => [...prev, lineaVacia()])
   }
@@ -174,12 +214,19 @@ export function NuevaCompraForm({
           <label className={LABEL}>Proveedor *</label>
           <div className="mt-1.5">
             <Buscador
-              opciones={proveedores}
+              opciones={catalogoProveedores}
               valor={proveedorId}
               onChange={(id) => setProveedorId(Number(id) || '')}
               placeholder="Escribe el nombre del proveedor..."
               name="proveedor_id"
               required
+              crearNuevo={{
+                etiqueta: (texto) => (texto ? `Crear "${texto}" como proveedor nuevo` : 'Crear proveedor nuevo'),
+                onClick: (texto) => {
+                  setNombreProveedorBuscado(texto)
+                  setCreandoProveedor(true)
+                },
+              }}
             />
           </div>
         </div>
@@ -195,6 +242,32 @@ export function NuevaCompraForm({
             onChange={(e) => setFechaRegistro(e.target.value)}
             className={CAMPO}
           />
+        </div>
+        <div>
+          <label className={LABEL}>Usuario</label>
+          <input
+            type="text"
+            value={`${usuarioNombre} — ${usuarioRol}`}
+            disabled
+            readOnly
+            className={`${CAMPO} disabled:cursor-not-allowed disabled:opacity-70`}
+          />
+          <p className="mt-1.5 text-xs font-medium text-[#94a3b8] dark:text-slate-500">
+            Se toma de tu sesión — no se puede cambiar.
+          </p>
+        </div>
+        <div>
+          <label className={LABEL}>Motivo</label>
+          <input
+            type="text"
+            value="Compras"
+            disabled
+            readOnly
+            className={`${CAMPO} disabled:cursor-not-allowed disabled:opacity-70`}
+          />
+          <p className="mt-1.5 text-xs font-medium text-[#94a3b8] dark:text-slate-500">
+            Esta sección solo registra órdenes de compra.
+          </p>
         </div>
       </div>
 
@@ -277,6 +350,13 @@ export function NuevaCompraForm({
                       ? `IA leyó: "${l.nombreSugerido}" — selecciona el producto`
                       : 'Buscar producto...'
                   }
+                  crearNuevo={{
+                    etiqueta: (texto) => (texto ? `Crear "${texto}" como producto nuevo` : 'Crear producto nuevo'),
+                    onClick: (texto) => {
+                      setNombreBuscado(texto)
+                      setLineaCreando(i)
+                    },
+                  }}
                 />
               </div>
               <input
@@ -363,6 +443,22 @@ export function NuevaCompraForm({
         La orden se guarda como "pendiente" — el stock recién se actualiza cuando la marques como
         "Recibida" desde la lista.
       </p>
+
+      <CrearProductoModal
+        abierto={lineaCreando !== null}
+        nombreInicial={nombreBuscado}
+        unidades={unidades}
+        categorias={categorias}
+        onCreado={productoCreadoDesdeLinea}
+        onCerrar={() => setLineaCreando(null)}
+      />
+
+      <CrearProveedorModal
+        abierto={creandoProveedor}
+        nombreInicial={nombreProveedorBuscado}
+        onCreado={proveedorCreado}
+        onCerrar={() => setCreandoProveedor(false)}
+      />
     </form>
   )
 }

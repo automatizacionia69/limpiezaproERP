@@ -14,7 +14,7 @@ type LineaVenta = {
 }
 
 const CAMPO =
-  'mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3.5 py-2.5 text-sm text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-100'
+  'mt-1.5 w-full rounded-lg border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2 text-sm text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-100'
 const LABEL = 'block text-xs font-bold text-[#1e293b] dark:text-slate-100'
 
 export function AnularComprobanteForm({

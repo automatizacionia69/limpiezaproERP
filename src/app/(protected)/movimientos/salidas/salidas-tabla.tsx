@@ -1,8 +1,8 @@
 'use client'
 
-import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import { MOTIVOS_SALIDA, DOCUMENTOS_GRUPOS } from './constantes'
+import { DetalleSalidaModal } from './detalle-salida-modal'
 
 const MOTIVO_LABELS: Record<string, string> = Object.fromEntries(MOTIVOS_SALIDA.map((m) => [m.valor, m.label]))
 const DOCUMENTO_LABELS: Record<string, string> = Object.fromEntries(
@@ -33,6 +33,7 @@ export type SalidaCabeceraRow = {
 
 export function SalidasTabla({ salidas }: { salidas: SalidaCabeceraRow[] }) {
   const [filtro, setFiltro] = useState('')
+  const [verId, setVerId] = useState<number | null>(null)
 
   const filtradas = useMemo(() => {
     const q = filtro.trim().toLowerCase()
@@ -120,13 +121,14 @@ export function SalidasTabla({ salidas }: { salidas: SalidaCabeceraRow[] }) {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <Link
-                        href={`/movimientos/salidas/${e.id}`}
+                      <button
+                        type="button"
+                        onClick={() => setVerId(e.id)}
                         title="Ver salida"
                         className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-bold text-red-600 transition-colors hover:bg-red-100 dark:hover:bg-red-950/40"
                       >
                         👁️ Ver
-                      </Link>
+                      </button>
                     </td>
                   </tr>
                 )
@@ -135,6 +137,8 @@ export function SalidasTabla({ salidas }: { salidas: SalidaCabeceraRow[] }) {
           </table>
         </div>
       )}
+
+      <DetalleSalidaModal salidaId={verId} onCerrar={() => setVerId(null)} />
     </div>
   )
 }

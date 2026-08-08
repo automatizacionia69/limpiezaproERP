@@ -5,8 +5,121 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { tienePermiso } from '@/lib/permisos'
 import { fechaDocumentoFueraDeRango } from '@/lib/fecha'
+import { calcularImportes } from '@/lib/cotizaciones'
 
 export type EstadoFormulario = { error: string | null }
+
+export type LineaDetalleCompra = {
+  sku: string | null
+  nombre: string | null
+  cantidad: number
+  costo_unitario: number
+}
+
+export type DetalleCompra = {
+  id: number
+  numero: string
+  estado: string
+  creado_en: string
+  recibida_en: string | null
+  fecha_registro: string
+  tipo_documento: string
+  documento_serie: string | null
+  documento_numero: string | null
+  observacion: string | null
+  proveedor: string | null
+  lineas: LineaDetalleCompra[]
+  subtotal: number
+  igv: number
+  total: number
+}
+
+type OrdenRaw = {
+  id: number
+  numero: string
+  estado: string
+  creado_en: string
+  recibida_en: string | null
+  fecha_registro: string
+  tipo_documento: string
+  documento_serie: string | null
+  documento_numero: string | null
+  observacion: string | null
+  proveedores: { nombre: string } | { nombre: string }[] | null
+}
+
+type LineaRaw = {
+  cantidad: number
+  costo_unitario: number
+  productos: { nombre: string; sku: string } | { nombre: string; sku: string }[] | null
+}
+
+function unoDe<T>(v: T | T[] | null): T | null {
+  return Array.isArray(v) ? (v[0] ?? null) : v
+}
+
+/** Detalle de una orden para el popup "Ver" de la tabla de Compras — misma consulta que antes vivía en /compras/[id]. */
+export async function obtenerDetalleCompra(id: number): Promise<{ orden: DetalleCompra } | { error: string }> {
+  if (!(await tienePermiso('compras'))) {
+    return { error: 'No tienes permiso para esta acción.' }
+  }
+
+  const supabase = await createClient()
+
+  const { data: orden } = await supabase
+    .from('ordenes_compra')
+    .select(
+      'id, numero, estado, creado_en, recibida_en, fecha_registro, tipo_documento, documento_serie, documento_numero, observacion, proveedores(nombre)'
+    )
+    .eq('id', id)
+    .single()
+    .returns<OrdenRaw>()
+
+  if (!orden) {
+    return { error: 'No se encontró la orden.' }
+  }
+
+  const { data: lineasRaw } = await supabase
+    .from('detalle_compra')
+    .select('cantidad, costo_unitario, productos(nombre, sku)')
+    .eq('orden_id', orden.id)
+    .order('id')
+    .returns<LineaRaw[]>()
+
+  const lineas: LineaDetalleCompra[] = (lineasRaw ?? []).map((l) => {
+    const producto = unoDe(l.productos)
+    return {
+      sku: producto?.sku ?? null,
+      nombre: producto?.nombre ?? null,
+      cantidad: l.cantidad,
+      costo_unitario: l.costo_unitario,
+    }
+  })
+
+  const { subtotal, igv, total } = calcularImportes(
+    lineas.map((l) => ({ cantidad: l.cantidad, precio_unitario: l.costo_unitario }))
+  )
+
+  return {
+    orden: {
+      id: orden.id,
+      numero: orden.numero,
+      estado: orden.estado,
+      creado_en: orden.creado_en,
+      recibida_en: orden.recibida_en,
+      fecha_registro: orden.fecha_registro,
+      tipo_documento: orden.tipo_documento,
+      documento_serie: orden.documento_serie,
+      documento_numero: orden.documento_numero,
+      observacion: orden.observacion,
+      proveedor: unoDe(orden.proveedores)?.nombre ?? null,
+      lineas,
+      subtotal,
+      igv,
+      total,
+    },
+  }
+}
 
 type Linea = { producto_id: number; cantidad: number; costo_unitario: number }
 

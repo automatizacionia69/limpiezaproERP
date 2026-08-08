@@ -1,14 +1,15 @@
 'use client'
 
-import { useActionState, useEffect, useRef, useState } from 'react'
+import { useActionState, useEffect, useMemo, useRef, useState } from 'react'
 import { crearProducto, sugerirSku, type EstadoFormulario } from '../actions'
 import { Buscador } from '@/components/buscador'
+import { IGV_TASA, calcularImportes } from '@/lib/cotizaciones'
 
 type Opcion = { id: number; nombre: string }
 
 const CAMPO =
-  'mt-1.5 w-full rounded-xl border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-4 py-3 text-base text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100'
-const LABEL = 'block text-sm font-bold text-[#1e293b] dark:text-slate-100'
+  'mt-1.5 w-full rounded-lg border-2 border-[#e2e8f0] dark:border-slate-700 bg-white dark:bg-[#141a2e] px-3 py-2 text-sm text-[#1e293b] dark:text-slate-100 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100'
+const LABEL = 'block text-xs font-bold text-[#1e293b] dark:text-slate-100'
 const AYUDA = 'mt-1.5 text-xs font-medium text-[#94a3b8] dark:text-slate-500'
 
 export function ProductoForm({
@@ -24,11 +25,20 @@ export function ProductoForm({
   const [unidadId, setUnidadId] = useState<number | ''>('')
   const [categoriaId, setCategoriaId] = useState<number | ''>('')
   const [sku, setSku] = useState('')
-  // Deja de auto-sugerir en cuanto el usuario toca el campo a mano — la
-  // sugerencia es solo un punto de partida editable, nunca se le pisa lo
-  // que ya escribió.
-  const [skuTocado, setSkuTocado] = useState(false)
+  // 'automatico': el SKU sigue la sugerencia según la categoría, campo
+  // bloqueado. 'manual': el usuario escribe el suyo libremente. Cambiar de
+  // categoría en modo manual NO pisa lo ya escrito.
+  const [modoSku, setModoSku] = useState<'automatico' | 'manual'>('automatico')
+  const [refrescarSugerencia, setRefrescarSugerencia] = useState(0)
+  const [precioVenta, setPrecioVenta] = useState('')
   const marcaRef = useRef<HTMLInputElement>(null)
+
+  // Mismo criterio que el resto del ERP: el precio ya incluye IGV, se
+  // desglosa hacia atrás (ver lib/cotizaciones.ts).
+  const { subtotal: precioVentaSinIgv, igv: igvPrecioVenta } = useMemo(
+    () => calcularImportes([{ cantidad: 1, precio_unitario: Number(precioVenta) || 0 }]),
+    [precioVenta]
+  )
 
   // Una pistola lectora de código de barras es, para el navegador, un
   // teclado: "escribe" los dígitos y al terminar manda un Enter. Sin esto,
@@ -43,7 +53,7 @@ export function ProductoForm({
   }
 
   useEffect(() => {
-    if (skuTocado) return
+    if (modoSku !== 'automatico') return
     let cancelado = false
     sugerirSku(categoriaId ? Number(categoriaId) : null).then((sugerido) => {
       if (!cancelado) setSku(sugerido)
@@ -51,18 +61,19 @@ export function ProductoForm({
     return () => {
       cancelado = true
     }
-  }, [categoriaId, skuTocado])
+  }, [categoriaId, modoSku, refrescarSugerencia])
 
   useEffect(() => {
     // Bajo alta concurrencia (varias personas creando en la misma categoría
-    // casi al mismo tiempo) dos sugerencias de SKU pueden coincidir. Si el
-    // guardado choca por SKU duplicado, se refresca la sugerencia sola en
-    // vez de dejar al usuario reintentando a ciegas con el mismo valor que
-    // ya falló.
-    if (estado.error?.includes('SKU')) {
-      setSkuTocado(false)
+    // casi al mismo tiempo) dos sugerencias automáticas de SKU pueden
+    // coincidir. Si el guardado choca por SKU duplicado y el modo sigue en
+    // automático, se refresca la sugerencia sola en vez de dejar al usuario
+    // reintentando a ciegas con el mismo valor que ya falló. En modo manual
+    // se deja tal cual — el usuario lo corrige él mismo.
+    if (estado.error?.includes('SKU') && modoSku === 'automatico') {
+      setRefrescarSugerencia((n) => n + 1)
     }
-  }, [estado.error])
+  }, [estado.error, modoSku])
 
   return (
     <form action={formAction} className="mt-6 space-y-5">
@@ -73,21 +84,49 @@ export function ProductoForm({
         </div>
 
         <div>
-          <label className={LABEL}>SKU *</label>
+          <div className="flex items-center justify-between gap-2">
+            <label className={LABEL}>SKU *</label>
+            <div className="inline-flex rounded-lg bg-[#f1f5f9] dark:bg-slate-800 p-0.5 text-[11px] font-bold">
+              <button
+                type="button"
+                onClick={() => setModoSku('automatico')}
+                className={`rounded-md px-2.5 py-1 transition-all ${
+                  modoSku === 'automatico'
+                    ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                    : 'text-[#64748b] dark:text-slate-400'
+                }`}
+              >
+                Automático
+              </button>
+              <button
+                type="button"
+                onClick={() => setModoSku('manual')}
+                className={`rounded-md px-2.5 py-1 transition-all ${
+                  modoSku === 'manual'
+                    ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm'
+                    : 'text-[#64748b] dark:text-slate-400'
+                }`}
+              >
+                Manual
+              </button>
+            </div>
+          </div>
           <input
             type="text"
             name="sku"
             required
             autoComplete="off"
+            disabled={modoSku === 'automatico'}
             value={sku}
-            onChange={(e) => {
-              setSku(e.target.value)
-              setSkuTocado(true)
-            }}
+            onChange={(e) => setSku(e.target.value)}
             placeholder="Se sugiere al elegir categoría"
-            className={`${CAMPO} uppercase`}
+            className={`${CAMPO} uppercase disabled:cursor-not-allowed disabled:bg-[#f8fafc] disabled:opacity-70 dark:disabled:bg-slate-800/40`}
           />
-          <p className={AYUDA}>Código interno único del ERP. Editable — la sugerencia es solo un punto de partida.</p>
+          <p className={AYUDA}>
+            {modoSku === 'automatico'
+              ? 'Se genera solo según la categoría — pasa a "Manual" para escribir el tuyo.'
+              : 'Código interno único del ERP — escríbelo tú.'}
+          </p>
         </div>
 
         <div>
@@ -121,9 +160,10 @@ export function ProductoForm({
               opciones={unidades}
               valor={unidadId}
               onChange={(id) => setUnidadId(Number(id) || '')}
-              placeholder="Escribe para buscar una unidad..."
+              placeholder="Elige una unidad..."
               name="unidad_id"
               required
+              mostrarTodo
             />
           </div>
         </div>
@@ -143,8 +183,22 @@ export function ProductoForm({
 
         <div>
           <label className={LABEL}>Precio de venta</label>
-          <input type="number" step="0.01" min="0" name="precio_venta" className={CAMPO} />
-          <p className={AYUDA}>Incluye IGV (18%).</p>
+          <input
+            type="number"
+            step="0.01"
+            min="0"
+            name="precio_venta"
+            value={precioVenta}
+            onChange={(e) => setPrecioVenta(e.target.value)}
+            className={CAMPO}
+          />
+          {Number(precioVenta) > 0 ? (
+            <p className={AYUDA}>
+              Sin IGV: S/ {precioVentaSinIgv.toFixed(2)} + IGV ({(IGV_TASA * 100).toFixed(0)}%): S/ {igvPrecioVenta.toFixed(2)}
+            </p>
+          ) : (
+            <p className={AYUDA}>Incluye IGV (18%).</p>
+          )}
         </div>
 
         <div>

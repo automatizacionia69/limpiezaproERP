@@ -15,6 +15,8 @@ export function Buscador({
   disabled,
   vacio = 'Sin resultados',
   compacto = false,
+  mostrarTodo = false,
+  crearNuevo,
 }: {
   opciones: OpcionBuscador[]
   valor: number | string | ''
@@ -26,6 +28,10 @@ export function Buscador({
   vacio?: string
   /** Versión angosta (misma altura/tipografía que el resto de una fila de tabla). */
   compacto?: boolean
+  /** Comportamiento de desplegable: muestra todas las opciones ya al enfocar, sin esperar a que se escriba. Al escribir, filtra igual que siempre. */
+  mostrarTodo?: boolean
+  /** Opcional: agrega una fila fija "+ Crear nuevo" al fondo del menú (ej. alta rápida de producto desde Compras). No aparece si no se pasa esta prop. */
+  crearNuevo?: { etiqueta: (texto: string) => string; onClick: (texto: string) => void }
 }) {
   const [abierto, setAbierto] = useState(false)
   const [texto, setTexto] = useState('')
@@ -41,9 +47,11 @@ export function Buscador({
   const seleccionado = opciones.find((o) => String(o.id) === String(valor))
 
   // El menú de coincidencias solo se muestra una vez que el usuario empezó a
-  // escribir algo — un clic/foco en el campo, por sí solo, no debe desplegar
-  // toda la lista (aunque el foco ya haya precargado el nombre elegido).
-  const mostrarMenu = abierto && interactuando && texto.trim() !== ''
+  // escribir algo — un clic/foco en el campo, por sí solo, no despliega toda
+  // la lista (aunque el foco ya haya precargado el nombre elegido) — salvo
+  // en modo `mostrarTodo`, donde se comporta como un desplegable clásico:
+  // toda la lista aparece ya con el foco, y escribir sigue filtrando igual.
+  const mostrarMenu = abierto && (mostrarTodo || (interactuando && texto.trim() !== ''))
 
   function actualizarPosicion() {
     const rect = inputRef.current?.getBoundingClientRect()
@@ -88,10 +96,13 @@ export function Buscador({
   }, [mostrarMenu])
 
   const filtradas = useMemo(() => {
-    const q = texto.trim().toLowerCase()
+    // En modo `mostrarTodo`, el texto precargado al enfocar (el nombre ya
+    // elegido) no debe filtrar la lista todavía — recién filtra una vez que
+    // el usuario escribe de verdad (`interactuando`).
+    const q = (mostrarTodo && !interactuando ? '' : texto).trim().toLowerCase()
     if (!q) return opciones
     return opciones.filter((o) => o.nombre.toLowerCase().includes(q))
-  }, [opciones, texto])
+  }, [opciones, texto, mostrarTodo, interactuando])
 
   return (
     <div ref={contenedorRef} className="relative">
@@ -186,6 +197,20 @@ export function Buscador({
                   {o.subtitulo && <span className="ml-2 text-xs text-[#94a3b8] dark:text-slate-500">{o.subtitulo}</span>}
                 </button>
               ))
+            )}
+            {crearNuevo && (
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  crearNuevo.onClick(texto.trim())
+                  setAbierto(false)
+                  setInteractuando(false)
+                }}
+                className="block w-full border-t border-[#e2e8f0] dark:border-slate-700 px-4 py-2.5 text-left text-sm font-bold text-indigo-600 transition-colors hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-950/40"
+              >
+                + {crearNuevo.etiqueta(texto.trim())}
+              </button>
             )}
           </div>,
           document.body
