@@ -7,6 +7,7 @@ import { SubirDocumentoCompra } from './subir-documento-compra'
 import type { DatosExtraidos } from './analizar-documento'
 import { crearProductoRapido } from './crear-producto-rapido'
 import { IGV_TASA, calcularImportes } from '@/lib/cotizaciones'
+import { AFECTACION_IGV_DEFAULT } from '@/lib/afectacion-igv'
 import { hoyPeruISO, haceNDiasPeruISO } from '@/lib/fecha'
 
 type Proveedor = { id: number; nombre: string }
@@ -139,13 +140,18 @@ export function NuevaCompraForm({
   }
 
   // Mismo calculo que Cotizaciones/Ventas/Notas de credito (calcularImportes):
-  // costo_unitario ya incluye IGV, se desglosa hacia atras.
+  // costo_unitario ya incluye IGV, se desglosa hacia atras. Compras no tiene
+  // (todavia) un concepto de clasificacion tributaria por producto en esta
+  // pantalla — se asume Gravado para el preview, igual que el comportamiento
+  // de siempre (ver docs/superpowers/specs/2026-08-07-tipo-afectacion-igv-design.md,
+  // "Fuera de alcance").
   const { subtotal, igv, total } = useMemo(
     () =>
       calcularImportes(
         lineas.map((l) => ({
           cantidad: Number(l.cantidad) || 0,
           precio_unitario: Number(l.costo_unitario) || 0,
+          tipo_afectacion_igv: AFECTACION_IGV_DEFAULT,
         }))
       ),
     [lineas]
