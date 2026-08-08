@@ -18,12 +18,18 @@ export type AfectacionIgv = {
   afectoIgv: boolean
 }
 
+// Las etiquetas son en lenguaje simple a propósito (pedido del usuario,
+// personal no técnico) — el nombre oficial SUNAT de cada código queda solo
+// en este comentario, por si hace falta consultarlo:
+// 10 Gravado–Operación Onerosa, 12 Gravado–Retiro por donación,
+// 15 Gravado–Bonificaciones, 20 Exonerado–Operación Onerosa,
+// 30 Inafecto–Operación Onerosa.
 export const AFECTACIONES_IGV: AfectacionIgv[] = [
-  { codigo: '10', etiqueta: 'Gravado – Operación Onerosa', grupo: 'gravado', afectoIgv: true },
-  { codigo: '12', etiqueta: 'Gravado – Retiro por donación', grupo: 'gravado', afectoIgv: true },
-  { codigo: '15', etiqueta: 'Gravado – Bonificaciones', grupo: 'gravado', afectoIgv: true },
-  { codigo: '20', etiqueta: 'Exonerado – Operación Onerosa', grupo: 'exonerado', afectoIgv: false },
-  { codigo: '30', etiqueta: 'Inafecto – Operación Onerosa', grupo: 'inafecto', afectoIgv: false },
+  { codigo: '10', etiqueta: 'Afecto a IGV (18%) — venta normal', grupo: 'gravado', afectoIgv: true },
+  { codigo: '12', etiqueta: 'Afecto a IGV (18%) — regalo o donación', grupo: 'gravado', afectoIgv: true },
+  { codigo: '15', etiqueta: 'Afecto a IGV (18%) — bonificación o promoción', grupo: 'gravado', afectoIgv: true },
+  { codigo: '20', etiqueta: 'Exonerado de IGV', grupo: 'exonerado', afectoIgv: false },
+  { codigo: '30', etiqueta: 'No afecto a IGV (inafecto)', grupo: 'inafecto', afectoIgv: false },
 ]
 
 export const AFECTACION_IGV_DEFAULT = '10'
